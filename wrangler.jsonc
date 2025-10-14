@@ -1,0 +1,5 @@
+{
+  "name": "promptly",
+  "compatibility_date": "2025-10-14",
+  "main": "app/routes.tsx"
+}
