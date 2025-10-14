@@ -1,7 +1,7 @@
 {
   "include": ["**/*.ts", "**/*.tsx", "./.react-router/types/**/*"],
   "compilerOptions": {
-    "allowImportingTsExtensions": true,
+    "allowImportingTsExtensions": false,
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
