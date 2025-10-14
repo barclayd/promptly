@@ -7,6 +7,7 @@ import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 import data from '~/dashboard/data.json';
 import type { Route } from './+types/home';
 
+// biome-ignore lint/correctness/noEmptyPattern: react router default
 export function meta({}: Route.MetaArgs) {
   return [
     { title: 'New React Router App' },
@@ -14,7 +15,7 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export function ServerComponent() {
+export default function Home() {
   return (
     <SidebarProvider
       style={
