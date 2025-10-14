@@ -8,7 +8,8 @@
     "start": "react-router-serve build/server/index.js",
     "typecheck": "react-router typegen && tsc",
     "lint": "bunx biome check .",
-    "lint:fix": "bunx biome check --write ."
+    "lint:fix": "bunx biome check --write .",
+    "deploy": "bun run build && wrangler deploy"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

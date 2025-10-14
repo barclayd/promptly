@@ -1,6 +1,7 @@
 {
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "promptly",
   "compatibility_date": "2025-10-14",
-  "main": "/workers/app.ts",
+  "main": "./workers/app.ts",
   "compatibility_flags": ["nodejs_compat"]
 }
