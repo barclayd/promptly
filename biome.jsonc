@@ -6,7 +6,14 @@
     "useIgnoreFile": true
   },
   "files": {
-    "ignoreUnknown": true
+    "ignoreUnknown": true,
+    "includes": [
+      "**",
+      "!dist",
+      "!build",
+      "!worker-configuration.d.ts",
+      "!.react-router"
+    ]
   },
   "formatter": {
     "enabled": true,

@@ -10,8 +10,12 @@ import type { Route } from './+types/home';
 // biome-ignore lint/correctness/noEmptyPattern: react router default
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: 'New React Router App' },
-    { name: 'description', content: 'Welcome to React Router!' },
+    { title: 'Promptly' },
+    {
+      name: 'description',
+      content:
+        'The modern CMS for high performing teams to ship effective AI products at speed',
+    },
   ];
 }
 
