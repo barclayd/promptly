@@ -4,15 +4,12 @@ import {
   IconCamera,
   IconChartBar,
   IconDashboard,
-  IconDatabase,
   IconFileAi,
   IconFileDescription,
-  IconFileWord,
+  IconFileText,
   IconFolder,
   IconHelp,
   IconInnerShadowTop,
-  IconListDetails,
-  IconReport,
   IconSearch,
   IconSettings,
   IconUsers,
@@ -46,18 +43,13 @@ const data = {
       icon: IconDashboard,
     },
     {
-      title: 'Lifecycle',
-      url: '#',
-      icon: IconListDetails,
-    },
-    {
       title: 'Analytics',
       url: '#',
       icon: IconChartBar,
     },
     {
-      title: 'Projects',
-      url: '#',
+      title: 'Prompts',
+      url: '/',
       icon: IconFolder,
     },
     {
@@ -133,19 +125,9 @@ const data = {
   ],
   documents: [
     {
-      name: 'Data Library',
-      url: '#',
-      icon: IconDatabase,
-    },
-    {
-      name: 'Reports',
-      url: '#',
-      icon: IconReport,
-    },
-    {
-      name: 'Word Assistant',
-      url: '#',
-      icon: IconFileWord,
+      name: 'Review',
+      url: '/prompts/1',
+      icon: IconFileText,
     },
   ],
 };
