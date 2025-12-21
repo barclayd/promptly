@@ -5,6 +5,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useMatch,
 } from 'react-router';
 import { SidebarLeft } from '~/components/sidebar-left';
 import { SidebarRight } from '~/components/sidebar-right';
@@ -28,6 +29,10 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const promptMatch = useMatch('/prompts/:id');
+  const showSidebarRight =
+    promptMatch !== null && /^\d+$/.test(promptMatch.params.id || '');
+
   return (
     <html lang="en">
       <head title="Promptly">
@@ -50,7 +55,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <SiteHeader />
             {children}
           </SidebarInset>
-          <SidebarRight />
+          {showSidebarRight && <SidebarRight />}
         </SidebarProvider>
 
         <ScrollRestoration />
