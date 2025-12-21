@@ -1,0 +1,254 @@
+'use client';
+
+import {
+  IconCamera,
+  IconChartBar,
+  IconDashboard,
+  IconDatabase,
+  IconFileAi,
+  IconFileDescription,
+  IconFileWord,
+  IconFolder,
+  IconHelp,
+  IconListDetails,
+  IconReport,
+  IconSearch,
+  IconSettings,
+  IconUsers,
+} from '@tabler/icons-react';
+import { Check, ChevronRight, Plus } from 'lucide-react';
+import type * as React from 'react';
+import { Fragment } from 'react';
+
+import { NavUser } from '~/components/nav-user';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '~/components/ui/collapsible';
+import { Separator } from '~/components/ui/separator';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarSeparator,
+} from '~/components/ui/sidebar';
+
+const data = {
+  user: {
+    name: 'Prompter',
+    email: 'm@example.com',
+    avatar: '/avatars/shadcn.jpg',
+  },
+  navMain: [
+    {
+      title: 'Dashboard',
+      url: '#',
+      icon: IconDashboard,
+    },
+    {
+      title: 'Lifecycle',
+      url: '#',
+      icon: IconListDetails,
+    },
+    {
+      title: 'Analytics',
+      url: '#',
+      icon: IconChartBar,
+    },
+    {
+      title: 'Projects',
+      url: '#',
+      icon: IconFolder,
+    },
+    {
+      title: 'Team',
+      url: '#',
+      icon: IconUsers,
+    },
+  ],
+  navClouds: [
+    {
+      title: 'Capture',
+      icon: IconCamera,
+      isActive: true,
+      url: '#',
+      items: [
+        {
+          title: 'Active Proposals',
+          url: '#',
+        },
+        {
+          title: 'Archived',
+          url: '#',
+        },
+      ],
+    },
+    {
+      title: 'Proposal',
+      icon: IconFileDescription,
+      url: '#',
+      items: [
+        {
+          title: 'Active Proposals',
+          url: '#',
+        },
+        {
+          title: 'Archived',
+          url: '#',
+        },
+      ],
+    },
+    {
+      title: 'Prompts',
+      icon: IconFileAi,
+      url: '#',
+      items: [
+        {
+          title: 'Active Proposals',
+          url: '#',
+        },
+        {
+          title: 'Archived',
+          url: '#',
+        },
+      ],
+    },
+  ],
+  navSecondary: [
+    {
+      title: 'Settings',
+      url: '#',
+      icon: IconSettings,
+    },
+    {
+      title: 'Get Help',
+      url: '#',
+      icon: IconHelp,
+    },
+    {
+      title: 'Search',
+      url: '#',
+      icon: IconSearch,
+    },
+  ],
+  documents: [
+    {
+      name: 'Data Library',
+      url: '#',
+      icon: IconDatabase,
+    },
+    {
+      name: 'Reports',
+      url: '#',
+      icon: IconReport,
+    },
+    {
+      name: 'Word Assistant',
+      url: '#',
+      icon: IconFileWord,
+    },
+  ],
+};
+
+export function SidebarRight({
+  ...props
+}: React.ComponentProps<typeof Sidebar>) {
+  return (
+    <Sidebar
+      collapsible="none"
+      className="sticky top-0 hidden h-svh border-l lg:flex"
+      {...props}
+    >
+      <SidebarHeader className="border-sidebar-border h-16 border-b">
+        <NavUser user={data.user} />
+      </SidebarHeader>
+      <SidebarContent>
+        <Fragment key={1}>
+          <SidebarGroup key="key" className="py-0">
+            <Collapsible defaultOpen={false} className="group/collapsible">
+              <SidebarGroupLabel
+                asChild
+                className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
+              >
+                <CollapsibleTrigger>
+                  Placeholder
+                  <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem key={1}>
+                      <SidebarMenuButton>
+                        <div
+                          data-active={1}
+                          className="group/calendar-item border-sidebar-border text-sidebar-primary-foreground data-[active=true]:border-sidebar-primary data-[active=true]:bg-sidebar-primary flex aspect-square size-4 shrink-0 items-center justify-center rounded-xs border"
+                        >
+                          <Check className="hidden size-3 group-data-[active=true]/calendar-item:block" />
+                        </div>
+                        Content
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+          <SidebarSeparator className="mx-0" />
+        </Fragment>
+        <Separator className="mx-0" />
+        <Fragment key={2}>
+          <SidebarGroup key="key" className="py-0">
+            <Collapsible defaultOpen={false} className="group/collapsible">
+              <SidebarGroupLabel
+                asChild
+                className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
+              >
+                <CollapsibleTrigger>
+                  Placeholder
+                  <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem key={1}>
+                      <SidebarMenuButton>
+                        <div
+                          data-active={1}
+                          className="group/calendar-item border-sidebar-border text-sidebar-primary-foreground data-[active=true]:border-sidebar-primary data-[active=true]:bg-sidebar-primary flex aspect-square size-4 shrink-0 items-center justify-center rounded-xs border"
+                        >
+                          <Check className="hidden size-3 group-data-[active=true]/calendar-item:block" />
+                        </div>
+                        Content
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+          <SidebarSeparator className="mx-0" />
+        </Fragment>
+      </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton>
+              <Plus />
+              <span>New Calendar</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}

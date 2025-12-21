@@ -6,7 +6,8 @@ import {
   Scripts,
   ScrollRestoration,
 } from 'react-router';
-import { AppSidebar } from '~/components/app-sidebar';
+import { SidebarLeft } from '~/components/sidebar-left';
+import { SidebarRight } from '~/components/sidebar-right';
 import { SiteHeader } from '~/components/site-header';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 
@@ -44,11 +45,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
             } as React.CSSProperties
           }
         >
-          <AppSidebar variant="inset" />
+          <SidebarLeft variant="inset" />
           <SidebarInset>
-            <SiteHeader title="Library" />
+            <SiteHeader />
             {children}
           </SidebarInset>
+          <SidebarRight />
         </SidebarProvider>
 
         <ScrollRestoration />
