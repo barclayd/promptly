@@ -1,4 +1,5 @@
 import { PromptEntry } from '~/components/prompt-entry';
+import { PromptReview } from '~/components/prompt-review';
 import { Separator } from '~/components/ui/separator';
 import type { Route } from './+types/home';
 
@@ -26,7 +27,9 @@ export default function Home() {
               to an uplift in conversion
             </p>
             <Separator className="my-4" />
-            <PromptEntry
+            <PromptEntry />
+            <Separator className="my-4" />
+            <PromptReview
               title="System Prompt"
               input={`<role>
 You distill customer reviews to their emotional core for marketing emails.
@@ -73,7 +76,7 @@ Another: "I was worried about my antique furniture but they wrapped everything s
 ✓ Just the distilled review text (≤50 chars)
 </forbidden_outputs>`}
             />
-            <PromptEntry
+            <PromptReview
               title="User Prompt"
               input={`<reviews>
  {reviews}

@@ -167,14 +167,14 @@ export function SidebarRight({
       </SidebarHeader>
       <SidebarContent>
         <Fragment key={1}>
-          <SidebarGroup key="key" className="py-0">
+          <SidebarGroup key="key" className="py-1">
             <Collapsible defaultOpen={false} className="group/collapsible">
               <SidebarGroupLabel
                 asChild
                 className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
               >
                 <CollapsibleTrigger>
-                  Placeholder
+                  Input
                   <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
                 </CollapsibleTrigger>
               </SidebarGroupLabel>
@@ -207,7 +207,7 @@ export function SidebarRight({
                 className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
               >
                 <CollapsibleTrigger>
-                  Placeholder
+                  Output
                   <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
                 </CollapsibleTrigger>
               </SidebarGroupLabel>

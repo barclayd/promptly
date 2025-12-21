@@ -1,6 +1,12 @@
-import { IconCopy, IconCornerDownLeft } from '@tabler/icons-react';
-import { Save } from 'lucide-react';
+import { IconPlus } from '@tabler/icons-react';
+import { ArrowUpIcon } from 'lucide-react';
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu';
 import {
   InputGroup,
   InputGroupAddon,
@@ -8,50 +14,48 @@ import {
   InputGroupText,
   InputGroupTextarea,
 } from '~/components/ui/input-group';
+import { Separator } from '~/components/ui/separator';
 
-export const PromptEntry = ({
-  title,
-  input,
-}: {
-  title: string;
-  input?: string;
-}) => {
+export function PromptEntry() {
   return (
-    <div className="grid w-full gap-4">
+    <div className="grid w-full gap-6">
       <InputGroup>
-        <InputGroupTextarea
-          id="textarea-code-32"
-          placeholder="console.log('Hello, world!');"
-          className="min-h-[200px]"
-          defaultValue={input}
-        />
-        <InputGroupAddon align="block-end" className="border-t">
-          <InputGroupText>
-            Last updated:
-            <span className="italic text-gray-400">
-              {new Date().toLocaleString(undefined, {
-                dateStyle: 'medium',
-                timeStyle: 'short',
-              })}
-            </span>
-          </InputGroupText>
-          <InputGroupButton size="sm" className="ml-auto" variant="default">
-            Run <IconCornerDownLeft />
+        <InputGroupTextarea placeholder="Ask, Search or Chat..." />
+        <InputGroupAddon align="block-end">
+          <InputGroupButton
+            variant="outline"
+            className="rounded-full"
+            size="icon-xs"
+          >
+            <IconPlus />
           </InputGroupButton>
-        </InputGroupAddon>
-        <InputGroupAddon align="block-start" className="border-b">
-          <InputGroupText className="font-mono font-medium">
-            {title}
-          </InputGroupText>
-          <div className="grow" />
-          <InputGroupButton variant="ghost" size="icon-xs">
-            <Save />
-          </InputGroupButton>
-          <InputGroupButton variant="ghost" size="icon-xs">
-            <IconCopy />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <InputGroupButton variant="ghost">Auto</InputGroupButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              side="top"
+              align="start"
+              className="[--radius:0.95rem]"
+            >
+              <DropdownMenuItem>Auto</DropdownMenuItem>
+              <DropdownMenuItem>Agent</DropdownMenuItem>
+              <DropdownMenuItem>Manual</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <InputGroupText className="ml-auto">52% used</InputGroupText>
+          <Separator orientation="vertical" className="!h-4" />
+          <InputGroupButton
+            variant="default"
+            className="rounded-full"
+            size="icon-xs"
+            disabled
+          >
+            <ArrowUpIcon />
+            <span className="sr-only">Send</span>
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
     </div>
   );
-};
+}
