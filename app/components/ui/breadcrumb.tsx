@@ -1,7 +1,7 @@
 import { Slot } from '@radix-ui/react-slot';
 import { ChevronDownIcon, ChevronRight, SlashIcon } from 'lucide-react';
-import type * as React from 'react';
-import { NavLink } from 'react-router';
+import { type ComponentProps, Fragment } from 'react';
+import { NavLink, useLocation } from 'react-router';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,11 +11,28 @@ import {
 
 import { cn } from '~/lib/utils';
 
-function Breadcrumb({ ...props }: React.ComponentProps<'nav'>) {
-  return <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />;
-}
+const SECTIONS = [
+  { name: 'Dashboard', path: '/dashboard' },
+  { name: 'Analytics', path: '/analytics' },
+  { name: 'Team', path: '/team' },
+  { name: 'Prompts', path: '/prompts' },
+];
 
-export function BreadcrumbWithDropdown() {
+const Breadcrumb = ({ ...props }: ComponentProps<'nav'>) => (
+  <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />
+);
+
+export const BreadcrumbWithDropdown = () => {
+  const location = useLocation();
+  const segments = location.pathname.split('/').filter(Boolean);
+
+  const currentSection = segments[0] || '';
+  const activeSection = SECTIONS.find(
+    (s) => s.path.slice(1).toLowerCase() === currentSection.toLowerCase(),
+  );
+
+  const deepSegments = segments.slice(1);
+
   return (
     <Breadcrumb>
       <BreadcrumbList>
@@ -24,63 +41,76 @@ export function BreadcrumbWithDropdown() {
             <NavLink to="/">Home</NavLink>
           </BreadcrumbLink>
         </BreadcrumbItem>
-        <BreadcrumbSeparator>
-          <SlashIcon />
-        </BreadcrumbSeparator>
-        <BreadcrumbItem>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5">
-              Prompts
-              <ChevronDownIcon />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem>Analytics</DropdownMenuItem>
-              <DropdownMenuItem>Dashboard</DropdownMenuItem>
-              <DropdownMenuItem>Team</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator>
-          <SlashIcon />
-        </BreadcrumbSeparator>
-        <BreadcrumbItem>
-          <BreadcrumbPage>1</BreadcrumbPage>
-        </BreadcrumbItem>
+
+        {activeSection && (
+          <>
+            <BreadcrumbSeparator>
+              <SlashIcon />
+            </BreadcrumbSeparator>
+            <BreadcrumbItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-1 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5">
+                  {activeSection.name}
+                  <ChevronDownIcon />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {SECTIONS.map((section) => (
+                    <DropdownMenuItem key={section.path} asChild>
+                      <NavLink to={section.path}>{section.name}</NavLink>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </BreadcrumbItem>
+
+            {deepSegments.map((segment, idx) => {
+              const path = `/${segments.slice(0, idx + 2).join('/')}`;
+              return (
+                <Fragment key={path}>
+                  <BreadcrumbSeparator>
+                    <SlashIcon />
+                  </BreadcrumbSeparator>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                      <NavLink to={path}>{segment}</NavLink>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                </Fragment>
+              );
+            })}
+          </>
+        )}
       </BreadcrumbList>
     </Breadcrumb>
   );
-}
+};
 
-function BreadcrumbList({ className, ...props }: React.ComponentProps<'ol'>) {
-  return (
-    <ol
-      data-slot="breadcrumb-list"
-      className={cn(
-        'text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5',
-        className,
-      )}
-      {...props}
-    />
-  );
-}
+const BreadcrumbList = ({ className, ...props }: ComponentProps<'ol'>) => (
+  <ol
+    data-slot="breadcrumb-list"
+    className={cn(
+      'text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5',
+      className,
+    )}
+    {...props}
+  />
+);
 
-function BreadcrumbItem({ className, ...props }: React.ComponentProps<'li'>) {
-  return (
-    <li
-      data-slot="breadcrumb-item"
-      className={cn('inline-flex items-center gap-1.5', className)}
-      {...props}
-    />
-  );
-}
+const BreadcrumbItem = ({ className, ...props }: ComponentProps<'li'>) => (
+  <li
+    data-slot="breadcrumb-item"
+    className={cn('inline-flex items-center gap-1.5', className)}
+    {...props}
+  />
+);
 
-function BreadcrumbLink({
+const BreadcrumbLink = ({
   asChild,
   className,
   ...props
-}: React.ComponentProps<'a'> & {
+}: ComponentProps<'a'> & {
   asChild?: boolean;
-}) {
+}) => {
   const Comp = asChild ? Slot : 'a';
 
   return (
@@ -90,35 +120,31 @@ function BreadcrumbLink({
       {...props}
     />
   );
-}
+};
 
-function BreadcrumbPage({ className, ...props }: React.ComponentProps<'span'>) {
-  return (
-    <span
-      data-slot="breadcrumb-page"
-      role="link"
-      aria-disabled="true"
-      aria-current="page"
-      className={cn('text-foreground font-normal', className)}
-      {...props}
-    />
-  );
-}
+const BreadcrumbPage = ({ className, ...props }: ComponentProps<'span'>) => (
+  <span
+    data-slot="breadcrumb-page"
+    role="link"
+    aria-disabled="true"
+    aria-current="page"
+    className={cn('text-foreground font-normal', className)}
+    {...props}
+  />
+);
 
-function BreadcrumbSeparator({
+const BreadcrumbSeparator = ({
   children,
   className,
   ...props
-}: React.ComponentProps<'li'>) {
-  return (
-    <li
-      data-slot="breadcrumb-separator"
-      role="presentation"
-      aria-hidden="true"
-      className={cn('[&>svg]:size-3.5', className)}
-      {...props}
-    >
-      {children ?? <ChevronRight />}
-    </li>
-  );
-}
+}: ComponentProps<'li'>) => (
+  <li
+    data-slot="breadcrumb-separator"
+    role="presentation"
+    aria-hidden="true"
+    className={cn('[&>svg]:size-3.5', className)}
+    {...props}
+  >
+    {children ?? <ChevronRight />}
+  </li>
+);
