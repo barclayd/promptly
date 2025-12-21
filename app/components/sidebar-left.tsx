@@ -15,6 +15,7 @@ import {
   IconUsers,
 } from '@tabler/icons-react';
 import type * as React from 'react';
+import { NavLink } from 'react-router';
 
 import { NavDocuments } from '~/components/nav-documents';
 import { NavMain } from '~/components/nav-main';
@@ -39,22 +40,22 @@ const data = {
   navMain: [
     {
       title: 'Dashboard',
-      url: '#',
+      url: '/dashboard',
       icon: IconDashboard,
     },
     {
       title: 'Analytics',
-      url: '#',
+      url: '/analytics',
       icon: IconChartBar,
     },
     {
       title: 'Prompts',
-      url: '/',
+      url: '/prompts',
       icon: IconFolder,
     },
     {
       title: 'Team',
-      url: '#',
+      url: '/team',
       icon: IconUsers,
     },
   ],
@@ -144,10 +145,10 @@ export function SidebarLeft({
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="/">
+              <NavLink to="/">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">Promptly</span>
-              </a>
+              </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

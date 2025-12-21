@@ -7,6 +7,7 @@ import {
   IconShare3,
   IconTrash,
 } from '@tabler/icons-react';
+import { NavLink } from 'react-router';
 
 import {
   DropdownMenu,
@@ -43,10 +44,10 @@ export function NavDocuments({
         {items.map((item) => (
           <SidebarMenuItem key={item.name}>
             <SidebarMenuButton asChild>
-              <a href={item.url}>
+              <NavLink to={item.url}>
                 <item.icon />
                 <span>{item.name}</span>
-              </a>
+              </NavLink>
             </SidebarMenuButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

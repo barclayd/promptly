@@ -15,13 +15,14 @@ import {
   IconSettings,
   IconUsers,
 } from '@tabler/icons-react';
-import { Check, ChevronRight, Plus } from 'lucide-react';
+import { Check, ChevronRight } from 'lucide-react';
 import type * as React from 'react';
 import { Fragment } from 'react';
 
 import { NavUser } from '~/components/nav-user';
 import { SelectScrollable } from '~/components/select-scrollable';
 import { SidebarSlider } from '~/components/sidebar-slider';
+import { Button } from '~/components/ui/button';
 import {
   Collapsible,
   CollapsibleContent,
@@ -30,7 +31,6 @@ import {
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -282,17 +282,34 @@ export function SidebarRight({
           </SidebarGroup>
           <SidebarSeparator className="mx-0" />
         </Fragment>
+        <Fragment key={5}>
+          <SidebarGroup key="key" className="py-0">
+            <Collapsible defaultOpen={false} className="group/collapsible">
+              <SidebarGroupLabel
+                asChild
+                className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
+              >
+                <CollapsibleTrigger>
+                  Test prompts
+                  <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem key={3} className="mx-2 my-6">
+                      <Button size="sm" variant="default">
+                        Test
+                      </Button>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+          <SidebarSeparator className="mx-0" />
+        </Fragment>
       </SidebarContent>
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton>
-              <Plus />
-              <span>Run</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
     </Sidebar>
   );
 }

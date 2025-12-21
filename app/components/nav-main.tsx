@@ -1,6 +1,7 @@
 'use client';
 
 import { type Icon, IconCirclePlusFilled } from '@tabler/icons-react';
+import { NavLink, useLocation } from 'react-router';
 
 import {
   SidebarGroup,
@@ -10,7 +11,7 @@ import {
   SidebarMenuItem,
 } from '~/components/ui/sidebar';
 
-export function NavMain({
+export const NavMain = ({
   items,
 }: {
   items: {
@@ -18,32 +19,48 @@ export function NavMain({
     url: string;
     icon?: Icon;
   }[];
-}) {
+}) => {
+  const location = useLocation();
+  const currentSection = location.pathname.split('/').filter(Boolean)[0] || '';
+
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
             <SidebarMenuButton
+              asChild
               tooltip="Create"
               className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
             >
-              <IconCirclePlusFilled />
-              <span>Create</span>
+              <NavLink to="/prompts/create">
+                <IconCirclePlusFilled />
+                <span>Create</span>
+              </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title}>
-                {item.icon && <item.icon />}
-                <span>{item.title}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {items.map((item) => {
+            const isActive =
+              item.title.toLowerCase() === currentSection.toLowerCase();
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  tooltip={item.title}
+                  isActive={isActive}
+                >
+                  <NavLink to={item.url}>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
   );
-}
+};
