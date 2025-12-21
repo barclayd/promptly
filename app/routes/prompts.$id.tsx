@@ -1,4 +1,3 @@
-import { ChartAreaInteractive } from '~/components/chart-area-interactive';
 import type { Route } from './+types/home';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
@@ -16,7 +15,7 @@ export function meta({}: Route.MetaArgs) {
 export default function Home() {
   return (
     <div className="px-4 lg:px-6">
-      <ChartAreaInteractive />
+      <h1>Prompts</h1>
     </div>
   );
 }
