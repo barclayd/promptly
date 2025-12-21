@@ -21,6 +21,7 @@ import { Fragment } from 'react';
 
 import { NavUser } from '~/components/nav-user';
 import { SelectScrollable } from '~/components/select-scrollable';
+import { SidebarSlider } from '~/components/sidebar-slider';
 import {
   Collapsible,
   CollapsibleContent,
@@ -246,8 +247,33 @@ export function SidebarRight({
               <CollapsibleContent>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    <SidebarMenuItem key={3}>
+                    <SidebarMenuItem key={3} className="my-2 my-4">
                       <SelectScrollable />
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+          <SidebarSeparator className="mx-0" />
+        </Fragment>
+        <Fragment key={4}>
+          <SidebarGroup key="key" className="py-0">
+            <Collapsible defaultOpen={false} className="group/collapsible">
+              <SidebarGroupLabel
+                asChild
+                className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
+              >
+                <CollapsibleTrigger>
+                  Temperature
+                  <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem key={3} className="mx-2 my-6">
+                      <SidebarSlider />
                     </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroupContent>
