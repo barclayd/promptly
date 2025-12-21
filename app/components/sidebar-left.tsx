@@ -33,8 +33,8 @@ import {
 
 const data = {
   user: {
-    name: 'Prompter',
-    email: 'm@example.com',
+    name: 'Test Prompter',
+    email: 'test@promptlycms.com',
     avatar: '/avatars/shadcn.jpg',
   },
   navMain: [

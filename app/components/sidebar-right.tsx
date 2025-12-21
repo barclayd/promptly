@@ -43,8 +43,8 @@ import {
 
 const data = {
   user: {
-    name: 'Prompter',
-    email: 'm@example.com',
+    name: 'Test Prompter',
+    email: 'test@promptlycms.com',
     avatar: '/avatars/shadcn.jpg',
   },
   navMain: [
@@ -247,7 +247,7 @@ export function SidebarRight({
               <CollapsibleContent>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    <SidebarMenuItem key={3} className="my-2 my-4">
+                    <SidebarMenuItem key={3} className="my-4">
                       <SelectScrollable />
                     </SidebarMenuItem>
                   </SidebarMenu>

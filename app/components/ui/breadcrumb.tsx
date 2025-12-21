@@ -18,6 +18,14 @@ const SECTIONS = [
   { name: 'Prompts', path: '/prompts' },
 ];
 
+const toTitleCase = (str: string): string => {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 const Breadcrumb = ({ ...props }: ComponentProps<'nav'>) => (
   <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />
 );
@@ -31,7 +39,7 @@ export const BreadcrumbWithDropdown = () => {
     (s) => s.path.slice(1).toLowerCase() === currentSection.toLowerCase(),
   );
 
-  const deepSegments = segments.slice(1);
+  const deepSegments = segments.slice(1).map((segment) => toTitleCase(segment));
 
   return (
     <Breadcrumb>
@@ -121,17 +129,6 @@ const BreadcrumbLink = ({
     />
   );
 };
-
-const BreadcrumbPage = ({ className, ...props }: ComponentProps<'span'>) => (
-  <span
-    data-slot="breadcrumb-page"
-    role="link"
-    aria-disabled="true"
-    aria-current="page"
-    className={cn('text-foreground font-normal', className)}
-    {...props}
-  />
-);
 
 const BreadcrumbSeparator = ({
   children,
