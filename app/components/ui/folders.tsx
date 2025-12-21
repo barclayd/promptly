@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import type * as React from 'react';
+import { useState } from 'react';
 
 import { cn } from '~/lib/utils';
 
@@ -40,72 +40,70 @@ function Folders({
     onOpenChange?.(false);
   };
 
+  // Dimensions: tab is 48px (h-12), overlaps main body by 36px, extends 12px above
+  // Total height: 128px (main body) + 12px (tab extension) = 140px
+  // Tab width: 2/5 of 192px = ~77px
+
   return (
     <div
-      aria-label="Folder"
       className={cn(
-        'relative h-32 w-48',
-        'transform -translate-x-4',
+        'relative h-[140px] w-48',
         'transition-all duration-300 ease-in-out',
-        className
+        className,
       )}
       onMouseEnter={handleOpen}
       onMouseLeave={handleClose}
       {...props}
     >
-      {/* Folder Tab */}
+      {/* Folder Back - the base layer spanning tab + body area */}
+      <div
+        className={cn(
+          'absolute bottom-0 left-0',
+          'h-32 w-full',
+          'rounded-lg bg-blue-600 shadow-lg',
+        )}
+      />
+
+      {/* Folder Tab - connects visually with the back */}
       <div
         className={cn(
           'absolute left-0 top-0',
           'h-12 w-2/5',
           'rounded-t-lg bg-blue-600',
-          '-translate-y-3 translate-x-0'
         )}
       />
 
-      {/* File 1 (back file) */}
+      {/* File 1 (back file) - positioned relative to main body area */}
       <div
         className={cn(
-          'absolute left-2 top-6',
-          'h-2/5 w-5/6',
-          'rounded-t-lg bg-blue-100 shadow-lg',
-          '-translate-y-3 translate-x-0',
+          'absolute left-2 bottom-[40px]',
+          'h-[62px] w-5/6',
+          'rounded-t-lg bg-blue-200 shadow-lg',
           'transition-all duration-300 ease-in-out',
           'origin-bottom-left',
-          isOpen ? '-rotate-[7deg]' : 'rotate-0'
+          isOpen ? '-rotate-[7deg]' : 'rotate-0',
         )}
       />
 
       {/* File 2 (front file) */}
       <div
         className={cn(
-          'absolute left-5 top-11',
-          'h-2/5 w-5/6',
-          'rounded-t-lg bg-blue-200 shadow-lg',
-          '-translate-y-3 translate-x-0',
+          'absolute left-3 bottom-[69px]',
+          'h-[51px] w-5/6',
+          'rounded-t-lg bg-white shadow-lg',
           'transition-all duration-300 ease-in-out',
           'origin-bottom-left',
-          isOpen ? '-rotate-[2deg]' : 'rotate-0'
+          isOpen ? '-rotate-[2deg]' : 'rotate-0',
         )}
       />
 
-      {/* Folder Body */}
+      {/* Folder Body - the front flap */}
       <div
         className={cn(
           'absolute bottom-0 left-0',
           'w-full rounded-lg bg-blue-400 shadow-lg',
           'transition-all duration-300 ease-in-out',
-          isOpen ? 'h-3/5' : 'h-4/5'
-        )}
-      />
-
-      {/* Folder Back (creates depth) */}
-      <div
-        className={cn(
-          'absolute left-0 top-0',
-          'h-full w-full',
-          'rounded-lg bg-blue-600 shadow-lg',
-          '-z-10'
+          isOpen ? 'h-[77px]' : 'h-[102px]',
         )}
       />
     </div>
