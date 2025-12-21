@@ -20,12 +20,12 @@ import type * as React from 'react';
 import { Fragment } from 'react';
 
 import { NavUser } from '~/components/nav-user';
+import { SelectScrollable } from '~/components/select-scrollable';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '~/components/ui/collapsible';
-import { Separator } from '~/components/ui/separator';
 import {
   Sidebar,
   SidebarContent,
@@ -198,7 +198,6 @@ export function SidebarRight({
           </SidebarGroup>
           <SidebarSeparator className="mx-0" />
         </Fragment>
-        <Separator className="mx-0" />
         <Fragment key={2}>
           <SidebarGroup key="key" className="py-0">
             <Collapsible defaultOpen={false} className="group/collapsible">
@@ -232,13 +231,38 @@ export function SidebarRight({
           </SidebarGroup>
           <SidebarSeparator className="mx-0" />
         </Fragment>
+        <Fragment key={3}>
+          <SidebarGroup key="key" className="py-0">
+            <Collapsible defaultOpen={false} className="group/collapsible">
+              <SidebarGroupLabel
+                asChild
+                className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
+              >
+                <CollapsibleTrigger>
+                  Model
+                  <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem key={3}>
+                      <SelectScrollable />
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+          <SidebarSeparator className="mx-0" />
+        </Fragment>
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton>
               <Plus />
-              <span>New Calendar</span>
+              <span>Run</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

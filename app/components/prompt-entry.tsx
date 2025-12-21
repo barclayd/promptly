@@ -1,4 +1,5 @@
 import { IconCopy, IconCornerDownLeft } from '@tabler/icons-react';
+import { Save } from 'lucide-react';
 
 import {
   InputGroup,
@@ -8,18 +9,31 @@ import {
   InputGroupTextarea,
 } from '~/components/ui/input-group';
 
-export function PromptEntry({ title }: { title: string }) {
+export const PromptEntry = ({
+  title,
+  input,
+}: {
+  title: string;
+  input?: string;
+}) => {
   return (
-    <div className="grid w-full max-w-md gap-4">
+    <div className="grid w-full gap-4">
       <InputGroup>
         <InputGroupTextarea
           id="textarea-code-32"
           placeholder="console.log('Hello, world!');"
           className="min-h-[200px]"
+          defaultValue={input}
         />
         <InputGroupAddon align="block-end" className="border-t">
           <InputGroupText>
-            Last updated: {new Date().toLocaleDateString()}
+            Last updated:
+            <span className="italic text-gray-400">
+              {new Date().toLocaleString(undefined, {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              })}
+            </span>
           </InputGroupText>
           <InputGroupButton size="sm" className="ml-auto" variant="default">
             Run <IconCornerDownLeft />
@@ -31,10 +45,13 @@ export function PromptEntry({ title }: { title: string }) {
           </InputGroupText>
           <div className="grow" />
           <InputGroupButton variant="ghost" size="icon-xs">
+            <Save />
+          </InputGroupButton>
+          <InputGroupButton variant="ghost" size="icon-xs">
             <IconCopy />
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
     </div>
   );
-}
+};
