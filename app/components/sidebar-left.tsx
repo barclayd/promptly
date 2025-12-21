@@ -4,20 +4,18 @@ import {
   IconCamera,
   IconChartBar,
   IconDashboard,
-  IconDatabase,
   IconFileAi,
   IconFileDescription,
-  IconFileWord,
+  IconFileText,
   IconFolder,
   IconHelp,
   IconInnerShadowTop,
-  IconListDetails,
-  IconReport,
   IconSearch,
   IconSettings,
   IconUsers,
 } from '@tabler/icons-react';
 import type * as React from 'react';
+import { NavLink } from 'react-router';
 
 import { NavDocuments } from '~/components/nav-documents';
 import { NavMain } from '~/components/nav-main';
@@ -35,34 +33,29 @@ import {
 
 const data = {
   user: {
-    name: 'Prompter',
-    email: 'm@example.com',
+    name: 'Test Prompter',
+    email: 'test@promptlycms.com',
     avatar: '/avatars/shadcn.jpg',
   },
   navMain: [
     {
       title: 'Dashboard',
-      url: '#',
+      url: '/dashboard',
       icon: IconDashboard,
     },
     {
-      title: 'Lifecycle',
-      url: '#',
-      icon: IconListDetails,
-    },
-    {
       title: 'Analytics',
-      url: '#',
+      url: '/analytics',
       icon: IconChartBar,
     },
     {
-      title: 'Projects',
-      url: '#',
+      title: 'Prompts',
+      url: '/prompts',
       icon: IconFolder,
     },
     {
       title: 'Team',
-      url: '#',
+      url: '/team',
       icon: IconUsers,
     },
   ],
@@ -133,24 +126,16 @@ const data = {
   ],
   documents: [
     {
-      name: 'Data Library',
-      url: '#',
-      icon: IconDatabase,
-    },
-    {
-      name: 'Reports',
-      url: '#',
-      icon: IconReport,
-    },
-    {
-      name: 'Word Assistant',
-      url: '#',
-      icon: IconFileWord,
+      name: 'Reviews',
+      url: '/prompts/1/1',
+      icon: IconFileText,
     },
   ],
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function SidebarLeft({
+  ...props
+}: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -160,10 +145,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="#">
+              <NavLink to="/">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">Promptly</span>
-              </a>
+              </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
