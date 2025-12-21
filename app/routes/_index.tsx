@@ -1,6 +1,6 @@
 import { AppSidebar } from '~/components/app-sidebar';
 import { SiteHeader } from '~/components/site-header';
-import { Folders } from '~/components/ui/folders';
+import { Folder } from '~/components/ui/folder';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 import type { Route } from './+types/home';
 
@@ -33,8 +33,13 @@ export default function Home() {
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
               <div className="px-4 lg:px-6">
-                <div>Folders</div>
-                <Folders />
+                <div className="font-semibold text-gray-500/75 mb-4">
+                  Folders
+                </div>
+                <div className="flex flex-col">
+                  <Folder />
+                  <h4 className="w-48 text-center my-4">Reviews</h4>
+                </div>
               </div>
             </div>
           </div>
