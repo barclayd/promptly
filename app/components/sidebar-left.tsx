@@ -126,8 +126,8 @@ const data = {
   ],
   documents: [
     {
-      name: 'Review',
-      url: '/prompts/1',
+      name: 'Reviews',
+      url: '/prompts/1/1',
       icon: IconFileText,
     },
   ],

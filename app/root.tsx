@@ -29,7 +29,8 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const promptMatch = useMatch('/prompts/:id');
+  const promptMatch = useMatch('/prompts/:id/:id');
+
   const showSidebarRight =
     promptMatch !== null && /^\d+$/.test(promptMatch.params.id || '');
 

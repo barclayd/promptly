@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router';
-import { Paper } from '~/components/ui/paper';
+import { Folder } from '~/components/ui/folder';
 import type { Route } from './+types/home';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
@@ -17,34 +17,15 @@ export function meta({}: Route.MetaArgs) {
 export default function Prompts() {
   return (
     <div className="flex flex-1 flex-col">
-      <div className="@container/main flex flex-1 flex-col gap-2 bg-gray-200">
+      <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
+            <div className="font-semibold text-gray-500/75 mb-4">Folders</div>
             <NavLink to="/prompts/1">
-              <Paper className="items-start">
-                <div className="flex flex-wrap text-pretty flex-col gap-y-2 p-4">
-                  <div className="flex flex-col gap-y-1 mb-4">
-                    <div className="text-[0.5rem] text-right text-gray-400">
-                      <span className="text-black">Last updated:</span>
-                      <br />
-                      {new Date().toLocaleString(undefined, {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      })}
-                    </div>
-                    <div className="text-[0.5rem] text-right text-gray-400">
-                      <span className="text-black">Last authored:</span>
-                      <br />
-                      Alex S
-                    </div>
-                  </div>
-                  <h3 className="text-sm font-bold">Reviews</h3>
-                  <p className="text-xs">
-                    Selects and modifies a customer review that will most likely
-                    lead to an uplift in conversion
-                  </p>
-                </div>
-              </Paper>
+              <div className="flex flex-col">
+                <Folder />
+                <h4 className="w-48 text-center my-4">Reviews</h4>
+              </div>
             </NavLink>
           </div>
         </div>
