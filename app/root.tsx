@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   isRouteErrorResponse,
   Links,
@@ -10,6 +11,11 @@ import {
 import { SidebarLeft } from '~/components/sidebar-left';
 import { SidebarRight } from '~/components/sidebar-right';
 import { SiteHeader } from '~/components/site-header';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '~/components/ui/resizable';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 
 import type { Route } from './+types/root';
@@ -30,6 +36,11 @@ export const links: Route.LinksFunction = () => [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const promptMatch = useMatch('/prompts/:id/:id');
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const showSidebarRight =
     promptMatch !== null && /^\d+$/.test(promptMatch.params.id || '');
@@ -52,11 +63,45 @@ export function Layout({ children }: { children: React.ReactNode }) {
           }
         >
           <SidebarLeft variant="inset" />
-          <SidebarInset>
-            <SiteHeader />
-            {children}
-          </SidebarInset>
-          {showSidebarRight && <SidebarRight />}
+          {isHydrated ? (
+            <ResizablePanelGroup direction="horizontal" className="flex-1">
+              <ResizablePanel id="main-content" defaultSize="75%">
+                <SidebarInset>
+                  <SiteHeader />
+                  {children}
+                </SidebarInset>
+              </ResizablePanel>
+              {showSidebarRight && (
+                <>
+                  <ResizableHandle withHandle />
+                  <ResizablePanel
+                    id="sidebar-right"
+                    defaultSize="25%"
+                    minSize="25%"
+                  >
+                    <SidebarRight />
+                  </ResizablePanel>
+                </>
+              )}
+            </ResizablePanelGroup>
+          ) : (
+            <div className="flex flex-1">
+              <div style={{ flex: showSidebarRight ? '3 1 0%' : '1 1 0%' }}>
+                <SidebarInset>
+                  <SiteHeader />
+                  {children}
+                </SidebarInset>
+              </div>
+              {showSidebarRight && (
+                <>
+                  <div className="w-px bg-sidebar-border" />
+                  <div style={{ flex: '1 1 0%' }}>
+                    <SidebarRight />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </SidebarProvider>
 
         <ScrollRestoration />
