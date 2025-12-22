@@ -34,7 +34,10 @@ export const FunctionSchema = ({ field, onChange }: FunctionSchemaProps) => {
 
   const addParameter = () => {
     onChange({
-      functionParams: [...params, { name: '', type: 'string', optional: false }],
+      functionParams: [
+        ...params,
+        { name: '', type: 'string', optional: false },
+      ],
     });
   };
 
@@ -43,7 +46,10 @@ export const FunctionSchema = ({ field, onChange }: FunctionSchemaProps) => {
     onChange({ functionParams: newParams });
   };
 
-  const updateParameter = (index: number, updates: Partial<FunctionParameter>) => {
+  const updateParameter = (
+    index: number,
+    updates: Partial<FunctionParameter>,
+  ) => {
     const newParams = [...params];
     newParams[index] = { ...newParams[index], ...updates };
     onChange({ functionParams: newParams });
@@ -126,7 +132,12 @@ export const FunctionSchema = ({ field, onChange }: FunctionSchemaProps) => {
             </div>
           </div>
         ))}
-        <Button type="button" variant="outline" size="sm" onClick={addParameter}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addParameter}
+        >
           <Plus className="h-4 w-4 mr-1" />
           Add Parameter
         </Button>

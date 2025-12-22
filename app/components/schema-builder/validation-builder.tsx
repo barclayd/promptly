@@ -17,7 +17,10 @@ interface ValidationBuilderProps {
   onChange: (validations: ValidationRule[]) => void;
 }
 
-export const ValidationBuilder = ({ field, onChange }: ValidationBuilderProps) => {
+export const ValidationBuilder = ({
+  field,
+  onChange,
+}: ValidationBuilderProps) => {
   const validationOptions = getValidationOptions(field.type);
 
   const addValidation = () => {
@@ -36,7 +39,7 @@ export const ValidationBuilder = ({ field, onChange }: ValidationBuilderProps) =
 
   const updateValidation = (id: string, updates: Partial<ValidationRule>) => {
     onChange(
-      field.validations.map((v) => (v.id === id ? { ...v, ...updates } : v))
+      field.validations.map((v) => (v.id === id ? { ...v, ...updates } : v)),
     );
   };
 
@@ -60,7 +63,12 @@ export const ValidationBuilder = ({ field, onChange }: ValidationBuilderProps) =
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <Label>Validations</Label>
-        <Button type="button" variant="outline" size="sm" onClick={addValidation}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addValidation}
+        >
           <Plus className="h-4 w-4 mr-1" />
           Add Validation
         </Button>
@@ -74,7 +82,9 @@ export const ValidationBuilder = ({ field, onChange }: ValidationBuilderProps) =
           <div className="flex items-center justify-between">
             <Select
               value={validation.type}
-              onValueChange={(value) => updateValidation(validation.id, { type: value })}
+              onValueChange={(value) =>
+                updateValidation(validation.id, { type: value })
+              }
             >
               <SelectTrigger className="w-full">
                 <SelectValue />

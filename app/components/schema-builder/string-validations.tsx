@@ -15,8 +15,13 @@ interface StringValidationsProps {
   onChange: (params: Partial<SchemaField['params']>) => void;
 }
 
-export const StringValidations = ({ field, onChange }: StringValidationsProps) => {
-  const hasDatetimeValidation = field.validations.some((v) => v.type === 'datetime');
+export const StringValidations = ({
+  field,
+  onChange,
+}: StringValidationsProps) => {
+  const hasDatetimeValidation = field.validations.some(
+    (v) => v.type === 'datetime',
+  );
   const hasIpValidation = field.validations.some((v) => v.type === 'ip');
 
   return (

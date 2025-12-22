@@ -15,10 +15,10 @@ import {
   IconSettings,
   IconUsers,
 } from '@tabler/icons-react';
-import { ChevronRight } from 'lucide-react';
 import { JsonEditor, type Theme } from 'json-edit-react';
+import { ChevronRight } from 'lucide-react';
 import type * as React from 'react';
-import { Fragment, useState, useMemo } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 
 import { CodePreview } from '~/components/code-preview';
 import { NavUser } from '~/components/nav-user';
@@ -372,11 +372,9 @@ export function SidebarRight({
               </SidebarGroupLabel>
               <CollapsibleContent>
                 <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem key={3} className="mx-2 my-6">
-                      <SidebarSlider />
-                    </SidebarMenuItem>
-                  </SidebarMenu>
+                  <div className="px-3 pb-4">
+                    <SidebarSlider />
+                  </div>
                 </SidebarGroupContent>
               </CollapsibleContent>
             </Collapsible>

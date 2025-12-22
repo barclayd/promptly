@@ -75,7 +75,9 @@ export const FieldParams = ({ field, onChange }: FieldParamsProps) => {
 
       {showObjectConfig && <ObjectConfig field={field} onChange={onChange} />}
 
-      {showFunctionConfig && <FunctionSchema field={field} onChange={onChange} />}
+      {showFunctionConfig && (
+        <FunctionSchema field={field} onChange={onChange} />
+      )}
 
       {field.type === 'union' && !field.params.isDiscriminatedUnion && (
         <div className="flex items-center justify-between">
@@ -99,7 +101,9 @@ export const FieldParams = ({ field, onChange }: FieldParamsProps) => {
         <DiscriminatedUnion field={field} onChange={onChange} />
       )}
 
-      {field.type === 'string' && <StringValidations field={field} onChange={onChange} />}
+      {field.type === 'string' && (
+        <StringValidations field={field} onChange={onChange} />
+      )}
     </div>
   );
 };

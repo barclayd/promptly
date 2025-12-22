@@ -11,7 +11,10 @@ interface CodeBlockProps {
   language?: string;
 }
 
-export const CodeBlock = ({ code, language = 'typescript' }: CodeBlockProps) => {
+export const CodeBlock = ({
+  code,
+  language = 'typescript',
+}: CodeBlockProps) => {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = async () => {
