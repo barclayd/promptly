@@ -113,7 +113,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             defaultLayout={defaultLayout}
             onLayoutChange={onLayoutChange}
           >
-            <ResizablePanel id="main-content" defaultSize="75%">
+            <ResizablePanel id="main-content" defaultSize="75%" minSize="50%">
               <SidebarInset>
                 <SiteHeader />
                 {children}
