@@ -17,9 +17,11 @@ import {
 } from '@tabler/icons-react';
 import { Check, ChevronRight } from 'lucide-react';
 import type * as React from 'react';
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 
+import { CodePreview } from '~/components/code-preview';
 import { NavUser } from '~/components/nav-user';
+import { SchemaBuilder } from '~/components/schema-builder';
 import { SelectScrollable } from '~/components/select-scrollable';
 import { SidebarSlider } from '~/components/sidebar-slider';
 import { Button } from '~/components/ui/button';
@@ -40,6 +42,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from '~/components/ui/sidebar';
+import type { SchemaField } from '~/lib/schema-types';
 
 const data = {
   user: {
@@ -156,6 +159,8 @@ const data = {
 export function SidebarRight({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
+  const [schemaFields, setSchemaFields] = useState<SchemaField[]>([]);
+
   return (
     <Sidebar
       collapsible="none"
@@ -168,31 +173,47 @@ export function SidebarRight({
       <SidebarContent>
         <Fragment key={1}>
           <SidebarGroup key="key" className="py-1">
+            <Collapsible defaultOpen={true} className="group/collapsible">
+              <SidebarGroupLabel
+                asChild
+                className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
+              >
+                <CollapsibleTrigger>
+                  Schema Builder
+                  <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <div className="px-2 py-4">
+                    <SchemaBuilder
+                      fields={schemaFields}
+                      onChange={setSchemaFields}
+                    />
+                  </div>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+          <SidebarSeparator className="mx-0" />
+        </Fragment>
+        <Fragment key={1.5}>
+          <SidebarGroup key="code-preview" className="py-1">
             <Collapsible defaultOpen={false} className="group/collapsible">
               <SidebarGroupLabel
                 asChild
                 className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
               >
                 <CollapsibleTrigger>
-                  Input
+                  Generated Code
                   <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
                 </CollapsibleTrigger>
               </SidebarGroupLabel>
               <CollapsibleContent>
                 <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem key={1}>
-                      <SidebarMenuButton>
-                        <div
-                          data-active={1}
-                          className="group/calendar-item border-sidebar-border text-sidebar-primary-foreground data-[active=true]:border-sidebar-primary data-[active=true]:bg-sidebar-primary flex aspect-square size-4 shrink-0 items-center justify-center rounded-xs border"
-                        >
-                          <Check className="hidden size-3 group-data-[active=true]/calendar-item:block" />
-                        </div>
-                        Content
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
+                  <div className="px-2 py-4">
+                    <CodePreview fields={schemaFields} />
+                  </div>
                 </SidebarGroupContent>
               </CollapsibleContent>
             </Collapsible>
