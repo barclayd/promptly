@@ -8,8 +8,7 @@ export function meta({}: Route.MetaArgs) {
     { title: 'Promptly' },
     {
       name: 'description',
-      content:
-        'The modern CMS for high performing teams to ship effective AI products at speed',
+      content: 'The CMS built for AI',
     },
   ];
 }
