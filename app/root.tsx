@@ -113,8 +113,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
             defaultLayout={defaultLayout}
             onLayoutChange={onLayoutChange}
           >
-            <ResizablePanel id="main-content" defaultSize="75%" minSize="50%">
-              <SidebarInset>
+            <ResizablePanel
+              id="main-content"
+              defaultSize="75%"
+              minSize="50%"
+              className="h-full"
+            >
+              <SidebarInset className="min-h-svh">
                 <SiteHeader />
                 {children}
               </SidebarInset>
@@ -126,6 +131,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   id="sidebar-right"
                   defaultSize="25%"
                   minSize="25%"
+                  className="h-full"
                 >
                   <SidebarRight />
                 </ResizablePanel>

@@ -31,6 +31,7 @@ export default function Home() {
               </Button>
             </div>
             <h1 className="text-3xl">Review</h1>
+            <div className="text-gray-400/75 text-sm -mt-2">0.1.0</div>
             <p className="text-secondary-foreground">
               Selects and modifies a customer review that will most likely lead
               to an uplift in conversion

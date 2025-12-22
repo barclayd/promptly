@@ -22,7 +22,7 @@ export default function Prompts() {
             <NavLink to="/prompts/1/1">
               <Paper className="items-start">
                 <div className="flex flex-wrap text-pretty flex-col gap-y-2 p-4">
-                  <div className="flex flex-col gap-y-1 mb-4">
+                  <div className="flex flex-col gap-y-1 mb-4 select-none">
                     <div className="text-[0.5rem] text-right text-gray-400">
                       <span className="text-black">Last updated:</span>
                       <br />

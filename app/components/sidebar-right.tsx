@@ -276,7 +276,7 @@ export function SidebarRight({
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">Reviews</span>
                     <span className="text-muted-foreground truncate text-xs">
-                      Version 0.1.0
+                      Version: 0.1.0
                     </span>
                   </div>
                   <IconDotsVertical className="ml-auto size-4" />
@@ -293,7 +293,7 @@ export function SidebarRight({
                     <div className="grid flex-1 text-left text-sm leading-tight">
                       <span className="truncate font-medium">Reviews</span>
                       <span className="text-muted-foreground truncate text-xs">
-                        Version 0.1.0
+                        Version: 0.1.0
                       </span>
                     </div>
                   </div>
