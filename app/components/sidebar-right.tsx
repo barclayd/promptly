@@ -384,20 +384,23 @@ export function SidebarRight({
           <SidebarSeparator className="mx-0" />
         </Fragment>
         <Fragment key={5}>
-          <SidebarGroup key="input-data" className="py-0">
+          <SidebarGroup key="test" className="py-0">
             <Collapsible defaultOpen={true} className="group/collapsible">
               <SidebarGroupLabel
                 asChild
                 className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
               >
                 <CollapsibleTrigger>
-                  Input data
+                  Test
                   <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
                 </CollapsibleTrigger>
               </SidebarGroupLabel>
               <CollapsibleContent>
                 <SidebarGroupContent>
                   <div className="px-2 py-3">
+                    <label className="text-xs font-medium text-sidebar-foreground mb-2 block">
+                      Input data
+                    </label>
                     <div className="rounded-md border border-sidebar-border bg-sidebar/50 p-2 overflow-x-auto">
                       <JsonEditor
                         data={inputData}
