@@ -133,17 +133,3 @@ body {
     @apply bg-background text-foreground;
   }
 }
-
-/*
- * Prevent hydration layout shift for resizable panels.
- * These CSS rules set the initial flex layout to match what
- * react-resizable-panels applies via JS after hydration.
- * The inline styles from the library will override these.
- */
-#main-content[data-panel] {
-  flex: 3 1 0%;
-}
-
-#sidebar-right[data-panel] {
-  flex: 1 1 0%;
-}

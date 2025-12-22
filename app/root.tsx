@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import {
   isRouteErrorResponse,
   Links,
@@ -7,19 +7,33 @@ import {
   Scripts,
   ScrollRestoration,
   useMatch,
+  useRouteLoaderData,
 } from 'react-router';
 import { SidebarLeft } from '~/components/sidebar-left';
 import { SidebarRight } from '~/components/sidebar-right';
 import { SiteHeader } from '~/components/site-header';
 import {
+  type LayoutStorage,
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
+  useDefaultLayout,
 } from '~/components/ui/resizable';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
+import { parseCookie } from '~/lib/cookies';
 
 import type { Route } from './+types/root';
 import './app.css';
+
+const LAYOUT_COOKIE_NAME = 'panel-layout';
+
+export const loader = ({ request }: Route.LoaderArgs) => {
+  const cookieHeader = request.headers.get('Cookie') || '';
+  const layoutCookie = parseCookie(cookieHeader, LAYOUT_COOKIE_NAME);
+  return {
+    serverLayoutCookie: layoutCookie ?? null,
+  };
+};
 
 export const links: Route.LinksFunction = () => [
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -34,16 +48,46 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+// Cookie-based storage for SSR compatibility
+const createCookieStorage = (serverCookie: string | null): LayoutStorage => ({
+  getItem: (key: string) => {
+    if (typeof document === 'undefined') {
+      // Server-side: return the cookie value from loader
+      return serverCookie;
+    }
+    // Client-side: read from document.cookie
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === key) {
+        return value;
+      }
+    }
+    return null;
+  },
+  setItem: (key: string, value: string) => {
+    if (typeof document !== 'undefined') {
+      document.cookie = `${key}=${value}; path=/; max-age=31536000`;
+    }
+  },
+});
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const promptMatch = useMatch('/prompts/:id/:id');
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
+  const loaderData = useRouteLoaderData<typeof loader>('root');
 
   const showSidebarRight =
     promptMatch !== null && /^\d+$/.test(promptMatch.params.id || '');
+
+  const cookieStorage = useMemo(
+    () => createCookieStorage(loaderData?.serverLayoutCookie ?? null),
+    [loaderData?.serverLayoutCookie],
+  );
+
+  const { defaultLayout, onLayoutChange } = useDefaultLayout({
+    id: LAYOUT_COOKIE_NAME,
+    storage: cookieStorage,
+  });
 
   return (
     <html lang="en">
@@ -63,45 +107,31 @@ export function Layout({ children }: { children: React.ReactNode }) {
           }
         >
           <SidebarLeft variant="inset" />
-          {isHydrated ? (
-            <ResizablePanelGroup direction="horizontal" className="flex-1">
-              <ResizablePanel id="main-content" defaultSize="75%">
-                <SidebarInset>
-                  <SiteHeader />
-                  {children}
-                </SidebarInset>
-              </ResizablePanel>
-              {showSidebarRight && (
-                <>
-                  <ResizableHandle withHandle />
-                  <ResizablePanel
-                    id="sidebar-right"
-                    defaultSize="25%"
-                    minSize="25%"
-                  >
-                    <SidebarRight />
-                  </ResizablePanel>
-                </>
-              )}
-            </ResizablePanelGroup>
-          ) : (
-            <div className="flex flex-1">
-              <div style={{ flex: showSidebarRight ? '3 1 0%' : '1 1 0%' }}>
-                <SidebarInset>
-                  <SiteHeader />
-                  {children}
-                </SidebarInset>
-              </div>
-              {showSidebarRight && (
-                <>
-                  <div className="w-px bg-sidebar-border" />
-                  <div style={{ flex: '1 1 0%' }}>
-                    <SidebarRight />
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+          <ResizablePanelGroup
+            direction="horizontal"
+            className="flex-1"
+            defaultLayout={defaultLayout}
+            onLayoutChange={onLayoutChange}
+          >
+            <ResizablePanel id="main-content" defaultSize="75%">
+              <SidebarInset>
+                <SiteHeader />
+                {children}
+              </SidebarInset>
+            </ResizablePanel>
+            {showSidebarRight && (
+              <>
+                <ResizableHandle withHandle />
+                <ResizablePanel
+                  id="sidebar-right"
+                  defaultSize="25%"
+                  minSize="25%"
+                >
+                  <SidebarRight />
+                </ResizablePanel>
+              </>
+            )}
+          </ResizablePanelGroup>
         </SidebarProvider>
 
         <ScrollRestoration />

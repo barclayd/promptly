@@ -1,9 +1,17 @@
 'use client';
 
 import { GripVertical } from 'lucide-react';
-import { Group, Panel, Separator } from 'react-resizable-panels';
+import {
+  Group,
+  type LayoutStorage,
+  Panel,
+  Separator,
+  useDefaultLayout,
+} from 'react-resizable-panels';
 
 import { cn } from '~/lib/utils';
+
+export { useDefaultLayout, type LayoutStorage };
 
 export const ResizablePanelGroup = ({
   className,
@@ -12,7 +20,7 @@ export const ResizablePanelGroup = ({
   <Group
     className={cn(
       'flex h-full w-full data-[orientation=vertical]:flex-col',
-      className
+      className,
     )}
     {...props}
   />
@@ -45,7 +53,7 @@ export const ResizableHandle = ({
       'data-[orientation=vertical]:after:left-0 data-[orientation=vertical]:after:h-3 data-[orientation=vertical]:after:w-full',
       'data-[orientation=vertical]:after:-translate-y-1/2 data-[orientation=vertical]:after:translate-x-0',
       '[&[data-orientation=vertical]>div]:rotate-90',
-      className
+      className,
     )}
     {...props}
   >
@@ -60,7 +68,7 @@ export const ResizableHandle = ({
           // Active state
           'group-data-[resize-handle-active]/handle:border-sidebar-primary group-data-[resize-handle-active]/handle:bg-sidebar-accent',
           // Smooth transitions
-          'transition-all duration-150'
+          'transition-all duration-150',
         )}
       >
         <GripVertical
@@ -68,7 +76,7 @@ export const ResizableHandle = ({
             'h-3 w-3 text-sidebar-foreground/40',
             'group-hover/handle:text-sidebar-foreground/70',
             'group-data-[resize-handle-active]/handle:text-sidebar-primary',
-            'transition-colors duration-150'
+            'transition-colors duration-150',
           )}
         />
       </div>
