@@ -482,7 +482,6 @@ export function SidebarRight({
                         rootFontSize={11}
                         collapse={1}
                         showCollectionCount={true}
-                        stringTruncate={40}
                         indent={2}
                         maxWidth="100%"
                       />
