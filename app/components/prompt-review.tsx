@@ -1,5 +1,5 @@
 import { IconCopy, IconCornerDownLeft } from '@tabler/icons-react';
-import { Save } from 'lucide-react';
+import { InfoIcon, Save } from 'lucide-react';
 
 import {
   InputGroup,
@@ -44,6 +44,9 @@ export const PromptReview = ({
             {title}
           </InputGroupText>
           <div className="grow" />
+          <InputGroupButton variant="ghost" size="icon-xs">
+            <InfoIcon />
+          </InputGroupButton>
           <InputGroupButton variant="ghost" size="icon-xs">
             <Save />
           </InputGroupButton>
