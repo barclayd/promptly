@@ -3,6 +3,7 @@
 import {
   IconCamera,
   IconChartBar,
+  IconCornerDownLeft,
   IconCreditCard,
   IconDashboard,
   IconDatabase,
@@ -31,6 +32,7 @@ import { SchemaBuilder } from '~/components/schema-builder';
 import { SelectScrollable } from '~/components/select-scrollable';
 import { SidebarSlider } from '~/components/sidebar-slider';
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
+import { Button } from '~/components/ui/button';
 import {
   Collapsible,
   CollapsibleContent,
@@ -470,21 +472,58 @@ export function SidebarRight({
               </SidebarGroupLabel>
               <CollapsibleContent>
                 <SidebarGroupContent>
-                  <div className="px-2 py-3">
-                    <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
-                      Input data
+                  <div className="flex flex-col gap-y-2">
+                    <div className="px-2 py-3">
+                      <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
+                        Input data
+                      </div>
+                      <div className="rounded-md border border-sidebar-border bg-sidebar/50 p-2 overflow-x-auto">
+                        <JsonEditor
+                          data={inputData}
+                          setData={setInputData}
+                          theme={jsonEditorTheme}
+                          rootFontSize={11}
+                          collapse={1}
+                          showCollectionCount={true}
+                          indent={2}
+                          maxWidth="100%"
+                        />
+                      </div>
                     </div>
-                    <div className="rounded-md border border-sidebar-border bg-sidebar/50 p-2 overflow-x-auto">
-                      <JsonEditor
-                        data={inputData}
-                        setData={setInputData}
-                        theme={jsonEditorTheme}
-                        rootFontSize={11}
-                        collapse={1}
-                        showCollectionCount={true}
-                        indent={2}
-                        maxWidth="100%"
-                      />
+
+                    <div className="px-2">
+                      <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
+                        Model
+                      </div>
+                      <div className="my-4">
+                        <SelectScrollable />
+                      </div>
+                    </div>
+
+                    <div className="px-2">
+                      <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
+                        Prompt version
+                      </div>
+                      <div className="my-4">
+                        <SelectScrollable />
+                      </div>
+                    </div>
+
+                    <div className="px-2">
+                      <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
+                        Temperature
+                      </div>
+                      <div className="my-1">
+                        <SidebarSlider />
+                      </div>
+                    </div>
+
+                    <div className="px-2">
+                      <div className="pt-4">
+                        <Button className="cursor-pointer">
+                          Run <IconCornerDownLeft />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </SidebarGroupContent>

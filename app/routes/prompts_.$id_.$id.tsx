@@ -36,7 +36,6 @@ export default function Home() {
               Selects and modifies a customer review that will most likely lead
               to an uplift in conversion
             </p>
-            <Separator className="my-4" />
             <PromptEntry />
             <Separator className="my-4" />
             <PromptReview
