@@ -15,7 +15,7 @@ import {
   IconSettings,
   IconUsers,
 } from '@tabler/icons-react';
-import { Check, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import type * as React from 'react';
 import { Fragment, useState } from 'react';
 
@@ -31,6 +31,15 @@ import {
   CollapsibleTrigger,
 } from '~/components/ui/collapsible';
 import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select';
+import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
@@ -38,7 +47,6 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
 } from '~/components/ui/sidebar';
@@ -236,15 +244,17 @@ export function SidebarRight({
                 <SidebarGroupContent>
                   <SidebarMenu>
                     <SidebarMenuItem key={1}>
-                      <SidebarMenuButton>
-                        <div
-                          data-active={1}
-                          className="group/calendar-item border-sidebar-border text-sidebar-primary-foreground data-[active=true]:border-sidebar-primary data-[active=true]:bg-sidebar-primary flex aspect-square size-4 shrink-0 items-center justify-center rounded-xs border"
-                        >
-                          <Check className="hidden size-3 group-data-[active=true]/calendar-item:block" />
-                        </div>
-                        Content
-                      </SidebarMenuButton>
+                      <Select defaultValue="string">
+                        <SelectTrigger className="w-[280px]" disabled>
+                          <SelectValue placeholder="Select output format" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Output Formats</SelectLabel>
+                            <SelectItem value="string">String</SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
                     </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroupContent>

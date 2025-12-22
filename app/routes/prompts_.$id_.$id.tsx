@@ -1,5 +1,7 @@
+import { RssIcon, Save } from 'lucide-react';
 import { PromptEntry } from '~/components/prompt-entry';
 import { PromptReview } from '~/components/prompt-review';
+import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import type { Route } from './+types/home';
 
@@ -20,7 +22,17 @@ export default function Home() {
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6 flex flex-col gap-y-4">
-            <h1 className="text-3xl">Review</h1>
+            <div className="flex justify-between items-center">
+              <h1 className="text-3xl">Review</h1>
+              <div className="flex gap-x-2">
+                <Button variant="outline" className="cursor-pointer">
+                  Save <Save />
+                </Button>
+                <Button className="cursor-pointer">
+                  Publish <RssIcon />
+                </Button>
+              </div>
+            </div>
             <p className="text-secondary-foreground">
               Selects and modifies a customer review that will most likely lead
               to an uplift in conversion
