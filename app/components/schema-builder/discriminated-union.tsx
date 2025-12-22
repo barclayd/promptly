@@ -81,7 +81,10 @@ export const DiscriminatedUnion = ({
       <div className="space-y-2">
         <Label>Cases</Label>
         {Object.entries(config.cases).map(([caseKey, caseConfig]) => (
-          <div key={caseKey} className="flex gap-2 items-start p-3 border rounded-md">
+          <div
+            key={caseKey}
+            className="flex gap-2 items-start p-3 border rounded-md"
+          >
             <div className="flex-1 space-y-2">
               <Input
                 value={caseConfig.value}
