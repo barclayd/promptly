@@ -21,6 +21,7 @@ import {
   useDefaultLayout,
 } from '~/components/ui/resizable';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
+import { useIsMobile } from '~/hooks/use-mobile';
 import { parseCookie } from '~/lib/cookies';
 
 import type { Route } from './+types/root';
@@ -81,6 +82,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const showSidebarRight =
     promptMatch !== null && /^\d+$/.test(promptMatch.params.id || '');
 
+  const isMobile = useIsMobile();
+
   const cookieStorage = useMemo(
     () => createCookieStorage(loaderData?.serverLayoutCookie ?? null),
     [loaderData?.serverLayoutCookie],
@@ -127,37 +130,51 @@ export function Layout({ children }: { children: React.ReactNode }) {
           }
         >
           <SidebarLeft variant="inset" />
-          <ResizablePanelGroup
-            direction="horizontal"
-            className="flex-1"
-            defaultLayout={defaultLayout}
-            onLayoutChange={onLayoutChange}
-          >
-            <ResizablePanel
-              id="main-content"
-              defaultSize="75%"
-              minSize="50%"
-              className="h-full"
-            >
-              <SidebarInset className="min-h-svh">
+          {isMobile ? (
+            <div className="flex flex-1 flex-col min-h-svh">
+              <SidebarInset className="flex-1">
                 <SiteHeader />
                 {children}
               </SidebarInset>
-            </ResizablePanel>
-            {showSidebarRight && (
-              <>
-                <ResizableHandle withHandle />
-                <ResizablePanel
-                  id="sidebar-right"
-                  defaultSize="25%"
-                  minSize="25%"
-                  className="h-full"
-                >
+              {showSidebarRight && (
+                <div className="w-full shrink-0">
                   <SidebarRight />
-                </ResizablePanel>
-              </>
-            )}
-          </ResizablePanelGroup>
+                </div>
+              )}
+            </div>
+          ) : (
+            <ResizablePanelGroup
+              direction="horizontal"
+              className="flex-1"
+              defaultLayout={defaultLayout}
+              onLayoutChange={onLayoutChange}
+            >
+              <ResizablePanel
+                id="main-content"
+                defaultSize="75%"
+                minSize="50%"
+                className="h-full"
+              >
+                <SidebarInset className="min-h-svh">
+                  <SiteHeader />
+                  {children}
+                </SidebarInset>
+              </ResizablePanel>
+              {showSidebarRight && (
+                <>
+                  <ResizableHandle withHandle />
+                  <ResizablePanel
+                    id="sidebar-right"
+                    defaultSize="25%"
+                    minSize="25%"
+                    className="h-full"
+                  >
+                    <SidebarRight />
+                  </ResizablePanel>
+                </>
+              )}
+            </ResizablePanelGroup>
+          )}
         </SidebarProvider>
 
         <ScrollRestoration />
