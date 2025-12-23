@@ -94,7 +94,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
     storage: cookieStorage,
   });
 
-  if (location.pathname === '/login') {
+  const authPages = ['/login', '/sign-up'];
+
+  if (authPages.includes(location.pathname)) {
     return (
       <html lang="en">
         <head title="Promptly">
