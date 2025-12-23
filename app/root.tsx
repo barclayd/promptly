@@ -6,6 +6,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
   useMatch,
   useRouteLoaderData,
 } from 'react-router';
@@ -48,7 +49,6 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
-// Cookie-based storage for SSR compatibility
 const createCookieStorage = (serverCookie: string | null): LayoutStorage => ({
   getItem: (key: string) => {
     if (typeof document === 'undefined') {
@@ -76,6 +76,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const promptMatch = useMatch('/prompts/:id/:id');
   const loaderData = useRouteLoaderData<typeof loader>('root');
 
+  const location = useLocation();
+
   const showSidebarRight =
     promptMatch !== null && /^\d+$/.test(promptMatch.params.id || '');
 
@@ -88,6 +90,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
     id: LAYOUT_COOKIE_NAME,
     storage: cookieStorage,
   });
+
+  if (location.pathname === '/login') {
+    return (
+      <html lang="en">
+        <head title="Promptly">
+          <meta charSet="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <Meta />
+          <Links />
+        </head>
+        <body data-dan="hi">
+          {children}
+          <ScrollRestoration />
+          <Scripts />
+        </body>
+      </html>
+    );
+  }
 
   return (
     <html lang="en">
