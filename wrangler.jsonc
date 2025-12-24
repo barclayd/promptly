@@ -5,5 +5,12 @@
   "main": "./workers/app.ts",
   "observability": {
     "enabled": true
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "promptly",
+      "database_name": "promptly",
+      "database_id": "eadc5f7c-e195-4bd0-bcb1-8e4d2950606b"
+    }
+  ]
 }
