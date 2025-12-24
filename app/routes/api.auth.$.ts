@@ -1,10 +1,12 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
-import { auth } from '~/lib/auth.server';
+import { createAuth } from '~/lib/auth.server';
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export const loader = async ({ request, context }: LoaderFunctionArgs) => {
+  const auth = createAuth(context.cloudflare.env);
   return auth.handler(request);
-}
+};
 
-export async function action({ request }: ActionFunctionArgs) {
+export const action = async ({ request, context }: ActionFunctionArgs) => {
+  const auth = createAuth(context.cloudflare.env);
   return auth.handler(request);
-}
+};
