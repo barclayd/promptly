@@ -26,7 +26,10 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   const result = signUpSchema.safeParse(rawData);
 
   if (!result.success) {
-    return data({ errors: z.flattenError(result.error).fieldErrors }, { status: 400 });
+    return data(
+      { errors: z.flattenError(result.error).fieldErrors },
+      { status: 400 },
+    );
   }
 
   const auth = getAuth(context);
@@ -39,15 +42,13 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
         password: result.data.password,
       },
     });
-    return redirect('/dashboard');
+    return redirect('/');
   } catch (error) {
     console.error('Sign up error:', error);
 
-    const message = error instanceof Error ? error.message : 'Registration failed';
-    return data(
-      { errors: { email: [message] } },
-      { status: 400 },
-    );
+    const message =
+      error instanceof Error ? error.message : 'Registration failed';
+    return data({ errors: { email: [message] } }, { status: 400 });
   }
 };
 
