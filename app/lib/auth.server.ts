@@ -6,15 +6,21 @@ import type { AppLoadContext } from 'react-router';
 
 type Database = Record<string, string>;
 
-// Factory for CLI - accepts a database adapter directly
+const authOptions: Omit<BetterAuthOptions, 'database'> = {
+  emailAndPassword: {
+    enabled: true,
+  },
+};
+
 export const createBetterAuth = (database: BetterAuthOptions['database']) =>
   betterAuth({
+    ...authOptions,
     database,
   });
 
-// Factory for runtime - creates auth with D1 from Cloudflare context
 export const getAuth = (ctx: AppLoadContext) =>
   betterAuth({
+    ...authOptions,
     database: new Kysely<Database>({
       dialect: new D1Dialect({ database: ctx.cloudflare.env.promptly }),
     }),

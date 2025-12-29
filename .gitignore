@@ -8,4 +8,4 @@
 .wrangler/
 
 tsconfig.tsbuildinfo
-migrations/
+migrations/local.db
