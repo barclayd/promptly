@@ -1,8 +1,8 @@
 import type { BetterAuthOptions } from 'better-auth';
 import { betterAuth } from 'better-auth';
-import type { AppLoadContext } from 'react-router';
 import { Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
+import type { AppLoadContext } from 'react-router';
 
 type Database = Record<string, string>;
 
