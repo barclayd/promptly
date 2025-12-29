@@ -21,6 +21,7 @@ import {
   useDefaultLayout,
 } from '~/components/ui/resizable';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
+import { Toaster } from '~/components/ui/sonner';
 import { useIsMobile } from '~/hooks/use-mobile';
 import { parseCookie } from '~/lib/cookies';
 
@@ -107,6 +108,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </head>
         <body data-dan="hi">
           {children}
+          <Toaster />
           <ScrollRestoration />
           <Scripts />
         </body>
@@ -178,7 +180,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </ResizablePanelGroup>
           )}
         </SidebarProvider>
-
+        <Toaster />
         <ScrollRestoration />
         <Scripts />
       </body>

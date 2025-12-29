@@ -1,4 +1,7 @@
+import { useEffect } from 'react';
+import type { FetcherWithComponents } from 'react-router';
 import { NavLink } from 'react-router';
+import { toast } from 'sonner';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent } from '~/components/ui/card';
 import {
@@ -11,48 +14,109 @@ import {
 import { Input } from '~/components/ui/input';
 import { cn } from '~/lib/utils';
 
-export function SignUpForm({
+type ActionData = {
+  errors: {
+    name?: string[];
+    email?: string[];
+    password?: string[];
+    confirmPassword?: string[];
+  };
+};
+
+interface SignUpFormProps extends React.ComponentProps<'div'> {
+  fetcher: FetcherWithComponents<ActionData>;
+}
+
+export const SignUpForm = ({
   className,
+  fetcher,
   ...props
-}: React.ComponentProps<'div'>) {
+}: SignUpFormProps) => {
+  const errors = fetcher.data?.errors;
+  const isSubmitting = fetcher.state === 'submitting';
+
+  useEffect(() => {
+    if (errors && Object.keys(errors).length > 0) {
+      toast.error('Please fix the errors below');
+    }
+  }, [errors]);
+
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card className="overflow-hidden p-0">
         <CardContent className="grid p-0 md:grid-cols-2">
-          <form className="p-6 md:p-8">
+          <fetcher.Form method="post" className="p-6 md:p-8">
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
                 <h1 className="text-2xl font-bold">
                   Create your Promptly account
                 </h1>
                 <p className="text-muted-foreground text-sm text-balance">
-                  Enter your email below to create your account
+                  Enter your details below to create your account
                 </p>
               </div>
+              <Field>
+                <FieldLabel htmlFor="name">Full Name</FieldLabel>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  placeholder="Johnny Appleseed"
+                  required
+                />
+                {errors?.name && (
+                  <p className="text-destructive text-sm">{errors.name[0]}</p>
+                )}
+              </Field>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="m@example.com"
                   required
                 />
-                <FieldDescription>
-                  We&apos;ll use this to contact you. We will not share your
-                  email with anyone else.
-                </FieldDescription>
+                {errors?.email ? (
+                  <p className="text-destructive text-sm">{errors.email[0]}</p>
+                ) : (
+                  <FieldDescription>
+                    We&apos;ll use this to contact you. We will not share your
+                    email with anyone else.
+                  </FieldDescription>
+                )}
               </Field>
               <Field>
                 <Field className="grid grid-cols-2 gap-4">
                   <Field>
                     <FieldLabel htmlFor="password">Password</FieldLabel>
-                    <Input id="password" type="password" required />
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      required
+                    />
+                    {errors?.password && (
+                      <p className="text-destructive text-sm">
+                        {errors.password[0]}
+                      </p>
+                    )}
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="confirm-password">
+                    <FieldLabel htmlFor="confirmPassword">
                       Confirm Password
                     </FieldLabel>
-                    <Input id="confirm-password" type="password" required />
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      required
+                    />
+                    {errors?.confirmPassword && (
+                      <p className="text-destructive text-sm">
+                        {errors.confirmPassword[0]}
+                      </p>
+                    )}
                   </Field>
                 </Field>
                 <FieldDescription>
@@ -60,7 +124,9 @@ export function SignUpForm({
                 </FieldDescription>
               </Field>
               <Field>
-                <Button type="submit">Create Account</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Creating Account...' : 'Create Account'}
+                </Button>
               </Field>
               <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
                 Or continue with
@@ -101,7 +167,7 @@ export function SignUpForm({
                 </NavLink>
               </FieldDescription>
             </FieldGroup>
-          </form>
+          </fetcher.Form>
           <div className="bg-muted relative hidden md:block">
             <img
               src="/placeholder.svg"
@@ -124,4 +190,4 @@ export function SignUpForm({
       </FieldDescription>
     </div>
   );
-}
+};
