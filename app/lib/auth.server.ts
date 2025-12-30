@@ -2,7 +2,7 @@ import type { BetterAuthOptions } from 'better-auth';
 import { betterAuth } from 'better-auth';
 import { CamelCasePlugin, Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
-import type { AppLoadContext } from 'react-router';
+import type { RouterContextProvider } from 'react-router';
 
 type Database = Record<string, string>;
 
@@ -18,7 +18,7 @@ export const createBetterAuth = (database: BetterAuthOptions['database']) =>
     database,
   });
 
-export const getAuth = (ctx: AppLoadContext) =>
+export const getAuth = (ctx: RouterContextProvider) =>
   betterAuth({
     ...authOptions,
     baseURL: ctx.cloudflare.env.BETTER_AUTH_URL,
