@@ -21,6 +21,12 @@ export const createBetterAuth = (database: BetterAuthOptions['database']) =>
 export const getAuth = (ctx: AppLoadContext) =>
   betterAuth({
     ...authOptions,
+    socialProviders: {
+      google: {
+        clientId: ctx.cloudflare.env.GOOGLE_CLIENT_ID,
+        clientSecret: ctx.cloudflare.env.GOOGLE_CLIENT_SECRET,
+      },
+    },
     secret: ctx.cloudflare.env.BETTER_AUTH_SECRET,
     database: {
       db: new Kysely<Database>({
