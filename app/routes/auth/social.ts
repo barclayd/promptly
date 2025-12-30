@@ -2,6 +2,9 @@ import { redirect } from 'react-router';
 import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/social';
 
+// GET requests to this route should redirect to login
+export const loader = () => redirect('/login');
+
 export const action = async ({ request, context }: Route.ActionArgs) => {
   const formData = await request.formData();
   const provider = formData.get('provider');
