@@ -7,6 +7,7 @@ import {
   IconNotification,
   IconUserCircle,
 } from '@tabler/icons-react';
+import { useFetcher } from 'react-router';
 
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 import {
@@ -40,6 +41,7 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const fetcher = useFetcher();
 
   return (
     <SidebarMenu>
@@ -101,7 +103,11 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                fetcher.submit(null, { method: 'post', action: '/logout' })
+              }
+            >
               <IconLogout />
               Log out
             </DropdownMenuItem>
