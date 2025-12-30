@@ -21,6 +21,8 @@ export const createBetterAuth = (database: BetterAuthOptions['database']) =>
 export const getAuth = (ctx: AppLoadContext) =>
   betterAuth({
     ...authOptions,
+    baseURL: ctx.cloudflare.env.BETTER_AUTH_URL,
+    trustedOrigins: [ctx.cloudflare.env.BETTER_AUTH_URL],
     socialProviders: {
       google: {
         clientId: ctx.cloudflare.env.GOOGLE_CLIENT_ID,
