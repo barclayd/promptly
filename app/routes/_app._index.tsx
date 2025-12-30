@@ -1,17 +1,15 @@
 import { NavLink } from 'react-router';
 import { Folder } from '~/components/ui/folder';
-import type { Route } from './+types/home';
+import type { Route } from './+types/_app._index';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: 'Promptly' },
-    {
-      name: 'description',
-      content: 'The CMS for building AI at scale',
-    },
-  ];
-}
+export const meta = ({}: Route.MetaArgs) => [
+  { title: 'Promptly' },
+  {
+    name: 'description',
+    content: 'The CMS for building AI at scale',
+  },
+];
 
 export default function Home() {
   return (

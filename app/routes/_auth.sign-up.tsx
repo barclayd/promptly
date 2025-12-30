@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { SignUpForm } from '~/components/sign-up-form';
 import { getAuth } from '~/lib/auth.server';
 import { signUpSchema } from '~/lib/validations/auth';
-import type { Route } from './+types/sign-up';
+import type { Route } from './+types/_auth.sign-up';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
 export const meta = ({}: Route.MetaArgs) => [

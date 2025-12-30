@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import {
   isRouteErrorResponse,
   Links,
@@ -6,23 +5,8 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useLocation,
-  useMatch,
-  useRouteLoaderData,
 } from 'react-router';
-import { SidebarLeft } from '~/components/sidebar-left';
-import { SidebarRight } from '~/components/sidebar-right';
-import { SiteHeader } from '~/components/site-header';
-import {
-  type LayoutStorage,
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-  useDefaultLayout,
-} from '~/components/ui/resizable';
-import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 import { Toaster } from '~/components/ui/sonner';
-import { useIsMobile } from '~/hooks/use-mobile';
 import { getAuth } from '~/lib/auth.server';
 import { parseCookie } from '~/lib/cookies';
 import { authMiddleware } from '~/middleware/auth';
@@ -60,70 +44,7 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
-const createCookieStorage = (serverCookie: string | null): LayoutStorage => ({
-  getItem: (key: string) => {
-    if (typeof document === 'undefined') {
-      return serverCookie;
-    }
-
-    const cookies = document.cookie.split(';');
-    for (const cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
-      if (name === key) {
-        return value;
-      }
-    }
-    return null;
-  },
-  setItem: (key: string, value: string) => {
-    if (typeof document !== 'undefined') {
-      document.cookie = `${key}=${value}; path=/; max-age=31536000`;
-    }
-  },
-});
-
-export function Layout({ children }: { children: React.ReactNode }) {
-  const promptMatch = useMatch('/prompts/:id/:id');
-  const loaderData = useRouteLoaderData<typeof loader>('root');
-
-  const location = useLocation();
-
-  const showSidebarRight =
-    promptMatch !== null && /^\d+$/.test(promptMatch.params.id || '');
-
-  const isMobile = useIsMobile();
-
-  const cookieStorage = useMemo(
-    () => createCookieStorage(loaderData?.serverLayoutCookie ?? null),
-    [loaderData?.serverLayoutCookie],
-  );
-
-  const { defaultLayout, onLayoutChange } = useDefaultLayout({
-    id: LAYOUT_COOKIE_NAME,
-    storage: cookieStorage,
-  });
-
-  const authRoutes = ['/login', '/sign-up'];
-
-  if (authRoutes.includes(location.pathname)) {
-    return (
-      <html lang="en">
-        <head title="Promptly">
-          <meta charSet="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <Meta />
-          <Links />
-        </head>
-        <body data-dan="hi">
-          {children}
-          <Toaster />
-          <ScrollRestoration />
-          <Scripts />
-        </body>
-      </html>
-    );
-  }
-
+export const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <html lang="en">
       <head title="Promptly">
@@ -133,74 +54,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        <SidebarProvider
-          style={
-            {
-              '--sidebar-width': 'calc(var(--spacing) * 72)',
-              '--header-height': 'calc(var(--spacing) * 12)',
-            } as React.CSSProperties
-          }
-        >
-          <SidebarLeft variant="inset" />
-          {isMobile ? (
-            <div className="flex flex-1 flex-col min-h-svh">
-              <SidebarInset className="flex-1">
-                <SiteHeader />
-                {children}
-              </SidebarInset>
-              {showSidebarRight && (
-                <div className="w-full shrink-0">
-                  <SidebarRight />
-                </div>
-              )}
-            </div>
-          ) : (
-            <ResizablePanelGroup
-              direction="horizontal"
-              className="flex-1"
-              defaultLayout={defaultLayout}
-              onLayoutChange={onLayoutChange}
-            >
-              <ResizablePanel
-                id="main-content"
-                defaultSize="75%"
-                minSize="50%"
-                className="h-full"
-              >
-                <SidebarInset className="min-h-svh">
-                  <SiteHeader />
-                  {children}
-                </SidebarInset>
-              </ResizablePanel>
-              {showSidebarRight && (
-                <>
-                  <ResizableHandle withHandle />
-                  <ResizablePanel
-                    id="sidebar-right"
-                    defaultSize="25%"
-                    minSize="25%"
-                    className="h-full"
-                  >
-                    <SidebarRight />
-                  </ResizablePanel>
-                </>
-              )}
-            </ResizablePanelGroup>
-          )}
-        </SidebarProvider>
+        {children}
         <Toaster />
         <ScrollRestoration />
         <Scripts />
       </body>
     </html>
   );
-}
+};
 
-export default function App() {
+const App = () => {
   return <Outlet />;
-}
+};
 
-export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+export default App;
+
+export const ErrorBoundary = ({ error }: Route.ErrorBoundaryProps) => {
   let message = 'Oops!';
   let details = 'An unexpected error occurred.';
   let stack: string | undefined;
@@ -227,4 +96,4 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
       )}
     </main>
   );
-}
+};

@@ -1,6 +1,7 @@
+import { PlusIcon } from 'lucide-react';
 import { NavLink } from 'react-router';
-import { Folder } from '~/components/ui/folder';
-import type { Route } from './+types/prompts';
+import { Paper } from '~/components/ui/paper';
+import type { Route } from './+types/_app.prompts_.create';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
 export function meta({}: Route.MetaArgs) {
@@ -16,15 +17,13 @@ export function meta({}: Route.MetaArgs) {
 export default function Prompts() {
   return (
     <div className="flex flex-1 flex-col">
-      <div className="@container/main flex flex-1 flex-col gap-2">
+      <div className="@container/main flex flex-1 flex-col gap-2 bg-gray-200">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
-            <div className="font-semibold text-gray-500/75 mb-4">Folders</div>
             <NavLink to="/prompts/1">
-              <div className="flex flex-col">
-                <Folder />
-                <h4 className="w-48 text-center my-4">Reviews</h4>
-              </div>
+              <Paper>
+                <PlusIcon size={36} />
+              </Paper>
             </NavLink>
           </div>
         </div>

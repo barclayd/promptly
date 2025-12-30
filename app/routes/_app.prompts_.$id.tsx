@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router';
 import { Paper } from '~/components/ui/paper';
-import type { Route } from './+types/prompts_.$id';
+import type { Route } from './+types/_app.prompts_.$id';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
 export function meta({}: Route.MetaArgs) {

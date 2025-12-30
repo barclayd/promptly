@@ -3,7 +3,7 @@ import { PromptEntry } from '~/components/prompt-entry';
 import { PromptReview } from '~/components/prompt-review';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
-import type { Route } from './+types/prompts_.$id_.$id';
+import type { Route } from './+types/_app.prompts_.$id_.$id';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
 export function meta({}: Route.MetaArgs) {
