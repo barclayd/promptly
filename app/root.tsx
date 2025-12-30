@@ -25,9 +25,12 @@ import { Toaster } from '~/components/ui/sonner';
 import { useIsMobile } from '~/hooks/use-mobile';
 import { getAuth } from '~/lib/auth.server';
 import { parseCookie } from '~/lib/cookies';
+import { authMiddleware } from '~/middleware/auth';
 
 import type { Route } from './+types/root';
 import './app.css';
+
+export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
 
 const LAYOUT_COOKIE_NAME = 'panel-layout';
 

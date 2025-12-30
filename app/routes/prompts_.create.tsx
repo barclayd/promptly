@@ -1,7 +1,7 @@
 import { PlusIcon } from 'lucide-react';
 import { NavLink } from 'react-router';
 import { Paper } from '~/components/ui/paper';
-import type { Route } from './+types/home';
+import type { Route } from './+types/prompts_.create';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
 export function meta({}: Route.MetaArgs) {
