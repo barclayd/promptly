@@ -1,4 +1,7 @@
+import { useEffect } from 'react';
+import type { FetcherWithComponents } from 'react-router';
 import { NavLink } from 'react-router';
+import { toast } from 'sonner';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent } from '~/components/ui/card';
 import {
@@ -11,15 +14,36 @@ import {
 import { Input } from '~/components/ui/input';
 import { cn } from '~/lib/utils';
 
-export function LoginForm({
+type ActionData = {
+  errors: {
+    email?: string[];
+    password?: string[];
+  };
+};
+
+interface LoginFormProps extends React.ComponentProps<'div'> {
+  fetcher: FetcherWithComponents<ActionData>;
+}
+
+export const LoginForm = ({
   className,
+  fetcher,
   ...props
-}: React.ComponentProps<'div'>) {
+}: LoginFormProps) => {
+  const errors = fetcher.data?.errors;
+  const isSubmitting = fetcher.state === 'submitting';
+
+  useEffect(() => {
+    if (errors && Object.keys(errors).length > 0) {
+      toast.error('Please fix the errors below');
+    }
+  }, [errors]);
+
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card className="overflow-hidden p-0">
         <CardContent className="grid p-0 md:grid-cols-2">
-          <form className="p-6 md:p-8">
+          <fetcher.Form method="post" className="p-6 md:p-8">
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
                 <h1 className="text-2xl font-bold">Welcome back</h1>
@@ -31,10 +55,14 @@ export function LoginForm({
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="user@promptlycms.com"
                   required
                 />
+                {errors?.email && (
+                  <p className="text-destructive text-sm">{errors.email[0]}</p>
+                )}
               </Field>
               <Field>
                 <div className="flex items-center">
@@ -46,10 +74,22 @@ export function LoginForm({
                     Forgot your password?
                   </a>
                 </div>
-                <Input id="password" type="password" required />
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                />
+                {errors?.password && (
+                  <p className="text-destructive text-sm">
+                    {errors.password[0]}
+                  </p>
+                )}
               </Field>
               <Field>
-                <Button type="submit">Login</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Logging in...' : 'Login'}
+                </Button>
               </Field>
               <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
                 Or continue with
@@ -90,7 +130,7 @@ export function LoginForm({
                 </NavLink>
               </FieldDescription>
             </FieldGroup>
-          </form>
+          </fetcher.Form>
           <div className="bg-muted relative hidden md:block">
             <img
               src="/placeholder.svg"
@@ -113,4 +153,4 @@ export function LoginForm({
       </FieldDescription>
     </div>
   );
-}
+};
