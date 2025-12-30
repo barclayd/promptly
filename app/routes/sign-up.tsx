@@ -35,14 +35,20 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   const auth = getAuth(context);
 
   try {
-    await auth.api.signUpEmail({
+    const response = await auth.api.signUpEmail({
       body: {
         name: result.data.name,
         email: result.data.email,
         password: result.data.password,
       },
+      asResponse: true,
     });
-    return redirect('/');
+
+    const setCookie = response.headers.get('set-cookie');
+
+    return redirect('/', {
+      headers: setCookie ? { 'Set-Cookie': setCookie } : {},
+    });
   } catch (error) {
     console.error('Sign up error:', error);
 

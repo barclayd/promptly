@@ -1,6 +1,5 @@
 import { NavLink } from 'react-router';
 import { Folder } from '~/components/ui/folder';
-import { authClient } from '~/lib/auth.client';
 import type { Route } from './+types/home';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
@@ -15,15 +14,6 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
-  const {
-    data: session,
-    isPending, //loading state
-    error, //error object
-    refetch, //refetch the session
-  } = authClient.useSession();
-
-  console.log('session', session);
-
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">

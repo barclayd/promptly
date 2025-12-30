@@ -60,10 +60,9 @@ export const links: Route.LinksFunction = () => [
 const createCookieStorage = (serverCookie: string | null): LayoutStorage => ({
   getItem: (key: string) => {
     if (typeof document === 'undefined') {
-      // Server-side: return the cookie value from loader
       return serverCookie;
     }
-    // Client-side: read from document.cookie
+
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
@@ -101,9 +100,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
     storage: cookieStorage,
   });
 
-  const authPages = ['/login', '/sign-up'];
+  const authRoutes = ['/login', '/sign-up'];
 
-  if (authPages.includes(location.pathname)) {
+  if (authRoutes.includes(location.pathname)) {
     return (
       <html lang="en">
         <head title="Promptly">

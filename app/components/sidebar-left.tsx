@@ -133,8 +133,6 @@ export const SidebarLeft = ({
 }: React.ComponentProps<typeof Sidebar>) => {
   const rootData = useRouteLoaderData<typeof rootLoader>('root');
 
-  console.log('rootData', rootData);
-
   const user = {
     name: rootData?.user?.name ?? 'Guest',
     email: rootData?.user?.email ?? '',

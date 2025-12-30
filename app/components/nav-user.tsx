@@ -25,6 +25,11 @@ import {
   useSidebar,
 } from '~/components/ui/sidebar';
 
+const getUserInitials = (name: string) => {
+  const initials = name.split(' ');
+  return initials.map((initial) => initial[0]).join('');
+};
+
 export function NavUser({
   user,
 }: {
@@ -47,7 +52,9 @@ export function NavUser({
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarFallback className="rounded-lg">
+                  {getUserInitials(user.name)}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
