@@ -1,4 +1,3 @@
-import type { BetterAuthOptions } from 'better-auth';
 import { betterAuth } from 'better-auth';
 import { CamelCasePlugin, Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
@@ -6,21 +5,11 @@ import type { RouterContextProvider } from 'react-router';
 
 type Database = Record<string, string>;
 
-const authOptions: Omit<BetterAuthOptions, 'database'> = {
-  emailAndPassword: {
-    enabled: true,
-  },
-};
-
-export const createBetterAuth = (database: BetterAuthOptions['database']) =>
-  betterAuth({
-    ...authOptions,
-    database,
-  });
-
 export const getAuth = (ctx: RouterContextProvider) =>
   betterAuth({
-    ...authOptions,
+    emailAndPassword: {
+      enabled: true,
+    },
     baseURL: ctx.cloudflare.env.BETTER_AUTH_URL,
     trustedOrigins: [ctx.cloudflare.env.BETTER_AUTH_URL],
     socialProviders: {

@@ -25,11 +25,7 @@ interface LoginFormProps extends React.ComponentProps<'div'> {
   fetcher: FetcherWithComponents<ActionData>;
 }
 
-export const LoginForm = ({
-  className,
-  fetcher,
-  ...props
-}: LoginFormProps) => {
+export const LoginForm = ({ className, fetcher, ...props }: LoginFormProps) => {
   const errors = fetcher.data?.errors;
   const isSubmitting = fetcher.state === 'submitting';
 
@@ -74,12 +70,7 @@ export const LoginForm = ({
                     Forgot your password?
                   </a>
                 </div>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                />
+                <Input id="password" name="password" type="password" required />
                 {errors?.password && (
                   <p className="text-destructive text-sm">
                     {errors.password[0]}
