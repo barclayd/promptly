@@ -21,7 +21,9 @@ import {
   useDefaultLayout,
 } from '~/components/ui/resizable';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
+import { Toaster } from '~/components/ui/sonner';
 import { useIsMobile } from '~/hooks/use-mobile';
+import { getAuth } from '~/lib/auth.server';
 import { parseCookie } from '~/lib/cookies';
 
 import type { Route } from './+types/root';
@@ -29,11 +31,16 @@ import './app.css';
 
 const LAYOUT_COOKIE_NAME = 'panel-layout';
 
-export const loader = ({ request }: Route.LoaderArgs) => {
+export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const cookieHeader = request.headers.get('Cookie') || '';
   const layoutCookie = parseCookie(cookieHeader, LAYOUT_COOKIE_NAME);
+
+  const auth = getAuth(context);
+  const session = await auth.api.getSession({ headers: request.headers });
+
   return {
     serverLayoutCookie: layoutCookie ?? null,
+    user: session?.user ?? null,
   };
 };
 
@@ -53,10 +60,9 @@ export const links: Route.LinksFunction = () => [
 const createCookieStorage = (serverCookie: string | null): LayoutStorage => ({
   getItem: (key: string) => {
     if (typeof document === 'undefined') {
-      // Server-side: return the cookie value from loader
       return serverCookie;
     }
-    // Client-side: read from document.cookie
+
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
@@ -94,9 +100,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
     storage: cookieStorage,
   });
 
-  const authPages = ['/login', '/sign-up'];
+  const authRoutes = ['/login', '/sign-up'];
 
-  if (authPages.includes(location.pathname)) {
+  if (authRoutes.includes(location.pathname)) {
     return (
       <html lang="en">
         <head title="Promptly">
@@ -107,6 +113,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </head>
         <body data-dan="hi">
           {children}
+          <Toaster />
           <ScrollRestoration />
           <Scripts />
         </body>
@@ -178,7 +185,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </ResizablePanelGroup>
           )}
         </SidebarProvider>
-
+        <Toaster />
         <ScrollRestoration />
         <Scripts />
       </body>
