@@ -15,8 +15,7 @@ import {
   IconUsers,
 } from '@tabler/icons-react';
 import type * as React from 'react';
-import { NavLink } from 'react-router';
-
+import { NavLink, useRouteLoaderData } from 'react-router';
 import { NavDocuments } from '~/components/nav-documents';
 import { NavMain } from '~/components/nav-main';
 import { NavSecondary } from '~/components/nav-secondary';
@@ -30,13 +29,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '~/components/ui/sidebar';
+import type { loader as rootLoader } from '~/root';
 
 const data = {
-  user: {
-    name: 'Test Prompter',
-    email: 'test@promptlycms.com',
-    avatar: '/avatars/shadcn.jpg',
-  },
   navMain: [
     {
       title: 'Dashboard',
@@ -133,9 +128,19 @@ const data = {
   ],
 };
 
-export function SidebarLeft({
+export const SidebarLeft = ({
   ...props
-}: React.ComponentProps<typeof Sidebar>) {
+}: React.ComponentProps<typeof Sidebar>) => {
+  const rootData = useRouteLoaderData<typeof rootLoader>('root');
+
+  console.log('rootData', rootData);
+
+  const user = {
+    name: rootData?.user?.name ?? 'Guest',
+    email: rootData?.user?.email ?? '',
+    avatar: rootData?.user?.image ?? '/avatars/shadcn.jpg',
+  };
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -159,8 +164,8 @@ export function SidebarLeft({
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   );
-}
+};

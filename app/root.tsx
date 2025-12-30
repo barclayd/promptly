@@ -23,6 +23,7 @@ import {
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 import { Toaster } from '~/components/ui/sonner';
 import { useIsMobile } from '~/hooks/use-mobile';
+import { getAuth } from '~/lib/auth.server';
 import { parseCookie } from '~/lib/cookies';
 
 import type { Route } from './+types/root';
@@ -30,11 +31,16 @@ import './app.css';
 
 const LAYOUT_COOKIE_NAME = 'panel-layout';
 
-export const loader = ({ request }: Route.LoaderArgs) => {
+export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const cookieHeader = request.headers.get('Cookie') || '';
   const layoutCookie = parseCookie(cookieHeader, LAYOUT_COOKIE_NAME);
+
+  const auth = getAuth(context);
+  const session = await auth.api.getSession({ headers: request.headers });
+
   return {
     serverLayoutCookie: layoutCookie ?? null,
+    user: session?.user ?? null,
   };
 };
 
