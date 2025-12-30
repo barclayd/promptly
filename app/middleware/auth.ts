@@ -1,9 +1,15 @@
-import { redirect } from 'react-router';
 import type { RouterContextProvider } from 'react-router';
+import { redirect } from 'react-router';
 import { userContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
 
-const publicRoutes = ['/login', '/sign-up', '/logout', '/api/auth', '/auth/social'];
+const publicRoutes = [
+  '/login',
+  '/sign-up',
+  '/logout',
+  '/api/auth',
+  '/auth/social',
+];
 
 const isPublicRoute = (pathname: string) =>
   publicRoutes.some(
