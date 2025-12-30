@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router';
 import { Folder } from '~/components/ui/folder';
-import type { Route } from './+types/_app.prompts';
+import type { Route } from './+types/index';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
 export const meta = ({}: Route.MetaArgs) => [
@@ -11,7 +11,7 @@ export const meta = ({}: Route.MetaArgs) => [
   },
 ];
 
-export default function Prompts() {
+export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">

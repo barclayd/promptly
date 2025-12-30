@@ -1,6 +1,6 @@
 import { redirect } from 'react-router';
 import { getAuth } from '~/lib/auth.server';
-import type { Route } from './+types/_app.logout';
+import type { Route } from './+types/logout';
 
 const performLogout = async (
   request: Request,

@@ -1,6 +1,6 @@
 import { redirect } from 'react-router';
 import { getAuth } from '~/lib/auth.server';
-import type { Route } from './+types/auth.social';
+import type { Route } from './+types/social';
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
   const formData = await request.formData();
