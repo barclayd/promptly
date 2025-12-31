@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select';
+import { Textarea } from '~/components/ui/textarea';
 
 type ActionData = {
   errors?: {
@@ -54,15 +55,15 @@ export const CreatePromptDialog = ({ children }: CreatePromptDialogProps) => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" name="name" />
+              <Label htmlFor="prompt">Name</Label>
+              <Input id="prompt" name="name" />
               {errors?.name && (
                 <p className="text-destructive text-sm">{errors.name[0]}</p>
               )}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
-              <Input id="description" name="description" />
+              <Textarea id="description" name="description" />
               {errors?.description && (
                 <p className="text-destructive text-sm">
                   {errors.description[0]}
