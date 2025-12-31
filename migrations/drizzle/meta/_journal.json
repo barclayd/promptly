@@ -8,6 +8,13 @@
       "when": 1766688124218,
       "tag": "0000_salty_green_goblin",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1767183875660,
+      "tag": "0001_clammy_vertigo",
+      "breakpoints": true
     }
   ]
 }
