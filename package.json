@@ -11,7 +11,10 @@
     "preview": "bun run build && vite preview",
     "typecheck": "bun run cf-typegen && react-router typegen && tsc -b",
     "lint": "bunx biome check .",
-    "lint:fix": "bunx biome check --write ."
+    "lint:fix": "bunx biome check --write .",
+    "db:generate": "bunx @better-auth/cli generate --output ./migrations/auth-schema.ts -y && bunx drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply promptly --local",
+    "db:migrate:prod": "wrangler d1 migrations apply promptly --remote"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
