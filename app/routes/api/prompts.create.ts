@@ -20,7 +20,7 @@ export const action = async ({ request }: { request: Request }) => {
 
   if (!result.success) {
     return data(
-      { errors: result.error.flatten().fieldErrors },
+      { errors: z.flattenError(result.error).fieldErrors },
       { status: 400 },
     );
   }

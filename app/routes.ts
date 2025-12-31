@@ -18,8 +18,8 @@ export default [
     route('home', './routes/home.tsx'),
     route('logout', './routes/logout.tsx'),
     route('prompts', './routes/prompts.tsx'),
-    route('prompts/create', './routes/prompts-create.tsx'),
-    route('prompts/:id', './routes/prompts-id.tsx'),
-    route('prompts/:id/:id', './routes/prompts-id-id.tsx'),
+    route('prompts/create', './routes/prompts.create.tsx'),
+    route('prompts/:id', './routes/prompts.id.tsx'),
+    route('prompts/:id/:id', './routes/prompts.id.id.tsx'),
   ]),
 ] satisfies RouteConfig;
