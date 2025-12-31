@@ -3,10 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "react-router dev",
     "build": "react-router build",
     "cf-typegen": "wrangler types",
     "deploy": "bun run build && wrangler deploy",
-    "dev": "react-router dev",
     "postinstall": "bun run cf-typegen",
     "preview": "bun run build && vite preview",
     "typecheck": "bun run cf-typegen && react-router typegen && tsc -b",
