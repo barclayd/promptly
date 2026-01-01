@@ -69,7 +69,6 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
   const db = context.cloudflare.env.promptly;
 
-  // Get or create "Untitled" folder if no folder selected
   let folderId = result.data.project;
 
   if (!folderId) {
@@ -94,7 +93,6 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     }
   }
 
-  // Create the prompt
   const promptId = nanoid();
   await db
     .prepare(
