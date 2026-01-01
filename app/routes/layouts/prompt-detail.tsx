@@ -24,6 +24,8 @@ type PromptDetailLoaderData = {
   schema: SchemaField[];
   model: string | null;
   temperature: number;
+  inputData: unknown;
+  inputDataRootName: string | null;
 };
 
 const LAYOUT_COOKIE_NAME = 'panel-layout';
@@ -61,6 +63,8 @@ export default function PromptDetailLayout() {
   const schema = (promptDetailData?.schema ?? []) as SchemaField[];
   const model = promptDetailData?.model ?? null;
   const temperature = promptDetailData?.temperature ?? 0.5;
+  const inputData = promptDetailData?.inputData ?? {};
+  const inputDataRootName = promptDetailData?.inputDataRootName ?? null;
 
   // Ref for external control of SidebarRight (trigger test, get streaming state)
   const sidebarRightRef = useRef<SidebarRightHandle>(null);
@@ -105,6 +109,8 @@ export default function PromptDetailLayout() {
               schema={schema}
               model={model}
               temperature={temperature}
+              inputData={inputData}
+              inputDataRootName={inputDataRootName}
             />
           </div>
         </div>
@@ -148,6 +154,8 @@ export default function PromptDetailLayout() {
               schema={schema}
               model={model}
               temperature={temperature}
+              inputData={inputData}
+              inputDataRootName={inputDataRootName}
             />
           </ResizablePanel>
         </ResizablePanelGroup>

@@ -54,11 +54,7 @@ import { useIsMobile } from '~/hooks/use-mobile';
 import type { SchemaField } from '~/lib/schema-types';
 import { cn } from '~/lib/utils';
 
-const DEFAULT_INPUT_DATA = [
-  'Brilliant service from start to finish. The team arrived on time, handled everything with care, and nothing was damaged. Would definitely recommend to anyone moving house.',
-  'Good value for money but communication could have been better. Had to chase for updates on the delivery window. The movers themselves were friendly and efficient though.',
-  'Absolutely terrible experience. Driver was two hours late with no apology, then tried to charge extra for stairs that were clearly listed in the booking. Avoid.',
-];
+const DEFAULT_INPUT_DATA: unknown = {};
 
 const sidebarLightTheme: Theme = {
   container: {
@@ -124,6 +120,8 @@ type SidebarRightProps = React.ComponentProps<typeof Sidebar> & {
   schema?: SchemaField[];
   model?: string | null;
   temperature?: number;
+  inputData?: unknown;
+  inputDataRootName?: string | null;
 };
 
 export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
@@ -133,6 +131,8 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       schema = [],
       model: initialModel = null,
       temperature: initialTemperature = 0.5,
+      inputData: initialInputData = DEFAULT_INPUT_DATA,
+      inputDataRootName: initialRootName = null,
       ...props
     },
     ref,
@@ -140,7 +140,11 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
     const [schemaFields, setSchemaFields] = useState<SchemaField[]>(schema);
     const [model, setModel] = useState<string | null>(initialModel);
     const [temperature, setTemperature] = useState(initialTemperature);
-    const [inputData, setInputData] = useState<string[]>(DEFAULT_INPUT_DATA);
+    const [inputData, setInputData] = useState<unknown>(initialInputData);
+    const [inputDataRootName, setInputDataRootName] = useState<string | null>(
+      initialRootName,
+    );
+    const [isGeneratingInputData, setIsGeneratingInputData] = useState(false);
 
     // Test section has its own model/temperature that can differ from main config
     const [testModel, setTestModel] = useState<string | null>(initialModel);
@@ -170,21 +174,56 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
     const schemaRef = useRef(schemaFields);
     const modelRef = useRef(model);
     const temperatureRef = useRef(temperature);
+    const inputDataRef = useRef(inputData);
+    const inputDataRootNameRef = useRef(inputDataRootName);
     schemaRef.current = schemaFields;
     modelRef.current = model;
     temperatureRef.current = temperature;
+    inputDataRef.current = inputData;
+    inputDataRootNameRef.current = inputDataRootName;
 
     const debouncedSaveConfig = useDebouncedCallback(() => {
       const config = {
         schema: schemaRef.current,
         model: modelRef.current,
         temperature: temperatureRef.current,
+        inputData: inputDataRef.current,
+        inputDataRootName: inputDataRootNameRef.current,
       };
       configFetcher.submit(
         { intent: 'saveConfig', config: JSON.stringify(config) },
         { method: 'post', action: location.pathname },
       );
     }, 1000);
+
+    // Generate input data for the current schema
+    const handleGenerateInputData = useCallback(async () => {
+      if (schemaFields.length === 0) return;
+
+      setIsGeneratingInputData(true);
+      try {
+        const response = await fetch('/api/generate-input-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ schema: schemaFields }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.inputData !== undefined) {
+            setInputData(result.inputData);
+            setInputDataRootName(result.rootName ?? null);
+            inputDataRef.current = result.inputData;
+            inputDataRootNameRef.current = result.rootName ?? null;
+            debouncedSaveConfig();
+          }
+        }
+      } catch (error) {
+        console.error('Failed to generate input data:', error);
+      } finally {
+        setIsGeneratingInputData(false);
+      }
+    }, [schemaFields, debouncedSaveConfig]);
 
     const handleSchemaChange = useCallback(
       (fields: SchemaField[]) => {
@@ -304,6 +343,8 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         schema: schemaRef.current,
         model: testModel,
         temperature: testTemperature,
+        inputData: inputDataRef.current,
+        inputDataRootName: inputDataRootNameRef.current,
       };
       configFetcher.submit(
         { intent: 'saveConfig', config: JSON.stringify(config) },
@@ -369,6 +410,8 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                       <SchemaBuilder
                         fields={schemaFields}
                         onChange={handleSchemaChange}
+                        onGenerateTestData={handleGenerateInputData}
+                        isGeneratingTestData={isGeneratingInputData}
                       />
                     </div>
                   </SidebarGroupContent>
@@ -518,6 +561,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                             showCollectionCount={true}
                             indent={2}
                             maxWidth="100%"
+                            rootName={inputDataRootName ?? undefined}
                           />
                         </div>
                       </div>

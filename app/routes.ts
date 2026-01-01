@@ -10,6 +10,7 @@ export default [
   route('api/prompts/create', './routes/api/prompts.create.ts'),
   route('api/prompts/run', './routes/api/prompts.run.ts'),
   route('api/prompt-info', './routes/api/prompt-info.ts'),
+  route('api/generate-input-data', './routes/api/generate-input-data.ts'),
   route('auth/social', './routes/auth/social.ts'),
   layout('./routes/layouts/auth.tsx', [
     route('login', './routes/auth/login.tsx'),

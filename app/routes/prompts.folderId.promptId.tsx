@@ -86,6 +86,8 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
   let schema: unknown[] = [];
   let model: string | null = null;
   let temperature = 0.5;
+  let inputData: unknown = {};
+  let inputDataRootName: string | null = null;
 
   try {
     if (latestVersion?.config) {
@@ -94,6 +96,8 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
       schema = Array.isArray(parsed.schema) ? parsed.schema : [];
       model = parsed.model ?? null;
       temperature = parsed.temperature ?? 0.5;
+      inputData = parsed.inputData ?? {};
+      inputDataRootName = parsed.inputDataRootName ?? null;
     }
   } catch {
     // Keep defaults
@@ -109,6 +113,8 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
     schema,
     model,
     temperature,
+    inputData,
+    inputDataRootName,
   };
 };
 

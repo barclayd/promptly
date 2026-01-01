@@ -149,7 +149,7 @@ export const StreamingResponse = ({
           />
         </ItemMedia>
 
-        <ItemContent className="min-h-[1.5rem]">
+        <ItemContent className="min-h-6">
           {isThinking ? (
             <div className="flex items-center gap-1.5">
               <span className="text-sm text-muted-foreground">Thinking</span>
@@ -182,7 +182,7 @@ export const StreamingResponse = ({
               {text}
               {isTyping && (
                 <span
-                  className="inline-block w-[2px] h-[1em] bg-primary ml-0.5 align-middle"
+                  className="inline-block w-0.5 h-[1em] bg-primary ml-0.5 align-middle"
                   style={{ animation: 'cursor-blink 1s step-end infinite' }}
                 />
               )}
