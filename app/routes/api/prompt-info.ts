@@ -6,7 +6,10 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const promptId = url.searchParams.get('promptId');
 
   if (!folderId || !promptId) {
-    return Response.json({ error: 'Missing folderId or promptId' }, { status: 400 });
+    return Response.json(
+      { error: 'Missing folderId or promptId' },
+      { status: 400 },
+    );
   }
 
   const db = context.cloudflare.env.promptly;

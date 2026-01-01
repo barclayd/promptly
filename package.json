@@ -43,6 +43,7 @@
     "@tabler/icons-react": "^3.36.0",
     "@tanstack/react-table": "^8.21.3",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "ai": "^6.0.5",
     "better-auth": "^1.4.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

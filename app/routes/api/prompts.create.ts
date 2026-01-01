@@ -34,7 +34,8 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     );
   }
 
-  const auth = getAuth(context);
+  // biome-ignore lint/suspicious/noExplicitAny: context not implemented
+  const auth = getAuth(context as any);
 
   const session = await auth.api.getSession({
     headers: request.headers,

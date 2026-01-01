@@ -4,9 +4,9 @@ import { IconCornerDownLeft } from '@tabler/icons-react';
 import { JsonEditor, type Theme } from 'json-edit-react';
 import { ChevronRight } from 'lucide-react';
 import type * as React from 'react';
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import { useFetcher, useLocation } from 'react-router';
-import { useDebounce } from 'use-debounce';
+import { Fragment, useCallback, useMemo, useRef, useState } from 'react';
+import { useFetcher, useLocation, useSearchParams } from 'react-router';
+import { useDebouncedCallback } from 'use-debounce';
 import { CodePreview } from '~/components/code-preview';
 import { SchemaBuilder } from '~/components/schema-builder';
 import { SelectScrollable } from '~/components/select-scrollable';
@@ -113,55 +113,66 @@ export function SidebarRight({
   model?: string | null;
   temperature?: number;
 }) {
-  const [initialSchema] = useState(() => JSON.stringify(schema));
   const [schemaFields, setSchemaFields] = useState<SchemaField[]>(schema);
-  const [initialModelState] = useState(initialModel);
   const [model, setModel] = useState<string | null>(initialModel);
-  const [initialTemperatureState] = useState(initialTemperature);
   const [temperature, setTemperature] = useState(initialTemperature);
   const [inputData, setInputData] = useState<string[]>(DEFAULT_INPUT_DATA);
-  const isFirstRender = useRef(true);
 
   const configFetcher = useFetcher();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
 
-  const [debouncedSchema] = useDebounce(schemaFields, 1000);
-  const [debouncedModel] = useDebounce(model, 1000);
-  const [debouncedTemperature] = useDebounce(temperature, 1000);
+  // Use refs to access current values in debounced callback
+  const schemaRef = useRef(schemaFields);
+  const modelRef = useRef(model);
+  const temperatureRef = useRef(temperature);
+  schemaRef.current = schemaFields;
+  modelRef.current = model;
+  temperatureRef.current = temperature;
 
-  useEffect(() => {
-    // Skip first render to avoid saving on page load
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-
-    const schemaChanged = JSON.stringify(debouncedSchema) !== initialSchema;
-    const modelChanged = debouncedModel !== initialModelState;
-    const temperatureChanged = debouncedTemperature !== initialTemperatureState;
-
-    if (!schemaChanged && !modelChanged && !temperatureChanged) return;
-
+  const debouncedSaveConfig = useDebouncedCallback(() => {
     const config = {
-      schema: debouncedSchema,
-      model: debouncedModel,
-      temperature: debouncedTemperature,
+      schema: schemaRef.current,
+      model: modelRef.current,
+      temperature: temperatureRef.current,
     };
-
     configFetcher.submit(
       { intent: 'saveConfig', config: JSON.stringify(config) },
       { method: 'post', action: location.pathname },
     );
-  }, [
-    debouncedSchema,
-    debouncedModel,
-    debouncedTemperature,
-    initialSchema,
-    initialModelState,
-    initialTemperatureState,
-    location.pathname,
-  ]);
+  }, 1000);
+
+  const handleSchemaChange = useCallback(
+    (fields: SchemaField[]) => {
+      setSchemaFields(fields);
+      debouncedSaveConfig();
+    },
+    [debouncedSaveConfig],
+  );
+
+  const handleModelChange = useCallback(
+    (value: string | null) => {
+      setModel(value);
+      debouncedSaveConfig();
+    },
+    [debouncedSaveConfig],
+  );
+
+  const handleTemperatureChange = useCallback(
+    (value: number) => {
+      setTemperature(value);
+      debouncedSaveConfig();
+    },
+    [debouncedSaveConfig],
+  );
+
+  // Get selected version from URL or default to latest
+  const versionParam = searchParams.get('version');
+  const latestVersion = versions[0]?.version;
+  const selectedVersion = versionParam
+    ? Number.parseInt(versionParam, 10)
+    : latestVersion;
 
   const jsonEditorTheme = useMemo(() => {
     const isDarkMode =
@@ -220,7 +231,7 @@ export function SidebarRight({
                   <div className="px-2 py-4">
                     <SchemaBuilder
                       fields={schemaFields}
-                      onChange={setSchemaFields}
+                      onChange={handleSchemaChange}
                     />
                   </div>
                 </SidebarGroupContent>
@@ -300,7 +311,10 @@ export function SidebarRight({
               <CollapsibleContent>
                 <SidebarGroupContent>
                   <div className="px-2 py-3">
-                    <SelectScrollable value={model ?? ''} onChange={setModel} />
+                    <SelectScrollable
+                      value={model ?? ''}
+                      onChange={handleModelChange}
+                    />
                   </div>
                 </SidebarGroupContent>
               </CollapsibleContent>
@@ -325,7 +339,7 @@ export function SidebarRight({
                   <div className="px-2 py-3">
                     <SidebarSlider
                       value={temperature}
-                      onChange={setTemperature}
+                      onChange={handleTemperatureChange}
                     />
                   </div>
                 </SidebarGroupContent>
@@ -372,7 +386,7 @@ export function SidebarRight({
                         Model
                       </div>
                       <div className="my-4">
-                        <SelectScrollable />
+                        <SelectScrollable value={model ?? ''} />
                       </div>
                     </div>
 
@@ -381,7 +395,36 @@ export function SidebarRight({
                         Prompt version
                       </div>
                       <div className="my-4">
-                        <SelectScrollable />
+                        <Select
+                          value={selectedVersion?.toString() ?? ''}
+                          disabled={versions.length === 0}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue
+                              placeholder={
+                                versions.length === 0
+                                  ? 'No versions'
+                                  : 'Select version'
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectLabel>Versions</SelectLabel>
+                              {versions.map((v) => (
+                                <SelectItem
+                                  key={v.version}
+                                  value={v.version.toString()}
+                                >
+                                  v{v.version}.0.0
+                                  {v.version === latestVersion
+                                    ? ' (latest)'
+                                    : ''}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
@@ -390,7 +433,10 @@ export function SidebarRight({
                         Temperature
                       </div>
                       <div className="my-1">
-                        <SidebarSlider />
+                        <SidebarSlider
+                          value={temperature}
+                          onChange={setTemperature}
+                        />
                       </div>
                     </div>
 
