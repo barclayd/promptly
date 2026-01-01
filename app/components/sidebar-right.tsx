@@ -130,7 +130,6 @@ export function SidebarRight({
   const [debouncedModel] = useDebounce(model, 1000);
   const [debouncedTemperature] = useDebounce(temperature, 1000);
 
-  // Auto-save when config changes
   useEffect(() => {
     // Skip first render to avoid saving on page load
     if (isFirstRender.current) {

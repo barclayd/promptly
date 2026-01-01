@@ -8,6 +8,7 @@ import {
 export default [
   route('api/auth/*', './routes/api/auth.ts'),
   route('api/prompts/create', './routes/api/prompts.create.ts'),
+  route('api/prompt-info', './routes/api/prompt-info.ts'),
   route('auth/social', './routes/auth/social.ts'),
   layout('./routes/layouts/auth.tsx', [
     route('login', './routes/auth/login.tsx'),
@@ -18,12 +19,15 @@ export default [
     route('home', './routes/home.tsx'),
     route('logout', './routes/logout.tsx'),
     route('prompts', './routes/prompts.tsx'),
-    route('prompts/create', './routes/prompts.create.tsx'),
     route('prompts/:folderId', './routes/prompts.id.tsx'),
   ]),
   layout('./routes/layouts/prompt-detail.tsx', [
-    route('prompts/:folderId/:promptId', './routes/prompts.id.id.tsx', {
-      id: 'prompt-detail',
-    }),
+    route(
+      'prompts/:folderId/:promptId',
+      './routes/prompts.folderId.promptId.tsx',
+      {
+        id: 'prompt-detail',
+      },
+    ),
   ]),
 ] satisfies RouteConfig;

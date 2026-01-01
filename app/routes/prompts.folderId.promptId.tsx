@@ -6,7 +6,6 @@ import { useDebounce } from 'use-debounce';
 import { PromptReview } from '~/components/prompt-review';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
-import { useRecentsContext } from '~/context/recents-context';
 import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/prompts.id.id';
 
@@ -79,7 +78,6 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
       published_by: string | null;
     }>();
 
-  // Parse config JSON for schema, model, and temperature
   let schema: unknown[] = [];
   let model: string | null = null;
   let temperature = 0.5;
@@ -87,12 +85,8 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
   try {
     if (latestVersion?.config) {
       const parsed = JSON.parse(latestVersion.config);
-      // Support both old format (array) and new format (object with schema key)
-      schema = Array.isArray(parsed.schema)
-        ? parsed.schema
-        : Array.isArray(parsed)
-          ? parsed
-          : [];
+
+      schema = Array.isArray(parsed.schema) ? parsed.schema : [];
       model = parsed.model ?? null;
       temperature = parsed.temperature ?? 0.5;
     }
@@ -133,7 +127,6 @@ export const action = async ({
   const formData = await request.formData();
   const intent = formData.get('intent') as string | null;
 
-  // Handle config save (schema, model, temperature)
   if (intent === 'saveConfig') {
     const configJson = (formData.get('config') as string) ?? '{}';
 
@@ -163,7 +156,6 @@ export const action = async ({
         .bind(configJson, currentVersion.id)
         .run();
     } else {
-      // Copy messages from previous version when creating new version
       await db
         .prepare(
           'INSERT INTO prompt_version (id, prompt_id, version, config, system_message, user_message, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -213,7 +205,6 @@ export const action = async ({
       .bind(systemMessage, userMessage, currentVersion.id)
       .run();
   } else {
-    // Copy config from previous version when creating new version
     await db
       .prepare(
         'INSERT INTO prompt_version (id, prompt_id, version, system_message, user_message, config, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -235,29 +226,6 @@ export const action = async ({
 
 export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher<typeof action>();
-  const { addRecent } = useRecentsContext();
-
-  // Track this prompt visit for recents
-  useEffect(() => {
-    // Get the latest version number from the versions array
-    const latestVersion = loaderData.versions[0]?.version ?? null;
-
-    addRecent({
-      promptId: loaderData.prompt.id,
-      promptName: loaderData.prompt.name,
-      folderId: loaderData.folder.id,
-      folderName: loaderData.folder.name,
-      version: latestVersion ? `${latestVersion}.0.0` : null,
-      url: `/prompts/${loaderData.folder.id}/${loaderData.prompt.id}`,
-    });
-  }, [
-    loaderData.prompt.id,
-    loaderData.prompt.name,
-    loaderData.folder.id,
-    loaderData.folder.name,
-    loaderData.versions,
-    addRecent,
-  ]);
 
   const [initialSystem] = useState(loaderData.systemMessage);
   const [initialUser] = useState(loaderData.userMessage);

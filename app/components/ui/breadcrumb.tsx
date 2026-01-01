@@ -10,8 +10,8 @@ import {
 } from '~/components/ui/dropdown-menu';
 
 import { cn } from '~/lib/utils';
+import type { loader as promptLoader } from '~/routes/prompts.folderId.promptId';
 import type { loader as folderLoader } from '~/routes/prompts.id';
-import type { loader as promptLoader } from '~/routes/prompts.id.id';
 
 const SECTIONS = [
   { name: 'Dashboard', path: '/dashboard' },
