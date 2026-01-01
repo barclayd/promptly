@@ -73,7 +73,7 @@ export const StreamingResponse = ({
         </ItemMedia>
         <ItemContent>
           <ItemDescription className="italic text-muted-foreground/70">
-            Click Run to test your prompt...
+            Click Test to execute your prompt...
           </ItemDescription>
         </ItemContent>
       </Item>

@@ -144,7 +144,7 @@ export const PromptReview = ({
             />
           </InputGroupText>
           <InputGroupButton size="sm" className="ml-auto" variant="default">
-            Run <IconCornerDownLeft />
+            Test <IconCornerDownLeft />
           </InputGroupButton>
         </InputGroupAddon>
         <InputGroupAddon align="block-start" className="border-b">

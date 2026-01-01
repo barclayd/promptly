@@ -141,7 +141,8 @@ export function SidebarRight({
   const [streamError, setStreamError] = useState<string | null>(null);
 
   // Check if test config differs from main config
-  const hasTestConfigChanges = testModel !== model || testTemperature !== temperature;
+  const hasTestConfigChanges =
+    testModel !== model || testTemperature !== temperature;
 
   // Use refs to access current values in debounced callback
   const schemaRef = useRef(schemaFields);
@@ -551,14 +552,17 @@ export function SidebarRight({
                             Running...
                           </span>
                         ) : (
-                          'Run Test'
+                          'Test'
                         )}
                       </Button>
                       <Button
                         variant="outline"
                         className="w-full"
                         onClick={handleSaveTestConfig}
-                        disabled={!hasTestConfigChanges || configFetcher.state !== 'idle'}
+                        disabled={
+                          !hasTestConfigChanges ||
+                          configFetcher.state !== 'idle'
+                        }
                       >
                         {configFetcher.state !== 'idle' ? (
                           <span className="flex items-center gap-2">
