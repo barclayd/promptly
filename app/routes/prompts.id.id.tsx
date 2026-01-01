@@ -78,15 +78,25 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
       published_by: string | null;
     }>();
 
-  // Parse schema from config JSON, default to empty array
+  // Parse config JSON for schema, model, and temperature
   let schema: unknown[] = [];
+  let model: string | null = null;
+  let temperature = 0.5;
+
   try {
     if (latestVersion?.config) {
       const parsed = JSON.parse(latestVersion.config);
-      schema = Array.isArray(parsed) ? parsed : [];
+      // Support both old format (array) and new format (object with schema key)
+      schema = Array.isArray(parsed.schema)
+        ? parsed.schema
+        : Array.isArray(parsed)
+          ? parsed
+          : [];
+      model = parsed.model ?? null;
+      temperature = parsed.temperature ?? 0.5;
     }
   } catch {
-    schema = [];
+    // Keep defaults
   }
 
   return {
@@ -97,6 +107,8 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
     systemMessage: latestVersion?.system_message ?? '',
     userMessage: latestVersion?.user_message ?? '',
     schema,
+    model,
+    temperature,
   };
 };
 
@@ -120,45 +132,54 @@ export const action = async ({
   const formData = await request.formData();
   const intent = formData.get('intent') as string | null;
 
-  // Handle schema save
-  if (intent === 'saveSchema') {
-    const schemaJson = (formData.get('schema') as string) ?? '[]';
+  // Handle config save (schema, model, temperature)
+  if (intent === 'saveConfig') {
+    const configJson = (formData.get('config') as string) ?? '{}';
 
     const currentVersion = await db
       .prepare(
-        'SELECT id, version, published_at FROM prompt_version WHERE prompt_id = ? ORDER BY version DESC LIMIT 1',
+        'SELECT id, version, published_at, system_message, user_message FROM prompt_version WHERE prompt_id = ? ORDER BY version DESC LIMIT 1',
       )
       .bind(promptId)
-      .first<{ id: string; version: number; published_at: number | null }>();
+      .first<{
+        id: string;
+        version: number;
+        published_at: number | null;
+        system_message: string | null;
+        user_message: string | null;
+      }>();
 
     if (!currentVersion) {
       await db
         .prepare(
           'INSERT INTO prompt_version (id, prompt_id, version, config, created_by) VALUES (?, ?, 1, ?, ?)',
         )
-        .bind(nanoid(), promptId, schemaJson, session.user.id)
+        .bind(nanoid(), promptId, configJson, session.user.id)
         .run();
     } else if (currentVersion.published_at === null) {
       await db
         .prepare('UPDATE prompt_version SET config = ? WHERE id = ?')
-        .bind(schemaJson, currentVersion.id)
+        .bind(configJson, currentVersion.id)
         .run();
     } else {
+      // Copy messages from previous version when creating new version
       await db
         .prepare(
-          'INSERT INTO prompt_version (id, prompt_id, version, config, created_by) VALUES (?, ?, ?, ?, ?)',
+          'INSERT INTO prompt_version (id, prompt_id, version, config, system_message, user_message, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
         )
         .bind(
           nanoid(),
           promptId,
           currentVersion.version + 1,
-          schemaJson,
+          configJson,
+          currentVersion.system_message,
+          currentVersion.user_message,
           session.user.id,
         )
         .run();
     }
 
-    return { success: true, savedAt: Date.now(), intent: 'saveSchema' };
+    return { success: true, savedAt: Date.now(), intent: 'saveConfig' };
   }
 
   const systemMessage = (formData.get('systemMessage') as string)?.trim() ?? '';
@@ -170,10 +191,15 @@ export const action = async ({
 
   const currentVersion = await db
     .prepare(
-      'SELECT id, version, published_at FROM prompt_version WHERE prompt_id = ? ORDER BY version DESC LIMIT 1',
+      'SELECT id, version, published_at, config FROM prompt_version WHERE prompt_id = ? ORDER BY version DESC LIMIT 1',
     )
     .bind(promptId)
-    .first<{ id: string; version: number; published_at: number | null }>();
+    .first<{
+      id: string;
+      version: number;
+      published_at: number | null;
+      config: string | null;
+    }>();
 
   if (!currentVersion) {
     await db
@@ -190,9 +216,10 @@ export const action = async ({
       .bind(systemMessage, userMessage, currentVersion.id)
       .run();
   } else {
+    // Copy config from previous version when creating new version
     await db
       .prepare(
-        'INSERT INTO prompt_version (id, prompt_id, version, system_message, user_message, created_by) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO prompt_version (id, prompt_id, version, system_message, user_message, config, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
       )
       .bind(
         nanoid(),
@@ -200,6 +227,7 @@ export const action = async ({
         currentVersion.version + 1,
         systemMessage,
         userMessage,
+        currentVersion.config,
         session.user.id,
       )
       .run();

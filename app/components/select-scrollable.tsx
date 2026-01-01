@@ -8,9 +8,17 @@ import {
   SelectValue,
 } from '~/components/ui/select';
 
-export function SelectScrollable() {
+interface SelectScrollableProps {
+  value?: string;
+  onChange?: (value: string) => void;
+}
+
+export const SelectScrollable = ({
+  value,
+  onChange,
+}: SelectScrollableProps) => {
   return (
-    <Select>
+    <Select value={value} onValueChange={onChange}>
       <SelectTrigger>
         <SelectValue placeholder="Select a model" />
       </SelectTrigger>
@@ -49,4 +57,4 @@ export function SelectScrollable() {
       </SelectContent>
     </Select>
   );
-}
+};

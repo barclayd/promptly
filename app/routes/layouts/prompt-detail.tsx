@@ -19,6 +19,8 @@ import type { loader as rootLoader } from '~/root';
 type PromptDetailLoaderData = {
   versions: Version[];
   schema: SchemaField[];
+  model: string | null;
+  temperature: number;
 };
 
 const LAYOUT_COOKIE_NAME = 'panel-layout';
@@ -53,6 +55,8 @@ export default function PromptDetailLayout() {
 
   const versions = promptDetailData?.versions ?? [];
   const schema = (promptDetailData?.schema ?? []) as SchemaField[];
+  const model = promptDetailData?.model ?? null;
+  const temperature = promptDetailData?.temperature ?? 0.5;
 
   const cookieStorage = useMemo(
     () => createCookieStorage(loaderData?.serverLayoutCookie ?? null),
@@ -81,7 +85,12 @@ export default function PromptDetailLayout() {
             <Outlet />
           </SidebarInset>
           <div className="w-full shrink-0">
-            <SidebarRight versions={versions} schema={schema} />
+            <SidebarRight
+              versions={versions}
+              schema={schema}
+              model={model}
+              temperature={temperature}
+            />
           </div>
         </div>
       ) : (
@@ -111,7 +120,12 @@ export default function PromptDetailLayout() {
             minSize="25%"
             className="h-full relative"
           >
-            <SidebarRight versions={versions} schema={schema} />
+            <SidebarRight
+              versions={versions}
+              schema={schema}
+              model={model}
+              temperature={temperature}
+            />
           </ResizablePanel>
         </ResizablePanelGroup>
       )}

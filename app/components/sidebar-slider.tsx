@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import {
   HoverCard,
   HoverCardContent,
@@ -9,12 +8,14 @@ import {
 import { Slider } from '~/components/ui/slider';
 
 interface SidebarSliderProps {
-  defaultValue?: number[];
+  value?: number;
+  onChange?: (value: number) => void;
 }
 
-export const SidebarSlider = ({ defaultValue = [0.5] }: SidebarSliderProps) => {
-  const [value, setValue] = useState(defaultValue);
-
+export const SidebarSlider = ({
+  value = 0.25,
+  onChange,
+}: SidebarSliderProps) => {
   return (
     <div className="space-y-3">
       <HoverCard openDelay={200}>
@@ -28,9 +29,9 @@ export const SidebarSlider = ({ defaultValue = [0.5] }: SidebarSliderProps) => {
             <Slider
               id="temperature"
               max={1}
-              defaultValue={value}
-              step={0.1}
-              onValueChange={setValue}
+              value={[value]}
+              step={0.05}
+              onValueChange={(v) => onChange?.(v[0])}
               aria-label="Temperature"
               className="cursor-pointer"
             />
