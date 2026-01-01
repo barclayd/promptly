@@ -109,5 +109,5 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     )
     .run();
 
-  return redirect(`/prompts/${promptId}`);
+  return redirect(`/prompts/${folderId}/${promptId}`);
 };
