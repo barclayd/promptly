@@ -1,8 +1,14 @@
 import { nanoid } from 'nanoid';
-import { data } from 'react-router';
+import { data, redirect } from 'react-router';
 import { z } from 'zod';
 import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/prompts.create';
+
+type Organization = {
+  id: string;
+  name: string;
+  slug: string;
+};
 
 const createPromptSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -42,10 +48,12 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     headers: request.headers,
     asResponse: true,
   });
-  const orgs = await orgsResponse.json();
+  const orgs = (await orgsResponse.json()) as Organization[];
+
+  let orgId: string;
 
   if (!orgs || orgs?.length === 0) {
-    await auth.api.createOrganization({
+    const createOrgResponse = await auth.api.createOrganization({
       body: {
         name: `${session.user.name}'s Workspace`,
         slug: nanoid(10),
@@ -53,11 +61,55 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       headers: request.headers,
       asResponse: true,
     });
+    const newOrg = (await createOrgResponse.json()) as Organization;
+    orgId = newOrg.id;
+  } else {
+    orgId = orgs[0].id;
   }
 
-  // TODO: Add DB persistence here
-  // const prompt = await db.insert(prompts).values(result.data);
-  // return redirect(`/prompts/${prompt.id}`);
+  const db = context.cloudflare.env.promptly;
 
-  return data({ success: true });
+  // Get or create "Untitled" folder if no folder selected
+  let folderId = result.data.project;
+
+  if (!folderId) {
+    const existingFolder = await db
+      .prepare(
+        'SELECT id FROM prompt_folder WHERE organization_id = ? AND name = ?',
+      )
+      .bind(orgId, 'Untitled')
+      .first<{ id: string }>();
+
+    if (existingFolder) {
+      folderId = existingFolder.id;
+    } else {
+      folderId = nanoid();
+      await db
+        .prepare(
+          `INSERT INTO prompt_folder (id, name, organization_id, created_by)
+           VALUES (?, ?, ?, ?)`,
+        )
+        .bind(folderId, 'Untitled', orgId, session.user.id)
+        .run();
+    }
+  }
+
+  // Create the prompt
+  const promptId = nanoid();
+  await db
+    .prepare(
+      `INSERT INTO prompt (id, name, description, folder_id, organization_id, created_by)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    )
+    .bind(
+      promptId,
+      result.data.name,
+      result.data.description || '',
+      folderId,
+      orgId,
+      session.user.id,
+    )
+    .run();
+
+  return redirect(`/prompts/${promptId}`);
 };
