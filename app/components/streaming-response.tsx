@@ -1,6 +1,8 @@
 'use client';
 
-import { IconAlertCircle, IconBrain, IconSparkles } from '@tabler/icons-react';
+import { IconAlertCircle, IconCopy, IconSparkles } from '@tabler/icons-react';
+import { Check } from 'lucide-react';
+import { useState } from 'react';
 import {
   Item,
   ItemContent,
@@ -22,9 +24,17 @@ export const StreamingResponse = ({
   isComplete,
   error,
 }: StreamingResponseProps) => {
+  const [copied, setCopied] = useState(false);
   const hasText = text.length > 0;
   const isThinking = isStreaming && !hasText;
   const isTyping = isStreaming && hasText;
+
+  const handleCopy = async () => {
+    if (!text) return;
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 5000);
+  };
 
   if (error) {
     return (
@@ -99,6 +109,28 @@ export const StreamingResponse = ({
           isComplete && 'border-emerald-500/30',
         )}
       >
+        {/* Copy button - only show when there's text */}
+        {hasText && (
+          <button
+            type="button"
+            onClick={handleCopy}
+            className={cn(
+              'absolute top-2 right-2 p-1.5 rounded-md z-20',
+              'text-muted-foreground/60 hover:text-foreground',
+              'hover:bg-muted/80 active:bg-muted',
+              'transition-all duration-200',
+              'opacity-0 group-hover:opacity-100 focus:opacity-100',
+              hasText && 'opacity-60 hover:opacity-100',
+            )}
+            aria-label="Copy response"
+          >
+            {copied ? (
+              <Check className="size-3.5 text-emerald-500 animate-in zoom-in duration-200" />
+            ) : (
+              <IconCopy className="size-3.5" />
+            )}
+          </button>
+        )}
         <ItemMedia
           variant="icon"
           className={cn(
@@ -108,7 +140,7 @@ export const StreamingResponse = ({
             isComplete && 'border-emerald-500/30 bg-emerald-500/10',
           )}
         >
-          <IconBrain
+          <IconSparkles
             className={cn(
               'size-4 transition-colors duration-300',
               isStreaming && 'text-primary',
@@ -153,11 +185,6 @@ export const StreamingResponse = ({
                   className="inline-block w-[2px] h-[1em] bg-primary ml-0.5 align-middle"
                   style={{ animation: 'cursor-blink 1s step-end infinite' }}
                 />
-              )}
-              {isComplete && (
-                <span className="inline-flex items-center ml-2 text-emerald-500/70 animate-in fade-in-0 zoom-in-90 duration-300">
-                  <IconSparkles className="size-3" />
-                </span>
               )}
             </ItemDescription>
           )}

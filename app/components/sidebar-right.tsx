@@ -124,6 +124,10 @@ export function SidebarRight({
   const [temperature, setTemperature] = useState(initialTemperature);
   const [inputData, setInputData] = useState<string[]>(DEFAULT_INPUT_DATA);
 
+  // Test section has its own model/temperature that can differ from main config
+  const [testModel, setTestModel] = useState<string | null>(initialModel);
+  const [testTemperature, setTestTemperature] = useState(initialTemperature);
+
   const configFetcher = useFetcher();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -135,6 +139,9 @@ export function SidebarRight({
   const [isStreaming, setIsStreaming] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
+
+  // Check if test config differs from main config
+  const hasTestConfigChanges = testModel !== model || testTemperature !== temperature;
 
   // Use refs to access current values in debounced callback
   const schemaRef = useRef(schemaFields);
@@ -201,8 +208,8 @@ export function SidebarRight({
       const formData = new FormData();
       formData.append('promptId', promptId);
       formData.append('folderId', folderId);
-      formData.append('model', model || 'anthropic/claude-haiku-4.5');
-      formData.append('temperature', temperature.toString());
+      formData.append('model', testModel || 'anthropic/claude-haiku-4.5');
+      formData.append('temperature', testTemperature.toString());
       formData.append('inputData', JSON.stringify(inputData));
       if (selectedVersion) {
         formData.append('version', selectedVersion.toString());
@@ -239,7 +246,24 @@ export function SidebarRight({
     } finally {
       setIsStreaming(false);
     }
-  }, [params, model, temperature, inputData, selectedVersion]);
+  }, [params, testModel, testTemperature, inputData, selectedVersion]);
+
+  // Save test config to main config and DB
+  const handleSaveTestConfig = useCallback(() => {
+    setModel(testModel);
+    setTemperature(testTemperature);
+
+    // Save to DB
+    const config = {
+      schema: schemaRef.current,
+      model: testModel,
+      temperature: testTemperature,
+    };
+    configFetcher.submit(
+      { intent: 'saveConfig', config: JSON.stringify(config) },
+      { method: 'post', action: location.pathname },
+    );
+  }, [testModel, testTemperature, configFetcher, location.pathname]);
 
   const jsonEditorTheme = useMemo(() => {
     const isDarkMode =
@@ -453,7 +477,10 @@ export function SidebarRight({
                         Model
                       </div>
                       <div className="my-4">
-                        <SelectScrollable value={model ?? ''} />
+                        <SelectScrollable
+                          value={testModel ?? ''}
+                          onChange={setTestModel}
+                        />
                       </div>
                     </div>
 
@@ -501,13 +528,13 @@ export function SidebarRight({
                       </div>
                       <div className="my-1">
                         <SidebarSlider
-                          value={temperature}
-                          onChange={setTemperature}
+                          value={testTemperature}
+                          onChange={setTestTemperature}
                         />
                       </div>
                     </div>
 
-                    <div className="px-2 pt-4">
+                    <div className="px-2 pt-4 flex flex-col gap-2">
                       <Button
                         className={cn(
                           'w-full font-medium transition-all duration-200',
@@ -525,6 +552,21 @@ export function SidebarRight({
                           </span>
                         ) : (
                           'Run Test'
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={handleSaveTestConfig}
+                        disabled={!hasTestConfigChanges || configFetcher.state !== 'idle'}
+                      >
+                        {configFetcher.state !== 'idle' ? (
+                          <span className="flex items-center gap-2">
+                            <span className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            Saving...
+                          </span>
+                        ) : (
+                          'Save config'
                         )}
                       </Button>
                     </div>
