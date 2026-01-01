@@ -7,6 +7,7 @@ import {
   ScrollRestoration,
 } from 'react-router';
 import { Toaster } from '~/components/ui/sonner';
+import { RecentsProvider } from '~/context/recents-context';
 import { getAuth } from '~/lib/auth.server';
 import { parseCookie } from '~/lib/cookies';
 import { authMiddleware } from '~/middleware/auth';
@@ -54,7 +55,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         <Links />
       </head>
       <body>
-        {children}
+        <RecentsProvider>{children}</RecentsProvider>
         <Toaster />
         <ScrollRestoration />
         <Scripts />

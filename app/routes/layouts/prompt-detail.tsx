@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Outlet, useRouteLoaderData } from 'react-router';
+import { Outlet, useParams, useRouteLoaderData } from 'react-router';
 import { SidebarLeft } from '~/components/sidebar-left';
 import { SidebarRight } from '~/components/sidebar-right';
 import { SiteHeader } from '~/components/site-header';
@@ -11,8 +11,17 @@ import {
   useDefaultLayout,
 } from '~/components/ui/resizable';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
+import type { Version } from '~/components/versions-table';
 import { useIsMobile } from '~/hooks/use-mobile';
+import type { SchemaField } from '~/lib/schema-types';
 import type { loader as rootLoader } from '~/root';
+
+type PromptDetailLoaderData = {
+  versions: Version[];
+  schema: SchemaField[];
+  model: string | null;
+  temperature: number;
+};
 
 const LAYOUT_COOKIE_NAME = 'panel-layout';
 
@@ -40,7 +49,15 @@ const createCookieStorage = (serverCookie: string | null): LayoutStorage => ({
 
 export default function PromptDetailLayout() {
   const loaderData = useRouteLoaderData<typeof rootLoader>('root');
+  const promptDetailData =
+    useRouteLoaderData<PromptDetailLoaderData>('prompt-detail');
+  const params = useParams();
   const isMobile = useIsMobile();
+
+  const versions = promptDetailData?.versions ?? [];
+  const schema = (promptDetailData?.schema ?? []) as SchemaField[];
+  const model = promptDetailData?.model ?? null;
+  const temperature = promptDetailData?.temperature ?? 0.5;
 
   const cookieStorage = useMemo(
     () => createCookieStorage(loaderData?.serverLayoutCookie ?? null),
@@ -66,10 +83,15 @@ export default function PromptDetailLayout() {
         <div className="flex flex-1 flex-col min-h-svh">
           <SidebarInset className="flex-1">
             <SiteHeader />
-            <Outlet />
+            <Outlet key={params.promptId} />
           </SidebarInset>
           <div className="w-full shrink-0">
-            <SidebarRight />
+            <SidebarRight
+              versions={versions}
+              schema={schema}
+              model={model}
+              temperature={temperature}
+            />
           </div>
         </div>
       ) : (
@@ -88,7 +110,7 @@ export default function PromptDetailLayout() {
             <SidebarInset className="h-full flex flex-col">
               <SiteHeader />
               <div className="flex-1 overflow-y-auto">
-                <Outlet />
+                <Outlet key={params.promptId} />
               </div>
             </SidebarInset>
           </ResizablePanel>
@@ -99,7 +121,12 @@ export default function PromptDetailLayout() {
             minSize="25%"
             className="h-full relative"
           >
-            <SidebarRight />
+            <SidebarRight
+              versions={versions}
+              schema={schema}
+              model={model}
+              temperature={temperature}
+            />
           </ResizablePanel>
         </ResizablePanelGroup>
       )}

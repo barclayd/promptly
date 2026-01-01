@@ -1,17 +1,12 @@
 'use client';
 
-import {
-  IconCornerDownLeft,
-  IconCreditCard,
-  IconDotsVertical,
-  IconLogout,
-  IconNotification,
-  IconUserCircle,
-} from '@tabler/icons-react';
+import { IconCornerDownLeft } from '@tabler/icons-react';
 import { JsonEditor, type Theme } from 'json-edit-react';
 import { ChevronRight } from 'lucide-react';
 import type * as React from 'react';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { useFetcher, useLocation } from 'react-router';
+import { useDebounce } from 'use-debounce';
 import { CodePreview } from '~/components/code-preview';
 import { SchemaBuilder } from '~/components/schema-builder';
 import { SelectScrollable } from '~/components/select-scrollable';
@@ -22,15 +17,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '~/components/ui/collapsible';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '~/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
@@ -46,14 +32,14 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
 } from '~/components/ui/sidebar';
+import { type Version, VersionsTable } from '~/components/versions-table';
 import { useIsMobile } from '~/hooks/use-mobile';
 import type { SchemaField } from '~/lib/schema-types';
+import { cn } from '~/lib/utils';
 
 const DEFAULT_INPUT_DATA = [
   'Brilliant service from start to finish. The team arrived on time, handled everything with care, and nothing was damaged. Would definitely recommend to anyone moving house.',
@@ -61,7 +47,6 @@ const DEFAULT_INPUT_DATA = [
   'Absolutely terrible experience. Driver was two hours late with no apology, then tried to charge extra for stairs that were clearly listed in the booking. Avoid.',
 ];
 
-// Custom theme that integrates with the sidebar's design system
 const sidebarLightTheme: Theme = {
   container: {
     backgroundColor: 'transparent',
@@ -117,14 +102,67 @@ const sidebarDarkTheme: Theme = {
 };
 
 export function SidebarRight({
+  versions = [],
+  schema = [],
+  model: initialModel = null,
+  temperature: initialTemperature = 0.5,
   ...props
-}: React.ComponentProps<typeof Sidebar>) {
-  const [schemaFields, setSchemaFields] = useState<SchemaField[]>([]);
+}: React.ComponentProps<typeof Sidebar> & {
+  versions?: Version[];
+  schema?: SchemaField[];
+  model?: string | null;
+  temperature?: number;
+}) {
+  const [initialSchema] = useState(() => JSON.stringify(schema));
+  const [schemaFields, setSchemaFields] = useState<SchemaField[]>(schema);
+  const [initialModelState] = useState(initialModel);
+  const [model, setModel] = useState<string | null>(initialModel);
+  const [initialTemperatureState] = useState(initialTemperature);
+  const [temperature, setTemperature] = useState(initialTemperature);
   const [inputData, setInputData] = useState<string[]>(DEFAULT_INPUT_DATA);
+  const isFirstRender = useRef(true);
 
+  const configFetcher = useFetcher();
+  const location = useLocation();
   const isMobile = useIsMobile();
 
-  // Memoized theme selection based on document dark class
+  const [debouncedSchema] = useDebounce(schemaFields, 1000);
+  const [debouncedModel] = useDebounce(model, 1000);
+  const [debouncedTemperature] = useDebounce(temperature, 1000);
+
+  useEffect(() => {
+    // Skip first render to avoid saving on page load
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    const schemaChanged = JSON.stringify(debouncedSchema) !== initialSchema;
+    const modelChanged = debouncedModel !== initialModelState;
+    const temperatureChanged = debouncedTemperature !== initialTemperatureState;
+
+    if (!schemaChanged && !modelChanged && !temperatureChanged) return;
+
+    const config = {
+      schema: debouncedSchema,
+      model: debouncedModel,
+      temperature: debouncedTemperature,
+    };
+
+    configFetcher.submit(
+      { intent: 'saveConfig', config: JSON.stringify(config) },
+      { method: 'post', action: location.pathname },
+    );
+  }, [
+    debouncedSchema,
+    debouncedModel,
+    debouncedTemperature,
+    initialSchema,
+    initialModelState,
+    initialTemperatureState,
+    location.pathname,
+  ]);
+
   const jsonEditorTheme = useMemo(() => {
     const isDarkMode =
       typeof document !== 'undefined' &&
@@ -135,7 +173,12 @@ export function SidebarRight({
   return (
     <Sidebar
       collapsible="none"
-      className="absolute inset-0 flex h-full w-full border-t md:border-t-0 md:border-l"
+      className={cn(
+        'flex w-full',
+        isMobile
+          ? 'relative border-t bg-sidebar'
+          : 'absolute inset-0 h-full border-l',
+      )}
       {...props}
     >
       <SidebarContent>
@@ -153,7 +196,7 @@ export function SidebarRight({
               </SidebarGroupLabel>
               <CollapsibleContent>
                 <SidebarGroupContent>
-                  <div className="px-2 py-4">No published versions yet.</div>
+                  <VersionsTable versions={versions} />
                 </SidebarGroupContent>
               </CollapsibleContent>
             </Collapsible>
@@ -223,21 +266,19 @@ export function SidebarRight({
               </SidebarGroupLabel>
               <CollapsibleContent>
                 <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem key={1}>
-                      <Select defaultValue="string">
-                        <SelectTrigger className="w-[280px]" disabled>
-                          <SelectValue placeholder="Select output format" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectLabel>Output Formats</SelectLabel>
-                            <SelectItem value="string">String</SelectItem>
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
+                  <div className="px-2 py-3">
+                    <Select defaultValue="string">
+                      <SelectTrigger className="w-full" disabled>
+                        <SelectValue placeholder="Select output format" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Output Formats</SelectLabel>
+                          <SelectItem value="string">String</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </SidebarGroupContent>
               </CollapsibleContent>
             </Collapsible>
@@ -258,11 +299,9 @@ export function SidebarRight({
               </SidebarGroupLabel>
               <CollapsibleContent>
                 <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem key={3} className="my-4">
-                      <SelectScrollable />
-                    </SidebarMenuItem>
-                  </SidebarMenu>
+                  <div className="px-2 py-3">
+                    <SelectScrollable value={model ?? ''} onChange={setModel} />
+                  </div>
                 </SidebarGroupContent>
               </CollapsibleContent>
             </Collapsible>
@@ -283,8 +322,11 @@ export function SidebarRight({
               </SidebarGroupLabel>
               <CollapsibleContent>
                 <SidebarGroupContent>
-                  <div className="px-3 pb-4">
-                    <SidebarSlider />
+                  <div className="px-2 py-3">
+                    <SidebarSlider
+                      value={temperature}
+                      onChange={setTemperature}
+                    />
                   </div>
                 </SidebarGroupContent>
               </CollapsibleContent>
