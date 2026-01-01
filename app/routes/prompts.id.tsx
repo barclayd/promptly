@@ -28,10 +28,15 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
 
   const prompts = await db
     .prepare(
-      'SELECT id, name, description, updated_at FROM prompt WHERE folder_id = ?'
+      'SELECT id, name, description, updated_at FROM prompt WHERE folder_id = ?',
     )
     .bind(folderId)
-    .all<{ id: string; name: string; description: string; updated_at: number }>();
+    .all<{
+      id: string;
+      name: string;
+      description: string;
+      updated_at: number;
+    }>();
 
   return {
     folder,
@@ -46,7 +51,9 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
             {loaderData.folder.name !== 'Untitled' && (
-              <h1 className="text-2xl font-semibold mb-6">{loaderData.folder.name}</h1>
+              <h1 className="text-2xl font-semibold mb-6">
+                {loaderData.folder.name}
+              </h1>
             )}
             <div className="font-semibold text-gray-500/75 mb-4">Prompts</div>
             <div className="flex flex-wrap gap-4">
@@ -61,10 +68,13 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
                         <div className="text-[0.5rem] text-right text-gray-400">
                           <span className="text-black">Last updated:</span>
                           <br />
-                          {new Date(prompt.updated_at).toLocaleString(undefined, {
-                            dateStyle: 'medium',
-                            timeStyle: 'short',
-                          })}
+                          {new Date(prompt.updated_at).toLocaleString(
+                            undefined,
+                            {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            },
+                          )}
                         </div>
                       </div>
                       <h3 className="text-sm font-bold">{prompt.name}</h3>
