@@ -6,6 +6,7 @@ import { useDebounce } from 'use-debounce';
 import { PromptReview } from '~/components/prompt-review';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
+import { useRecentsContext } from '~/context/recents-context';
 import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/prompts.id.id';
 
@@ -185,10 +186,6 @@ export const action = async ({
   const systemMessage = (formData.get('systemMessage') as string)?.trim() ?? '';
   const userMessage = (formData.get('userMessage') as string)?.trim() ?? '';
 
-  if (!systemMessage && !userMessage) {
-    return { success: false, savedAt: null };
-  }
-
   const currentVersion = await db
     .prepare(
       'SELECT id, version, published_at, config FROM prompt_version WHERE prompt_id = ? ORDER BY version DESC LIMIT 1',
@@ -238,6 +235,29 @@ export const action = async ({
 
 export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher<typeof action>();
+  const { addRecent } = useRecentsContext();
+
+  // Track this prompt visit for recents
+  useEffect(() => {
+    // Get the latest version number from the versions array
+    const latestVersion = loaderData.versions[0]?.version ?? null;
+
+    addRecent({
+      promptId: loaderData.prompt.id,
+      promptName: loaderData.prompt.name,
+      folderId: loaderData.folder.id,
+      folderName: loaderData.folder.name,
+      version: latestVersion ? `${latestVersion}.0.0` : null,
+      url: `/prompts/${loaderData.folder.id}/${loaderData.prompt.id}`,
+    });
+  }, [
+    loaderData.prompt.id,
+    loaderData.prompt.name,
+    loaderData.folder.id,
+    loaderData.folder.name,
+    loaderData.versions,
+    addRecent,
+  ]);
 
   const [initialSystem] = useState(loaderData.systemMessage);
   const [initialUser] = useState(loaderData.userMessage);
@@ -245,8 +265,8 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const [systemMessage, setSystemMessage] = useState(loaderData.systemMessage);
   const [userMessage, setUserMessage] = useState(loaderData.userMessage);
 
-  const [debouncedSystem] = useDebounce(systemMessage, 3000);
-  const [debouncedUser] = useDebounce(userMessage, 3000);
+  const [debouncedSystem] = useDebounce(systemMessage, 1000);
+  const [debouncedUser] = useDebounce(userMessage, 1000);
 
   const [hasSavedOnce, setHasSavedOnce] = useState(false);
 
@@ -256,9 +276,6 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
     const userChanged = debouncedUser !== initialUser;
 
     if (!systemChanged && !userChanged && !hasSavedOnce) return;
-
-    // Skip if both are empty
-    if (!debouncedSystem.trim() && !debouncedUser.trim()) return;
 
     setHasSavedOnce(true);
     fetcher.submit(

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Outlet, useRouteLoaderData } from 'react-router';
+import { Outlet, useParams, useRouteLoaderData } from 'react-router';
 import { SidebarLeft } from '~/components/sidebar-left';
 import { SidebarRight } from '~/components/sidebar-right';
 import { SiteHeader } from '~/components/site-header';
@@ -51,6 +51,7 @@ export default function PromptDetailLayout() {
   const loaderData = useRouteLoaderData<typeof rootLoader>('root');
   const promptDetailData =
     useRouteLoaderData<PromptDetailLoaderData>('prompt-detail');
+  const params = useParams();
   const isMobile = useIsMobile();
 
   const versions = promptDetailData?.versions ?? [];
@@ -82,7 +83,7 @@ export default function PromptDetailLayout() {
         <div className="flex flex-1 flex-col min-h-svh">
           <SidebarInset className="flex-1">
             <SiteHeader />
-            <Outlet />
+            <Outlet key={params.promptId} />
           </SidebarInset>
           <div className="w-full shrink-0">
             <SidebarRight
@@ -109,7 +110,7 @@ export default function PromptDetailLayout() {
             <SidebarInset className="h-full flex flex-col">
               <SiteHeader />
               <div className="flex-1 overflow-y-auto">
-                <Outlet />
+                <Outlet key={params.promptId} />
               </div>
             </SidebarInset>
           </ResizablePanel>

@@ -29,6 +29,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '~/components/ui/sidebar';
+import { useRecentsContext } from '~/context/recents-context';
 import type { loader as rootLoader } from '~/root';
 
 const data = {
@@ -119,25 +120,28 @@ const data = {
       icon: IconSearch,
     },
   ],
-  documents: [
-    {
-      name: 'Reviews',
-      url: '/prompts/1/1',
-      icon: IconFileText,
-    },
-  ],
 };
 
 export const SidebarLeft = ({
   ...props
 }: React.ComponentProps<typeof Sidebar>) => {
   const rootData = useRouteLoaderData<typeof rootLoader>('root');
+  const { recents } = useRecentsContext();
 
   const user = {
     name: rootData?.user?.name ?? 'Guest',
     email: rootData?.user?.email ?? '',
     avatar: rootData?.user?.image ?? '/avatars/shadcn.jpg',
   };
+
+  // Transform recents to NavDocuments format
+  const recentItems = recents.map((r) => ({
+    name: r.promptName,
+    url: r.url,
+    icon: IconFileText,
+    folderName: r.folderName,
+    version: r.version,
+  }));
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -158,7 +162,7 @@ export const SidebarLeft = ({
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
+        {recentItems.length > 0 && <NavDocuments items={recentItems} />}
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
