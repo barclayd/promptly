@@ -1,9 +1,8 @@
-import { RssIcon, Save } from 'lucide-react';
+import { RssIcon } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { Suspense, useEffect, useState } from 'react';
 import { Await, data, useFetcher } from 'react-router';
 import { useDebounce } from 'use-debounce';
-import { PromptEntry } from '~/components/prompt-entry';
 import { PromptReview } from '~/components/prompt-review';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
@@ -48,10 +47,14 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
 
   const latestVersion = await db
     .prepare(
-      'SELECT system_message, user_message FROM prompt_version WHERE prompt_id = ? ORDER BY created_at DESC LIMIT 1',
+      'SELECT system_message, user_message, config FROM prompt_version WHERE prompt_id = ? ORDER BY created_at DESC LIMIT 1',
     )
     .bind(promptId)
-    .first<{ system_message: string | null; user_message: string | null }>();
+    .first<{
+      system_message: string | null;
+      user_message: string | null;
+      config: string;
+    }>();
 
   const version = db
     .prepare(
@@ -75,6 +78,17 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
       published_by: string | null;
     }>();
 
+  // Parse schema from config JSON, default to empty array
+  let schema: unknown[] = [];
+  try {
+    if (latestVersion?.config) {
+      const parsed = JSON.parse(latestVersion.config);
+      schema = Array.isArray(parsed) ? parsed : [];
+    }
+  } catch {
+    schema = [];
+  }
+
   return {
     folder,
     prompt,
@@ -82,6 +96,7 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
     versions: versionsResult.results,
     systemMessage: latestVersion?.system_message ?? '',
     userMessage: latestVersion?.user_message ?? '',
+    schema,
   };
 };
 
@@ -103,6 +118,49 @@ export const action = async ({
   }
 
   const formData = await request.formData();
+  const intent = formData.get('intent') as string | null;
+
+  // Handle schema save
+  if (intent === 'saveSchema') {
+    const schemaJson = (formData.get('schema') as string) ?? '[]';
+
+    const currentVersion = await db
+      .prepare(
+        'SELECT id, version, published_at FROM prompt_version WHERE prompt_id = ? ORDER BY version DESC LIMIT 1',
+      )
+      .bind(promptId)
+      .first<{ id: string; version: number; published_at: number | null }>();
+
+    if (!currentVersion) {
+      await db
+        .prepare(
+          'INSERT INTO prompt_version (id, prompt_id, version, config, created_by) VALUES (?, ?, 1, ?, ?)',
+        )
+        .bind(nanoid(), promptId, schemaJson, session.user.id)
+        .run();
+    } else if (currentVersion.published_at === null) {
+      await db
+        .prepare('UPDATE prompt_version SET config = ? WHERE id = ?')
+        .bind(schemaJson, currentVersion.id)
+        .run();
+    } else {
+      await db
+        .prepare(
+          'INSERT INTO prompt_version (id, prompt_id, version, config, created_by) VALUES (?, ?, ?, ?, ?)',
+        )
+        .bind(
+          nanoid(),
+          promptId,
+          currentVersion.version + 1,
+          schemaJson,
+          session.user.id,
+        )
+        .run();
+    }
+
+    return { success: true, savedAt: Date.now(), intent: 'saveSchema' };
+  }
+
   const systemMessage = (formData.get('systemMessage') as string)?.trim() ?? '';
   const userMessage = (formData.get('userMessage') as string)?.trim() ?? '';
 

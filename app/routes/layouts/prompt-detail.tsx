@@ -13,10 +13,12 @@ import {
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 import type { Version } from '~/components/versions-table';
 import { useIsMobile } from '~/hooks/use-mobile';
+import type { SchemaField } from '~/lib/schema-types';
 import type { loader as rootLoader } from '~/root';
 
 type PromptDetailLoaderData = {
   versions: Version[];
+  schema: SchemaField[];
 };
 
 const LAYOUT_COOKIE_NAME = 'panel-layout';
@@ -50,6 +52,7 @@ export default function PromptDetailLayout() {
   const isMobile = useIsMobile();
 
   const versions = promptDetailData?.versions ?? [];
+  const schema = (promptDetailData?.schema ?? []) as SchemaField[];
 
   const cookieStorage = useMemo(
     () => createCookieStorage(loaderData?.serverLayoutCookie ?? null),
@@ -78,7 +81,7 @@ export default function PromptDetailLayout() {
             <Outlet />
           </SidebarInset>
           <div className="w-full shrink-0">
-            <SidebarRight versions={versions} />
+            <SidebarRight versions={versions} schema={schema} />
           </div>
         </div>
       ) : (
@@ -108,7 +111,7 @@ export default function PromptDetailLayout() {
             minSize="25%"
             className="h-full relative"
           >
-            <SidebarRight versions={versions} />
+            <SidebarRight versions={versions} schema={schema} />
           </ResizablePanel>
         </ResizablePanelGroup>
       )}

@@ -5,6 +5,7 @@ import { JsonEditor, type Theme } from 'json-edit-react';
 import { ChevronRight } from 'lucide-react';
 import type * as React from 'react';
 import { Fragment, useMemo, useState } from 'react';
+import { useFetcher, useLocation } from 'react-router';
 import { CodePreview } from '~/components/code-preview';
 import { SchemaBuilder } from '~/components/schema-builder';
 import { SelectScrollable } from '~/components/select-scrollable';
@@ -101,12 +102,30 @@ const sidebarDarkTheme: Theme = {
 
 export function SidebarRight({
   versions = [],
+  schema = [],
   ...props
-}: React.ComponentProps<typeof Sidebar> & { versions?: Version[] }) {
-  const [schemaFields, setSchemaFields] = useState<SchemaField[]>([]);
+}: React.ComponentProps<typeof Sidebar> & {
+  versions?: Version[];
+  schema?: SchemaField[];
+}) {
+  const [initialSchema] = useState(schema);
+  const [schemaFields, setSchemaFields] = useState<SchemaField[]>(schema);
   const [inputData, setInputData] = useState<string[]>(DEFAULT_INPUT_DATA);
 
+  const schemaFetcher = useFetcher();
+  const location = useLocation();
   const isMobile = useIsMobile();
+
+  const isSchemaChanged =
+    JSON.stringify(schemaFields) !== JSON.stringify(initialSchema);
+  const isSchemaSaving = schemaFetcher.state !== 'idle';
+
+  const handleSaveSchema = () => {
+    schemaFetcher.submit(
+      { intent: 'saveSchema', schema: JSON.stringify(schemaFields) },
+      { method: 'post', action: location.pathname },
+    );
+  };
 
   const jsonEditorTheme = useMemo(() => {
     const isDarkMode =
@@ -166,6 +185,9 @@ export function SidebarRight({
                     <SchemaBuilder
                       fields={schemaFields}
                       onChange={setSchemaFields}
+                      onSave={handleSaveSchema}
+                      isDirty={isSchemaChanged}
+                      isSaving={isSchemaSaving}
                     />
                   </div>
                 </SidebarGroupContent>

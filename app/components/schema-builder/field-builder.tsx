@@ -73,7 +73,7 @@ export const FieldBuilder = ({
               id={`name-${field.id}`}
               value={field.name}
               onChange={(e) => onChange({ ...field, name: e.target.value })}
-              placeholder="fieldName"
+              placeholder="Field name"
             />
           </div>
 
