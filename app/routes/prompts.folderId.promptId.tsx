@@ -240,7 +240,17 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const [systemMessage, setSystemMessage] = useState(loaderData.systemMessage);
   const [userMessage, setUserMessage] = useState(loaderData.userMessage);
 
-  const [isPendingSave, setIsPendingSave] = useState(false);
+  // Separate pending states and timestamps for each field
+  const [isPendingSystemSave, setIsPendingSystemSave] = useState(false);
+  const [isPendingUserSave, setIsPendingUserSave] = useState(false);
+  const [lastSystemSavedAt, setLastSystemSavedAt] = useState<number | null>(
+    null,
+  );
+  const [lastUserSavedAt, setLastUserSavedAt] = useState<number | null>(null);
+
+  // Use refs to track pending states for the debounced callback
+  const pendingSystemRef = useRef(false);
+  const pendingUserRef = useRef(false);
 
   const systemRef = useRef(systemMessage);
   const userRef = useRef(userMessage);
@@ -248,17 +258,31 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   userRef.current = userMessage;
 
   const debouncedSave = useDebouncedCallback(() => {
+    const now = Date.now();
+    // Update timestamps for fields that were pending (optimistic update)
+    if (pendingSystemRef.current) {
+      setLastSystemSavedAt(now);
+    }
+    if (pendingUserRef.current) {
+      setLastUserSavedAt(now);
+    }
+
     fetcher.submit(
       { systemMessage: systemRef.current, userMessage: userRef.current },
       { method: 'post' },
     );
-    setIsPendingSave(false);
+
+    setIsPendingSystemSave(false);
+    setIsPendingUserSave(false);
+    pendingSystemRef.current = false;
+    pendingUserRef.current = false;
   }, 1000);
 
   const handleSystemChange = useCallback(
     (value: string) => {
       setSystemMessage(value);
-      setIsPendingSave(true);
+      setIsPendingSystemSave(true);
+      pendingSystemRef.current = true;
       debouncedSave();
     },
     [debouncedSave],
@@ -267,7 +291,8 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const handleUserChange = useCallback(
     (value: string) => {
       setUserMessage(value);
-      setIsPendingSave(true);
+      setIsPendingUserSave(true);
+      pendingUserRef.current = true;
       debouncedSave();
     },
     [debouncedSave],
@@ -275,9 +300,6 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
 
   const isSystemDirty = systemMessage !== initialSystem;
   const isUserDirty = userMessage !== initialUser;
-
-  const isSaving = fetcher.state !== 'idle';
-  const lastSavedAt = fetcher.data?.savedAt ?? null;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -314,9 +336,9 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               value={systemMessage}
               onChange={handleSystemChange}
               isDirty={isSystemDirty}
-              isPendingSave={isPendingSave}
-              isSaving={isSaving}
-              lastSavedAt={lastSavedAt}
+              isPendingSave={isPendingSystemSave}
+              isSaving={false}
+              lastSavedAt={lastSystemSavedAt}
               onTest={triggerTest}
               isTestRunning={getIsTestRunning()}
             />
@@ -325,9 +347,9 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               value={userMessage}
               onChange={handleUserChange}
               isDirty={isUserDirty}
-              isPendingSave={isPendingSave}
-              isSaving={isSaving}
-              lastSavedAt={lastSavedAt}
+              isPendingSave={isPendingUserSave}
+              isSaving={false}
+              lastSavedAt={lastUserSavedAt}
               onTest={triggerTest}
               isTestRunning={getIsTestRunning()}
             />
