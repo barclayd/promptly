@@ -1,13 +1,13 @@
 import { RssIcon } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useCallback, useRef, useState } from 'react';
 import { Await, data, useFetcher } from 'react-router';
-import { useDebounce } from 'use-debounce';
+import { useDebouncedCallback } from 'use-debounce';
 import { PromptReview } from '~/components/prompt-review';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import { getAuth } from '~/lib/auth.server';
-import type { Route } from './+types/prompts.id.id';
+import type { Route } from './+types/prompts.folderId.promptId';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
 export const meta = ({}: Route.MetaArgs) => {
@@ -233,36 +233,41 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const [systemMessage, setSystemMessage] = useState(loaderData.systemMessage);
   const [userMessage, setUserMessage] = useState(loaderData.userMessage);
 
-  const [debouncedSystem] = useDebounce(systemMessage, 1000);
-  const [debouncedUser] = useDebounce(userMessage, 1000);
+  const [isPendingSave, setIsPendingSave] = useState(false);
 
-  const [hasSavedOnce, setHasSavedOnce] = useState(false);
+  const systemRef = useRef(systemMessage);
+  const userRef = useRef(userMessage);
+  systemRef.current = systemMessage;
+  userRef.current = userMessage;
 
-  useEffect(() => {
-    // Skip if nothing has changed from initial load and we haven't saved yet
-    const systemChanged = debouncedSystem !== initialSystem;
-    const userChanged = debouncedUser !== initialUser;
-
-    if (!systemChanged && !userChanged && !hasSavedOnce) return;
-
-    setHasSavedOnce(true);
+  const debouncedSave = useDebouncedCallback(() => {
     fetcher.submit(
-      { systemMessage: debouncedSystem, userMessage: debouncedUser },
+      { systemMessage: systemRef.current, userMessage: userRef.current },
       { method: 'post' },
     );
-  }, [
-    debouncedSystem,
-    debouncedUser,
-    initialSystem,
-    initialUser,
-    hasSavedOnce,
-  ]);
+    setIsPendingSave(false);
+  }, 1000);
+
+  const handleSystemChange = useCallback(
+    (value: string) => {
+      setSystemMessage(value);
+      setIsPendingSave(true);
+      debouncedSave();
+    },
+    [debouncedSave],
+  );
+
+  const handleUserChange = useCallback(
+    (value: string) => {
+      setUserMessage(value);
+      setIsPendingSave(true);
+      debouncedSave();
+    },
+    [debouncedSave],
+  );
 
   const isSystemDirty = systemMessage !== initialSystem;
   const isUserDirty = userMessage !== initialUser;
-
-  const isSystemPendingSave = systemMessage !== debouncedSystem;
-  const isUserPendingSave = userMessage !== debouncedUser;
 
   const isSaving = fetcher.state !== 'idle';
   const lastSavedAt = fetcher.data?.savedAt ?? null;
@@ -300,18 +305,18 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
             <PromptReview
               title="System Prompt"
               value={systemMessage}
-              onChange={setSystemMessage}
+              onChange={handleSystemChange}
               isDirty={isSystemDirty}
-              isPendingSave={isSystemPendingSave}
+              isPendingSave={isPendingSave}
               isSaving={isSaving}
               lastSavedAt={lastSavedAt}
             />
             <PromptReview
               title="User Prompt"
               value={userMessage}
-              onChange={setUserMessage}
+              onChange={handleUserChange}
               isDirty={isUserDirty}
-              isPendingSave={isUserPendingSave}
+              isPendingSave={isPendingSave}
               isSaving={isSaving}
               lastSavedAt={lastSavedAt}
             />
