@@ -45,7 +45,7 @@ export const CreatePromptDialog = ({ children }: CreatePromptDialogProps) => {
   return (
     <Dialog key={location.key}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-106.25">
         <Form method="post" action="/api/prompts/create">
           <DialogHeader>
             <DialogTitle>Create a new prompt</DialogTitle>

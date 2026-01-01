@@ -1,7 +1,8 @@
 import { IconFolderCode } from '@tabler/icons-react';
-import { ArrowUpRightIcon } from 'lucide-react';
+import { ArrowUpRightIcon, PlusIcon } from 'lucide-react';
 import { Suspense } from 'react';
 import { Await, NavLink } from 'react-router';
+import { CreatePromptDialog } from '~/components/create-prompt-dialog';
 import { Button } from '~/components/ui/button';
 import {
   Empty,
@@ -66,16 +67,16 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
                   <EmptyMedia variant="icon">
                     <IconFolderCode />
                   </EmptyMedia>
-                  <EmptyTitle>No Projects Yet</EmptyTitle>
+                  <EmptyTitle>No Prompts Yet</EmptyTitle>
                   <EmptyDescription>
-                    You haven&apos;t created any projects yet. Get started by
-                    creating your first project.
+                    You haven&apos;t created any prompts yet. Get started by
+                    creating your first prompt or project.
                   </EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent>
                   <div className="flex gap-2">
-                    <Button>Create Project</Button>
-                    <Button variant="outline">Import Project</Button>
+                    <Button>Create Prompt</Button>
+                    <Button variant="outline">Create Project</Button>
                   </div>
                 </EmptyContent>
                 <Button
@@ -129,18 +130,13 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
               <Await resolve={loaderData.prompts}>
                 {(promptsResult) => (
                   <div className="flex flex-wrap gap-4">
-                    {promptsResult.results?.length === 0 && (
-                      <div className="text-gray-400 text-sm">
-                        No prompts yet
-                      </div>
-                    )}
                     {promptsResult.results?.map((prompt) => (
                       <NavLink
                         key={prompt.id}
                         to={`/prompts/${loaderData.untitledFolderId}/${prompt.id}`}
                       >
                         <Paper className="items-start">
-                          <div className="flex flex-wrap text-pretty flex-col gap-y-2 p-4">
+                          <div className="flex flex-wrap text-pretty flex-col gap-y-2 p-4 w-full h-full">
                             <div className="flex flex-col gap-y-1 mb-8 select-none">
                               <div className="text-[0.5rem] text-right text-gray-400">
                                 <span className="text-black">
@@ -162,6 +158,24 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
                         </Paper>
                       </NavLink>
                     ))}
+                    <CreatePromptDialog>
+                      <button
+                        type="button"
+                        className="group relative isolate min-h-[250px] w-[200px] cursor-pointer"
+                      >
+                        <div className="relative z-10 h-[250px] rounded-[2px] border-2 border-dashed border-gray-300 bg-gray-50/50 flex flex-col justify-center items-center gap-3 transition-all duration-300 ease-out hover:border-gray-400 hover:bg-white hover:shadow-lg group-hover:scale-[1.02]">
+                          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center transition-all duration-300 group-hover:bg-gray-200 group-hover:scale-110">
+                            <PlusIcon
+                              size={24}
+                              className="text-gray-400 transition-colors duration-300 group-hover:text-gray-600"
+                            />
+                          </div>
+                          <span className="text-sm font-medium text-gray-400 transition-colors duration-300 group-hover:text-gray-600">
+                            New Prompt
+                          </span>
+                        </div>
+                      </button>
+                    </CreatePromptDialog>
                   </div>
                 )}
               </Await>
