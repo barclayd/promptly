@@ -87,8 +87,7 @@ export const action = async ({
   }
 
   const formData = await request.formData();
-  const systemMessage =
-    (formData.get('systemMessage') as string)?.trim() ?? '';
+  const systemMessage = (formData.get('systemMessage') as string)?.trim() ?? '';
   const userMessage = (formData.get('userMessage') as string)?.trim() ?? '';
 
   if (!systemMessage && !userMessage) {
@@ -138,7 +137,6 @@ export const action = async ({
 export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher<typeof action>();
 
-  // Track initial values to determine dirty state
   const [initialSystem] = useState(loaderData.systemMessage);
   const [initialUser] = useState(loaderData.userMessage);
 
@@ -148,7 +146,6 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const [debouncedSystem] = useDebounce(systemMessage, 3000);
   const [debouncedUser] = useDebounce(userMessage, 3000);
 
-  // Track if we've made any changes that warrant saving
   const [hasSavedOnce, setHasSavedOnce] = useState(false);
 
   useEffect(() => {
@@ -166,13 +163,17 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
       { systemMessage: debouncedSystem, userMessage: debouncedUser },
       { method: 'post' },
     );
-  }, [debouncedSystem, debouncedUser, initialSystem, initialUser, hasSavedOnce]);
+  }, [
+    debouncedSystem,
+    debouncedUser,
+    initialSystem,
+    initialUser,
+    hasSavedOnce,
+  ]);
 
-  // Dirty state: current value differs from initial OR we've saved before
   const isSystemDirty = systemMessage !== initialSystem;
   const isUserDirty = userMessage !== initialUser;
 
-  // Pending save: current value differs from debounced value (still waiting for debounce)
   const isSystemPendingSave = systemMessage !== debouncedSystem;
   const isUserPendingSave = userMessage !== debouncedUser;
 
@@ -211,7 +212,6 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
             <p className="text-secondary-foreground">
               {loaderData.prompt.description}
             </p>
-            <PromptEntry />
             <Separator className="my-4" />
             <PromptReview
               title="System Prompt"

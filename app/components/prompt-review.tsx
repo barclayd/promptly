@@ -1,5 +1,5 @@
 import { IconCopy, IconCornerDownLeft } from '@tabler/icons-react';
-import { CheckCircle2, InfoIcon, Loader2, Save } from 'lucide-react';
+import { Check, CheckCircle2, InfoIcon, Loader2, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import {
@@ -112,6 +112,14 @@ export const PromptReview = ({
   lastSavedAt?: number | null;
 }) => {
   const isCurrentlySaving = isPendingSave || isSaving;
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (!value) return;
+    await navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 5000);
+  };
 
   return (
     <div className="grid w-full gap-4">
@@ -159,11 +167,15 @@ export const PromptReview = ({
             {isCurrentlySaving ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
-              <Save />
+              <Save className="cursor-not-allowed" />
             )}
           </InputGroupButton>
-          <InputGroupButton variant="ghost" size="icon-xs">
-            <IconCopy />
+          <InputGroupButton variant="ghost" size="icon-xs" onClick={handleCopy}>
+            {copied ? (
+              <Check className="size-4 text-emerald-500 animate-in zoom-in duration-200" />
+            ) : (
+              <IconCopy />
+            )}
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
