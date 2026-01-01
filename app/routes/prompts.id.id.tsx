@@ -1,10 +1,13 @@
 import { RssIcon, Save } from 'lucide-react';
-import { Suspense } from 'react';
-import { Await } from 'react-router';
+import { nanoid } from 'nanoid';
+import { Suspense, useEffect, useState } from 'react';
+import { Await, data, useFetcher } from 'react-router';
+import { useDebounce } from 'use-debounce';
 import { PromptEntry } from '~/components/prompt-entry';
 import { PromptReview } from '~/components/prompt-review';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
+import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/prompts.id.id';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
@@ -66,7 +69,116 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
   };
 };
 
-export default function Home({ loaderData }: Route.ComponentProps) {
+export const action = async ({
+  request,
+  params,
+  context,
+}: Route.ActionArgs) => {
+  const { promptId } = params;
+  const db = context.cloudflare.env.promptly;
+
+  const auth = getAuth(context);
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
+
+  if (!session?.user) {
+    return data({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  const formData = await request.formData();
+  const systemMessage =
+    (formData.get('systemMessage') as string)?.trim() ?? '';
+  const userMessage = (formData.get('userMessage') as string)?.trim() ?? '';
+
+  if (!systemMessage && !userMessage) {
+    return { success: false, savedAt: null };
+  }
+
+  const currentVersion = await db
+    .prepare(
+      'SELECT id, version, published_at FROM prompt_version WHERE prompt_id = ? ORDER BY version DESC LIMIT 1',
+    )
+    .bind(promptId)
+    .first<{ id: string; version: number; published_at: number | null }>();
+
+  if (!currentVersion) {
+    await db
+      .prepare(
+        'INSERT INTO prompt_version (id, prompt_id, version, system_message, user_message, created_by) VALUES (?, ?, 1, ?, ?, ?)',
+      )
+      .bind(nanoid(), promptId, systemMessage, userMessage, session.user.id)
+      .run();
+  } else if (currentVersion.published_at === null) {
+    await db
+      .prepare(
+        'UPDATE prompt_version SET system_message = ?, user_message = ? WHERE id = ?',
+      )
+      .bind(systemMessage, userMessage, currentVersion.id)
+      .run();
+  } else {
+    await db
+      .prepare(
+        'INSERT INTO prompt_version (id, prompt_id, version, system_message, user_message, created_by) VALUES (?, ?, ?, ?, ?, ?)',
+      )
+      .bind(
+        nanoid(),
+        promptId,
+        currentVersion.version + 1,
+        systemMessage,
+        userMessage,
+        session.user.id,
+      )
+      .run();
+  }
+
+  return { success: true, savedAt: Date.now() };
+};
+
+export default function PromptDetail({ loaderData }: Route.ComponentProps) {
+  const fetcher = useFetcher<typeof action>();
+
+  // Track initial values to determine dirty state
+  const [initialSystem] = useState(loaderData.systemMessage);
+  const [initialUser] = useState(loaderData.userMessage);
+
+  const [systemMessage, setSystemMessage] = useState(loaderData.systemMessage);
+  const [userMessage, setUserMessage] = useState(loaderData.userMessage);
+
+  const [debouncedSystem] = useDebounce(systemMessage, 3000);
+  const [debouncedUser] = useDebounce(userMessage, 3000);
+
+  // Track if we've made any changes that warrant saving
+  const [hasSavedOnce, setHasSavedOnce] = useState(false);
+
+  useEffect(() => {
+    // Skip if nothing has changed from initial load and we haven't saved yet
+    const systemChanged = debouncedSystem !== initialSystem;
+    const userChanged = debouncedUser !== initialUser;
+
+    if (!systemChanged && !userChanged && !hasSavedOnce) return;
+
+    // Skip if both are empty
+    if (!debouncedSystem.trim() && !debouncedUser.trim()) return;
+
+    setHasSavedOnce(true);
+    fetcher.submit(
+      { systemMessage: debouncedSystem, userMessage: debouncedUser },
+      { method: 'post' },
+    );
+  }, [debouncedSystem, debouncedUser, initialSystem, initialUser, hasSavedOnce]);
+
+  // Dirty state: current value differs from initial OR we've saved before
+  const isSystemDirty = systemMessage !== initialSystem;
+  const isUserDirty = userMessage !== initialUser;
+
+  // Pending save: current value differs from debounced value (still waiting for debounce)
+  const isSystemPendingSave = systemMessage !== debouncedSystem;
+  const isUserPendingSave = userMessage !== debouncedUser;
+
+  const isSaving = fetcher.state !== 'idle';
+  const lastSavedAt = fetcher.data?.savedAt ?? null;
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
@@ -103,9 +215,22 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             <Separator className="my-4" />
             <PromptReview
               title="System Prompt"
-              input={loaderData.systemMessage}
+              value={systemMessage}
+              onChange={setSystemMessage}
+              isDirty={isSystemDirty}
+              isPendingSave={isSystemPendingSave}
+              isSaving={isSaving}
+              lastSavedAt={lastSavedAt}
             />
-            <PromptReview title="User Prompt" input={loaderData.userMessage} />
+            <PromptReview
+              title="User Prompt"
+              value={userMessage}
+              onChange={setUserMessage}
+              isDirty={isUserDirty}
+              isPendingSave={isUserPendingSave}
+              isSaving={isSaving}
+              lastSavedAt={lastSavedAt}
+            />
           </div>
         </div>
       </div>
