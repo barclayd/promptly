@@ -16,7 +16,7 @@ export function meta({}: Route.MetaArgs) {
 export default function Prompts() {
   return (
     <div className="flex flex-1 flex-col">
-      <div className="@container/main flex flex-1 flex-col gap-2 bg-gray-200">
+      <div className="@container/main flex flex-1 flex-col gap-2 bg-gray-100">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
             <NavLink to="/prompts/1/1">
@@ -30,11 +30,6 @@ export default function Prompts() {
                         dateStyle: 'medium',
                         timeStyle: 'short',
                       })}
-                    </div>
-                    <div className="text-[0.5rem] text-right text-gray-400">
-                      <span className="text-black">Last authored:</span>
-                      <br />
-                      Alex S
                     </div>
                   </div>
                   <h3 className="text-sm font-bold">Reviews</h3>
