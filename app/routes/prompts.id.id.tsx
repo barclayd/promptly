@@ -22,6 +22,15 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
   const { folderId, promptId } = params;
   const db = context.cloudflare.env.promptly;
 
+  const folder = await db
+    .prepare('SELECT id, name FROM prompt_folder WHERE id = ?')
+    .bind(folderId)
+    .first<{ id: string; name: string }>();
+
+  if (!folder) {
+    throw new Response('Folder not found', { status: 404 });
+  }
+
   const prompt = await db
     .prepare(
       'SELECT id, name, description FROM prompt WHERE id = ? AND folder_id = ?',
@@ -41,6 +50,7 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
     .first<{ version: number }>();
 
   return {
+    folder,
     prompt,
     version,
   };

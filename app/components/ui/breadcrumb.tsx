@@ -34,8 +34,10 @@ const Breadcrumb = ({ ...props }: ComponentProps<'nav'>) => (
 
 export const BreadcrumbWithDropdown = () => {
   const location = useLocation();
-  const folderData = useRouteLoaderData<typeof folderLoader>(
-    'routes/prompts.id'
+  const folderData =
+    useRouteLoaderData<typeof folderLoader>('routes/prompts.id');
+  const promptData = useRouteLoaderData<typeof promptLoader>(
+    'routes/prompts.id.id',
   );
 
   const segments = location.pathname.split('/').filter(Boolean);
@@ -45,25 +47,26 @@ export const BreadcrumbWithDropdown = () => {
     (s) => s.path.slice(1).toLowerCase() === currentSection.toLowerCase(),
   );
 
-  // Transform segments: replace folder ID with name, filter out "Untitled"
-  const deepSegments = segments.slice(1).reduce<
-    Array<{ label: string; path: string }>
-  >((acc, segment, idx) => {
-    const path = `/${segments.slice(0, idx + 2).join('/')}`;
+  const folder = folderData?.folder ?? promptData?.folder;
 
-    // Check if this segment is the folder ID
-    if (folderData?.folder && segment === folderData.folder.id) {
-      // Skip "Untitled" folders
-      if (folderData.folder.name === 'Untitled') {
-        return acc;
+  const deepSegments = segments
+    .slice(1)
+    .reduce<Array<{ label: string; path: string }>>((acc, segment, idx) => {
+      const path = `/${segments.slice(0, idx + 2).join('/')}`;
+
+      if (folder && segment === folder.id) {
+        if (folder.name === 'Untitled') {
+          return acc;
+        }
+        acc.push({ label: folder.name, path });
+      } else if (promptData?.prompt && segment === promptData.prompt.id) {
+        acc.push({ label: promptData.prompt.name, path });
+      } else {
+        acc.push({ label: toTitleCase(segment), path });
       }
-      acc.push({ label: folderData.folder.name, path });
-    } else {
-      acc.push({ label: toTitleCase(segment), path });
-    }
 
-    return acc;
-  }, []);
+      return acc;
+    }, []);
 
   return (
     <Breadcrumb>
