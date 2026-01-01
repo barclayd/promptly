@@ -21,7 +21,7 @@ export const PromptReview = ({
       <InputGroup>
         <InputGroupTextarea
           id="textarea-code-32"
-          placeholder="console.log('Hello, world!');"
+          placeholder="Prompt text goes here"
           className="min-h-[200px]"
           defaultValue={input}
         />

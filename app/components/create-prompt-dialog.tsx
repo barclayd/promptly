@@ -1,6 +1,6 @@
 'use client';
 
-import { useFetcher } from 'react-router';
+import { Form, useActionData, useLocation, useNavigation } from 'react-router';
 import { Button } from '~/components/ui/button';
 import {
   Dialog,
@@ -29,7 +29,6 @@ type ActionData = {
     description?: string[];
     project?: string[];
   };
-  success?: boolean;
 };
 
 interface CreatePromptDialogProps {
@@ -37,15 +36,17 @@ interface CreatePromptDialogProps {
 }
 
 export const CreatePromptDialog = ({ children }: CreatePromptDialogProps) => {
-  const fetcher = useFetcher<ActionData>();
-  const errors = fetcher.data?.errors;
-  const isSubmitting = fetcher.state === 'submitting';
+  const actionData = useActionData<ActionData>();
+  const location = useLocation();
+  const navigation = useNavigation();
+  const errors = actionData?.errors;
+  const isSubmitting = navigation.state === 'submitting';
 
   return (
-    <Dialog>
+    <Dialog key={location.key}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <fetcher.Form method="post" action="/api/prompts/create">
+      <DialogContent className="sm:max-w-106.25">
+        <Form method="post" action="/api/prompts/create">
           <DialogHeader>
             <DialogTitle>Create a new prompt</DialogTitle>
             <DialogDescription>
@@ -97,7 +98,7 @@ export const CreatePromptDialog = ({ children }: CreatePromptDialogProps) => {
               {isSubmitting ? 'Creating...' : 'Create'}
             </Button>
           </DialogFooter>
-        </fetcher.Form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

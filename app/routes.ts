@@ -19,7 +19,9 @@ export default [
     route('logout', './routes/logout.tsx'),
     route('prompts', './routes/prompts.tsx'),
     route('prompts/create', './routes/prompts.create.tsx'),
-    route('prompts/:id', './routes/prompts.id.tsx'),
-    route('prompts/:id/:id', './routes/prompts.id.id.tsx'),
+    route('prompts/:folderId', './routes/prompts.id.tsx'),
+  ]),
+  layout('./routes/layouts/prompt-detail.tsx', [
+    route('prompts/:folderId/:promptId', './routes/prompts.id.id.tsx'),
   ]),
 ] satisfies RouteConfig;

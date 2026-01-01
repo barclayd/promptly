@@ -1,7 +1,7 @@
 import { Slot } from '@radix-ui/react-slot';
 import { ChevronDownIcon, ChevronRight, SlashIcon } from 'lucide-react';
 import { type ComponentProps, Fragment } from 'react';
-import { NavLink, useLocation } from 'react-router';
+import { NavLink, useLocation, useRouteLoaderData } from 'react-router';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +10,8 @@ import {
 } from '~/components/ui/dropdown-menu';
 
 import { cn } from '~/lib/utils';
+import type { loader as folderLoader } from '~/routes/prompts.id';
+import type { loader as promptLoader } from '~/routes/prompts.id.id';
 
 const SECTIONS = [
   { name: 'Dashboard', path: '/dashboard' },
@@ -32,6 +34,12 @@ const Breadcrumb = ({ ...props }: ComponentProps<'nav'>) => (
 
 export const BreadcrumbWithDropdown = () => {
   const location = useLocation();
+  const folderData =
+    useRouteLoaderData<typeof folderLoader>('routes/prompts.id');
+  const promptData = useRouteLoaderData<typeof promptLoader>(
+    'routes/prompts.id.id',
+  );
+
   const segments = location.pathname.split('/').filter(Boolean);
 
   const currentSection = segments[0] || '';
@@ -39,7 +47,26 @@ export const BreadcrumbWithDropdown = () => {
     (s) => s.path.slice(1).toLowerCase() === currentSection.toLowerCase(),
   );
 
-  const deepSegments = segments.slice(1).map((segment) => toTitleCase(segment));
+  const folder = folderData?.folder ?? promptData?.folder;
+
+  const deepSegments = segments
+    .slice(1)
+    .reduce<Array<{ label: string; path: string }>>((acc, segment, idx) => {
+      const path = `/${segments.slice(0, idx + 2).join('/')}`;
+
+      if (folder && segment === folder.id) {
+        if (folder.name === 'Untitled') {
+          return acc;
+        }
+        acc.push({ label: folder.name, path });
+      } else if (promptData?.prompt && segment === promptData.prompt.id) {
+        acc.push({ label: promptData.prompt.name, path });
+      } else {
+        acc.push({ label: toTitleCase(segment), path });
+      }
+
+      return acc;
+    }, []);
 
   return (
     <Breadcrumb>
@@ -71,21 +98,18 @@ export const BreadcrumbWithDropdown = () => {
               </DropdownMenu>
             </BreadcrumbItem>
 
-            {deepSegments.map((segment, idx) => {
-              const path = `/${segments.slice(0, idx + 2).join('/')}`;
-              return (
-                <Fragment key={path}>
-                  <BreadcrumbSeparator>
-                    <SlashIcon />
-                  </BreadcrumbSeparator>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink asChild>
-                      <NavLink to={path}>{segment}</NavLink>
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                </Fragment>
-              );
-            })}
+            {deepSegments.map(({ label, path }) => (
+              <Fragment key={path}>
+                <BreadcrumbSeparator>
+                  <SlashIcon />
+                </BreadcrumbSeparator>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <NavLink to={path}>{label}</NavLink>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              </Fragment>
+            ))}
           </>
         )}
       </BreadcrumbList>
