@@ -202,9 +202,6 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6 flex flex-col gap-y-4">
             <div className="flex gap-x-3 justify-end">
-              <Button variant="outline" className="cursor-pointer">
-                Save <Save />
-              </Button>
               <Button className="cursor-pointer">
                 Publish <RssIcon />
               </Button>

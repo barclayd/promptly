@@ -73,14 +73,19 @@ const columns: ColumnDef<Version>[] = [
     accessorKey: 'version',
     header: () => <span className="text-xs">Version</span>,
     cell: ({ row }) => (
-      <span className="text-xs font-mono">{row.original.version}.0.0</span>
+      <span className="text-xs font-mono whitespace-nowrap">
+        {row.original.version}.0.0
+      </span>
     ),
+    size: 70,
+    minSize: 70,
+    maxSize: 70,
   },
   {
     accessorKey: 'published_by',
-    header: () => <span className="text-xs">By</span>,
+    header: () => <span className="text-xs">Created By</span>,
     cell: ({ row }) => (
-      <span className="text-xs text-muted-foreground truncate max-w-[80px] block">
+      <span className="text-xs text-muted-foreground truncate block min-w-0">
         {row.original.published_by ?? '-'}
       </span>
     ),
@@ -90,21 +95,26 @@ const columns: ColumnDef<Version>[] = [
     header: () => <span className="text-xs">Status</span>,
     cell: ({ row }) =>
       row.original.published_at ? (
-        <span className="text-xs text-muted-foreground">
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
           {formatDate(row.original.published_at)}
         </span>
       ) : (
         <Badge
           variant="outline"
-          className="text-[10px] px-1.5 py-0 font-normal"
+          className="text-[10px] px-1.5 py-0 font-normal whitespace-nowrap"
         >
           Draft
         </Badge>
       ),
+    size: 90,
+    minSize: 90,
   },
   {
     id: 'actions',
     cell: ({ row }) => <ViewVersionAction version={row.original.version} />,
+    size: 32,
+    minSize: 32,
+    maxSize: 32,
   },
 ];
 
@@ -126,38 +136,51 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
 
   return (
     <div className="px-2 py-2">
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border overflow-hidden">
+        <Table className="table-fixed w-full">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className="h-8 px-2 first:pl-3 last:pr-2"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </TableHead>
-                ))}
+                {headerGroup.headers.map((header) => {
+                  const size = header.column.columnDef.size;
+                  const hasFixedSize = size !== undefined;
+                  return (
+                    <TableHead
+                      key={header.id}
+                      className="h-8 px-2 first:pl-3 last:pr-2"
+                      style={hasFixedSize ? { width: size } : undefined}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             ))}
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.map((row) => (
               <TableRow key={row.id} className="hover:bg-muted/50">
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    className="h-9 px-2 py-1.5 first:pl-3 last:pr-2"
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
+                {row.getVisibleCells().map((cell) => {
+                  const size = cell.column.columnDef.size;
+                  const hasFixedSize = size !== undefined;
+                  return (
+                    <TableCell
+                      key={cell.id}
+                      className="h-9 px-2 py-1.5 first:pl-3 last:pr-2 overflow-hidden"
+                      style={hasFixedSize ? { width: size } : undefined}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </TableCell>
+                  );
+                })}
               </TableRow>
             ))}
           </TableBody>
