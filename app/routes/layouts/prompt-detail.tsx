@@ -75,7 +75,7 @@ export default function PromptDetailLayout() {
       ) : (
         <ResizablePanelGroup
           direction="horizontal"
-          className="flex-1"
+          className="flex-1 h-svh"
           defaultLayout={defaultLayout}
           onLayoutChange={onLayoutChange}
         >
@@ -83,11 +83,13 @@ export default function PromptDetailLayout() {
             id="main-content"
             defaultSize="75%"
             minSize="50%"
-            className="h-full"
+            className="h-full overflow-hidden"
           >
-            <SidebarInset className="min-h-svh">
+            <SidebarInset className="h-full flex flex-col">
               <SiteHeader />
-              <Outlet />
+              <div className="flex-1 overflow-y-auto">
+                <Outlet />
+              </div>
             </SidebarInset>
           </ResizablePanel>
           <ResizableHandle withHandle />
@@ -95,7 +97,7 @@ export default function PromptDetailLayout() {
             id="sidebar-right"
             defaultSize="25%"
             minSize="25%"
-            className="h-full"
+            className="h-full relative"
           >
             <SidebarRight />
           </ResizablePanel>

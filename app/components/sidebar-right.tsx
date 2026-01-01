@@ -135,7 +135,7 @@ export function SidebarRight({
   return (
     <Sidebar
       collapsible="none"
-      className="sticky top-0 flex h-full w-full border-t md:border-t-0 md:border-l"
+      className="absolute inset-0 flex h-full w-full border-t md:border-t-0 md:border-l"
       {...props}
     >
       <SidebarContent>
