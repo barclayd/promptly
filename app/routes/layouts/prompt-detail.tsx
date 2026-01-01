@@ -11,8 +11,13 @@ import {
   useDefaultLayout,
 } from '~/components/ui/resizable';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
+import type { Version } from '~/components/versions-table';
 import { useIsMobile } from '~/hooks/use-mobile';
 import type { loader as rootLoader } from '~/root';
+
+type PromptDetailLoaderData = {
+  versions: Version[];
+};
 
 const LAYOUT_COOKIE_NAME = 'panel-layout';
 
@@ -40,7 +45,11 @@ const createCookieStorage = (serverCookie: string | null): LayoutStorage => ({
 
 export default function PromptDetailLayout() {
   const loaderData = useRouteLoaderData<typeof rootLoader>('root');
+  const promptDetailData =
+    useRouteLoaderData<PromptDetailLoaderData>('prompt-detail');
   const isMobile = useIsMobile();
+
+  const versions = promptDetailData?.versions ?? [];
 
   const cookieStorage = useMemo(
     () => createCookieStorage(loaderData?.serverLayoutCookie ?? null),
@@ -69,7 +78,7 @@ export default function PromptDetailLayout() {
             <Outlet />
           </SidebarInset>
           <div className="w-full shrink-0">
-            <SidebarRight />
+            <SidebarRight versions={versions} />
           </div>
         </div>
       ) : (
@@ -99,7 +108,7 @@ export default function PromptDetailLayout() {
             minSize="25%"
             className="h-full relative"
           >
-            <SidebarRight />
+            <SidebarRight versions={versions} />
           </ResizablePanel>
         </ResizablePanelGroup>
       )}

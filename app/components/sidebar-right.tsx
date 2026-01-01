@@ -52,6 +52,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from '~/components/ui/sidebar';
+import { type Version, VersionsTable } from '~/components/versions-table';
 import { useIsMobile } from '~/hooks/use-mobile';
 import type { SchemaField } from '~/lib/schema-types';
 
@@ -117,8 +118,9 @@ const sidebarDarkTheme: Theme = {
 };
 
 export function SidebarRight({
+  versions = [],
   ...props
-}: React.ComponentProps<typeof Sidebar>) {
+}: React.ComponentProps<typeof Sidebar> & { versions?: Version[] }) {
   const [schemaFields, setSchemaFields] = useState<SchemaField[]>([]);
   const [inputData, setInputData] = useState<string[]>(DEFAULT_INPUT_DATA);
 
@@ -153,7 +155,7 @@ export function SidebarRight({
               </SidebarGroupLabel>
               <CollapsibleContent>
                 <SidebarGroupContent>
-                  <div className="px-2 py-4">No published versions yet.</div>
+                  <VersionsTable versions={versions} />
                 </SidebarGroupContent>
               </CollapsibleContent>
             </Collapsible>

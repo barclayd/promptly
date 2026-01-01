@@ -22,6 +22,8 @@ export default [
     route('prompts/:folderId', './routes/prompts.id.tsx'),
   ]),
   layout('./routes/layouts/prompt-detail.tsx', [
-    route('prompts/:folderId/:promptId', './routes/prompts.id.id.tsx'),
+    route('prompts/:folderId/:promptId', './routes/prompts.id.id.tsx', {
+      id: 'prompt-detail',
+    }),
   ]),
 ] satisfies RouteConfig;

@@ -60,10 +60,26 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
     .bind(promptId)
     .first<{ version: number }>();
 
+  const versionsResult = await db
+    .prepare(
+      `SELECT pv.version, pv.published_at, u.name as published_by
+       FROM prompt_version pv
+       LEFT JOIN user u ON pv.created_by = u.id
+       WHERE pv.prompt_id = ?
+       ORDER BY pv.version DESC`,
+    )
+    .bind(promptId)
+    .all<{
+      version: number;
+      published_at: number | null;
+      published_by: string | null;
+    }>();
+
   return {
     folder,
     prompt,
     version,
+    versions: versionsResult.results,
     systemMessage: latestVersion?.system_message ?? '',
     userMessage: latestVersion?.user_message ?? '',
   };

@@ -36,9 +36,7 @@ export const BreadcrumbWithDropdown = () => {
   const location = useLocation();
   const folderData =
     useRouteLoaderData<typeof folderLoader>('routes/prompts.id');
-  const promptData = useRouteLoaderData<typeof promptLoader>(
-    'routes/prompts.id.id',
-  );
+  const promptData = useRouteLoaderData<typeof promptLoader>('prompt-detail');
 
   const segments = location.pathname.split('/').filter(Boolean);
 
