@@ -20,6 +20,6 @@ export default [
     route('prompts', './routes/prompts.tsx'),
     route('prompts/create', './routes/prompts.create.tsx'),
     route('prompts/:id', './routes/prompts.id.tsx'),
-    route('prompts/:id/:id', './routes/prompts.id.id.tsx'),
+    route('prompts/:folderId/:promptId', './routes/prompts.id.id.tsx'),
   ]),
 ] satisfies RouteConfig;

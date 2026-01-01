@@ -1,12 +1,14 @@
 import { RssIcon, Save } from 'lucide-react';
+import { Suspense } from 'react';
+import { Await } from 'react-router';
 import { PromptEntry } from '~/components/prompt-entry';
 import { PromptReview } from '~/components/prompt-review';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
-import type { Route } from './+types/prompts-id-id';
+import type { Route } from './+types/prompts.id.id';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
-export function meta({}: Route.MetaArgs) {
+export const meta = ({}: Route.MetaArgs) => {
   return [
     { title: 'Promptly' },
     {
@@ -14,9 +16,37 @@ export function meta({}: Route.MetaArgs) {
       content: 'The CMS for building AI at scale',
     },
   ];
-}
+};
 
-export default function Home() {
+export const loader = async ({ params, context }: Route.LoaderArgs) => {
+  const { folderId, promptId } = params;
+  const db = context.cloudflare.env.promptly;
+
+  const prompt = await db
+    .prepare(
+      'SELECT id, name, description FROM prompt WHERE id = ? AND folder_id = ?',
+    )
+    .bind(promptId, folderId)
+    .first<{ id: string; name: string; description: string }>();
+
+  if (!prompt) {
+    throw new Response('Prompt not found', { status: 404 });
+  }
+
+  const version = db
+    .prepare(
+      'SELECT version FROM prompt_version WHERE prompt_id = ? ORDER BY version DESC LIMIT 1',
+    )
+    .bind(promptId)
+    .first<{ version: number }>();
+
+  return {
+    prompt,
+    version,
+  };
+};
+
+export default function Home({ loaderData }: Route.ComponentProps) {
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
@@ -30,11 +60,24 @@ export default function Home() {
                 Publish <RssIcon />
               </Button>
             </div>
-            <h1 className="text-3xl">Review</h1>
-            <div className="text-gray-400/75 text-sm -mt-2">0.1.0</div>
+            <h1 className="text-3xl">{loaderData.prompt.name}</h1>
+            <Suspense
+              fallback={
+                <div className="text-gray-400/75 text-sm -mt-2">Loading...</div>
+              }
+            >
+              <Await resolve={loaderData.version}>
+                {(version) => (
+                  <div className="text-gray-400/75 text-sm -mt-2">
+                    {version?.version
+                      ? `${version.version}.0.0`
+                      : 'Unpublished'}
+                  </div>
+                )}
+              </Await>
+            </Suspense>
             <p className="text-secondary-foreground">
-              Selects and modifies a customer review that will most likely lead
-              to an uplift in conversion
+              {loaderData.prompt.description}
             </p>
             <PromptEntry />
             <Separator className="my-4" />
