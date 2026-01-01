@@ -5,12 +5,18 @@ import { JsonEditor, type Theme } from 'json-edit-react';
 import { ChevronRight } from 'lucide-react';
 import type * as React from 'react';
 import { Fragment, useCallback, useMemo, useRef, useState } from 'react';
-import { useFetcher, useLocation, useSearchParams } from 'react-router';
+import {
+  useFetcher,
+  useLocation,
+  useParams,
+  useSearchParams,
+} from 'react-router';
 import { useDebouncedCallback } from 'use-debounce';
 import { CodePreview } from '~/components/code-preview';
 import { SchemaBuilder } from '~/components/schema-builder';
 import { SelectScrollable } from '~/components/select-scrollable';
 import { SidebarSlider } from '~/components/sidebar-slider';
+import { StreamingResponse } from '~/components/streaming-response';
 import { Button } from '~/components/ui/button';
 import {
   Collapsible,
@@ -121,7 +127,14 @@ export function SidebarRight({
   const configFetcher = useFetcher();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const params = useParams();
   const isMobile = useIsMobile();
+
+  // Streaming response state
+  const [streamText, setStreamText] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
+  const [streamError, setStreamError] = useState<string | null>(null);
 
   // Use refs to access current values in debounced callback
   const schemaRef = useRef(schemaFields);
@@ -173,6 +186,60 @@ export function SidebarRight({
   const selectedVersion = versionParam
     ? Number.parseInt(versionParam, 10)
     : latestVersion;
+
+  // Handle running the prompt
+  const handleRunPrompt = useCallback(async () => {
+    const { folderId, promptId } = params;
+    if (!folderId || !promptId) return;
+
+    setStreamText('');
+    setIsStreaming(true);
+    setIsComplete(false);
+    setStreamError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('promptId', promptId);
+      formData.append('folderId', folderId);
+      formData.append('model', model || 'anthropic/claude-haiku-4.5');
+      formData.append('temperature', temperature.toString());
+      formData.append('inputData', JSON.stringify(inputData));
+      if (selectedVersion) {
+        formData.append('version', selectedVersion.toString());
+      }
+
+      const response = await fetch('/api/prompts/run', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      if (!response.body) {
+        throw new Error('No response body');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        setStreamText((prev) => prev + chunk);
+      }
+
+      setIsComplete(true);
+    } catch (err) {
+      setStreamError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setIsStreaming(false);
+    }
+  }, [params, model, temperature, inputData, selectedVersion]);
 
   const jsonEditorTheme = useMemo(() => {
     const isDarkMode =
@@ -440,12 +507,38 @@ export function SidebarRight({
                       </div>
                     </div>
 
-                    <div className="px-2">
-                      <div className="pt-4">
-                        <Button className="cursor-pointer">
-                          Run <IconCornerDownLeft />
-                        </Button>
+                    <div className="px-2 pt-4">
+                      <Button
+                        className={cn(
+                          'w-full font-medium transition-all duration-200',
+                          isStreaming
+                            ? 'bg-primary/80'
+                            : 'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/95 hover:to-primary/85 shadow-sm hover:shadow-md',
+                        )}
+                        onClick={handleRunPrompt}
+                        disabled={isStreaming}
+                      >
+                        {isStreaming ? (
+                          <span className="flex items-center gap-2">
+                            <span className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            Running...
+                          </span>
+                        ) : (
+                          'Run Test'
+                        )}
+                      </Button>
+                    </div>
+
+                    <div className="px-2 pt-6 pb-4">
+                      <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
+                        Response
                       </div>
+                      <StreamingResponse
+                        text={streamText}
+                        isStreaming={isStreaming}
+                        isComplete={isComplete}
+                        error={streamError}
+                      />
                     </div>
                   </div>
                 </SidebarGroupContent>
