@@ -1,10 +1,17 @@
 'use client';
 
-import { IconCornerDownLeft } from '@tabler/icons-react';
 import { JsonEditor, type Theme } from 'json-edit-react';
 import { ChevronRight } from 'lucide-react';
 import type * as React from 'react';
-import { Fragment, useCallback, useMemo, useRef, useState } from 'react';
+import {
+  Fragment,
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   useFetcher,
   useLocation,
@@ -107,493 +114,538 @@ const sidebarDarkTheme: Theme = {
   },
 };
 
-export function SidebarRight({
-  versions = [],
-  schema = [],
-  model: initialModel = null,
-  temperature: initialTemperature = 0.5,
-  ...props
-}: React.ComponentProps<typeof Sidebar> & {
+export interface SidebarRightHandle {
+  triggerTest: () => void;
+  isStreaming: boolean;
+}
+
+type SidebarRightProps = React.ComponentProps<typeof Sidebar> & {
   versions?: Version[];
   schema?: SchemaField[];
   model?: string | null;
   temperature?: number;
-}) {
-  const [schemaFields, setSchemaFields] = useState<SchemaField[]>(schema);
-  const [model, setModel] = useState<string | null>(initialModel);
-  const [temperature, setTemperature] = useState(initialTemperature);
-  const [inputData, setInputData] = useState<string[]>(DEFAULT_INPUT_DATA);
+};
 
-  // Test section has its own model/temperature that can differ from main config
-  const [testModel, setTestModel] = useState<string | null>(initialModel);
-  const [testTemperature, setTestTemperature] = useState(initialTemperature);
+export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
+  (
+    {
+      versions = [],
+      schema = [],
+      model: initialModel = null,
+      temperature: initialTemperature = 0.5,
+      ...props
+    },
+    ref,
+  ) => {
+    const [schemaFields, setSchemaFields] = useState<SchemaField[]>(schema);
+    const [model, setModel] = useState<string | null>(initialModel);
+    const [temperature, setTemperature] = useState(initialTemperature);
+    const [inputData, setInputData] = useState<string[]>(DEFAULT_INPUT_DATA);
 
-  const configFetcher = useFetcher();
-  const location = useLocation();
-  const [searchParams] = useSearchParams();
-  const params = useParams();
-  const isMobile = useIsMobile();
+    // Test section has its own model/temperature that can differ from main config
+    const [testModel, setTestModel] = useState<string | null>(initialModel);
+    const [testTemperature, setTestTemperature] = useState(initialTemperature);
 
-  // Streaming response state
-  const [streamText, setStreamText] = useState('');
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [isComplete, setIsComplete] = useState(false);
-  const [streamError, setStreamError] = useState<string | null>(null);
+    // Test section open state and ref for external control
+    const [testOpen, setTestOpen] = useState(true);
+    const testSectionRef = useRef<HTMLDivElement>(null);
 
-  // Check if test config differs from main config
-  const hasTestConfigChanges =
-    testModel !== model || testTemperature !== temperature;
+    const configFetcher = useFetcher();
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
+    const params = useParams();
+    const isMobile = useIsMobile();
 
-  // Use refs to access current values in debounced callback
-  const schemaRef = useRef(schemaFields);
-  const modelRef = useRef(model);
-  const temperatureRef = useRef(temperature);
-  schemaRef.current = schemaFields;
-  modelRef.current = model;
-  temperatureRef.current = temperature;
+    // Streaming response state
+    const [streamText, setStreamText] = useState('');
+    const [isStreaming, setIsStreaming] = useState(false);
+    const [isComplete, setIsComplete] = useState(false);
+    const [streamError, setStreamError] = useState<string | null>(null);
 
-  const debouncedSaveConfig = useDebouncedCallback(() => {
-    const config = {
-      schema: schemaRef.current,
-      model: modelRef.current,
-      temperature: temperatureRef.current,
-    };
-    configFetcher.submit(
-      { intent: 'saveConfig', config: JSON.stringify(config) },
-      { method: 'post', action: location.pathname },
+    // Check if test config differs from main config
+    const hasTestConfigChanges =
+      testModel !== model || testTemperature !== temperature;
+
+    // Use refs to access current values in debounced callback
+    const schemaRef = useRef(schemaFields);
+    const modelRef = useRef(model);
+    const temperatureRef = useRef(temperature);
+    schemaRef.current = schemaFields;
+    modelRef.current = model;
+    temperatureRef.current = temperature;
+
+    const debouncedSaveConfig = useDebouncedCallback(() => {
+      const config = {
+        schema: schemaRef.current,
+        model: modelRef.current,
+        temperature: temperatureRef.current,
+      };
+      configFetcher.submit(
+        { intent: 'saveConfig', config: JSON.stringify(config) },
+        { method: 'post', action: location.pathname },
+      );
+    }, 1000);
+
+    const handleSchemaChange = useCallback(
+      (fields: SchemaField[]) => {
+        setSchemaFields(fields);
+        debouncedSaveConfig();
+      },
+      [debouncedSaveConfig],
     );
-  }, 1000);
 
-  const handleSchemaChange = useCallback(
-    (fields: SchemaField[]) => {
-      setSchemaFields(fields);
-      debouncedSaveConfig();
-    },
-    [debouncedSaveConfig],
-  );
+    const handleModelChange = useCallback(
+      (value: string | null) => {
+        setModel(value);
+        debouncedSaveConfig();
+      },
+      [debouncedSaveConfig],
+    );
 
-  const handleModelChange = useCallback(
-    (value: string | null) => {
-      setModel(value);
-      debouncedSaveConfig();
-    },
-    [debouncedSaveConfig],
-  );
+    const handleTemperatureChange = useCallback(
+      (value: number) => {
+        setTemperature(value);
+        debouncedSaveConfig();
+      },
+      [debouncedSaveConfig],
+    );
 
-  const handleTemperatureChange = useCallback(
-    (value: number) => {
-      setTemperature(value);
-      debouncedSaveConfig();
-    },
-    [debouncedSaveConfig],
-  );
+    // Get selected version from URL or default to latest
+    const versionParam = searchParams.get('version');
+    const latestVersion = versions[0]?.version;
+    const selectedVersion = versionParam
+      ? Number.parseInt(versionParam, 10)
+      : latestVersion;
 
-  // Get selected version from URL or default to latest
-  const versionParam = searchParams.get('version');
-  const latestVersion = versions[0]?.version;
-  const selectedVersion = versionParam
-    ? Number.parseInt(versionParam, 10)
-    : latestVersion;
+    // Handle running the prompt
+    const handleRunPrompt = useCallback(async () => {
+      const { folderId, promptId } = params;
+      if (!folderId || !promptId) return;
 
-  // Handle running the prompt
-  const handleRunPrompt = useCallback(async () => {
-    const { folderId, promptId } = params;
-    if (!folderId || !promptId) return;
+      setStreamText('');
+      setIsStreaming(true);
+      setIsComplete(false);
+      setStreamError(null);
 
-    setStreamText('');
-    setIsStreaming(true);
-    setIsComplete(false);
-    setStreamError(null);
+      try {
+        const formData = new FormData();
+        formData.append('promptId', promptId);
+        formData.append('folderId', folderId);
+        formData.append('model', testModel || 'anthropic/claude-haiku-4.5');
+        formData.append('temperature', testTemperature.toString());
+        formData.append('inputData', JSON.stringify(inputData));
+        if (selectedVersion) {
+          formData.append('version', selectedVersion.toString());
+        }
 
-    try {
-      const formData = new FormData();
-      formData.append('promptId', promptId);
-      formData.append('folderId', folderId);
-      formData.append('model', testModel || 'anthropic/claude-haiku-4.5');
-      formData.append('temperature', testTemperature.toString());
-      formData.append('inputData', JSON.stringify(inputData));
-      if (selectedVersion) {
-        formData.append('version', selectedVersion.toString());
+        const response = await fetch('/api/prompts/run', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+
+        if (!response.body) {
+          throw new Error('No response body');
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          setStreamText((prev) => prev + chunk);
+        }
+
+        setIsComplete(true);
+      } catch (err) {
+        setStreamError(
+          err instanceof Error ? err.message : 'An error occurred',
+        );
+      } finally {
+        setIsStreaming(false);
       }
+    }, [params, testModel, testTemperature, inputData, selectedVersion]);
 
-      const response = await fetch('/api/prompts/run', {
-        method: 'POST',
-        body: formData,
+    // Trigger test from external source (e.g., PromptReview)
+    const triggerTest = useCallback(() => {
+      setTestOpen(true);
+      testSectionRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
       });
+      // Small delay to ensure collapsible is open before running
+      setTimeout(handleRunPrompt, 100);
+    }, [handleRunPrompt]);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}`);
-      }
-
-      if (!response.body) {
-        throw new Error('No response body');
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        setStreamText((prev) => prev + chunk);
-      }
-
-      setIsComplete(true);
-    } catch (err) {
-      setStreamError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setIsStreaming(false);
-    }
-  }, [params, testModel, testTemperature, inputData, selectedVersion]);
-
-  // Save test config to main config and DB
-  const handleSaveTestConfig = useCallback(() => {
-    setModel(testModel);
-    setTemperature(testTemperature);
-
-    // Save to DB
-    const config = {
-      schema: schemaRef.current,
-      model: testModel,
-      temperature: testTemperature,
-    };
-    configFetcher.submit(
-      { intent: 'saveConfig', config: JSON.stringify(config) },
-      { method: 'post', action: location.pathname },
+    // Expose ref API for external control
+    useImperativeHandle(
+      ref,
+      () => ({
+        triggerTest,
+        isStreaming,
+      }),
+      [triggerTest, isStreaming],
     );
-  }, [testModel, testTemperature, configFetcher, location.pathname]);
 
-  const jsonEditorTheme = useMemo(() => {
-    const isDarkMode =
-      typeof document !== 'undefined' &&
-      document.documentElement.classList.contains('dark');
-    return isDarkMode ? sidebarDarkTheme : sidebarLightTheme;
-  }, []);
+    // Save test config to main config and DB
+    const handleSaveTestConfig = useCallback(() => {
+      setModel(testModel);
+      setTemperature(testTemperature);
 
-  return (
-    <Sidebar
-      collapsible="none"
-      className={cn(
-        'flex w-full',
-        isMobile
-          ? 'relative border-t bg-sidebar'
-          : 'absolute inset-0 h-full border-l',
-      )}
-      {...props}
-    >
-      <SidebarContent>
-        <Fragment key={0}>
-          <SidebarGroup key="key" className="py-1">
-            <Collapsible defaultOpen={true} className="group/collapsible">
-              <SidebarGroupLabel
-                asChild
-                className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
-              >
-                <CollapsibleTrigger>
-                  Versions
-                  <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                </CollapsibleTrigger>
-              </SidebarGroupLabel>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <VersionsTable versions={versions} />
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </SidebarGroup>
-          <SidebarSeparator className="mx-0" />
-        </Fragment>
-        <Fragment key={1}>
-          <SidebarGroup key="key" className="py-1">
-            <Collapsible defaultOpen={true} className="group/collapsible">
-              <SidebarGroupLabel
-                asChild
-                className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
-              >
-                <CollapsibleTrigger>
-                  Schema Builder
-                  <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                </CollapsibleTrigger>
-              </SidebarGroupLabel>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <div className="px-2 py-4">
-                    <SchemaBuilder
-                      fields={schemaFields}
-                      onChange={handleSchemaChange}
-                    />
-                  </div>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </SidebarGroup>
-          <SidebarSeparator className="mx-0" />
-        </Fragment>
-        <Fragment key={1.5}>
-          <SidebarGroup key="code-preview" className="py-1">
-            <Collapsible defaultOpen={false} className="group/collapsible">
-              <SidebarGroupLabel
-                asChild
-                className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
-              >
-                <CollapsibleTrigger>
-                  Generated Code
-                  <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                </CollapsibleTrigger>
-              </SidebarGroupLabel>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <div className="px-2 py-4">
-                    <CodePreview fields={schemaFields} />
-                  </div>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </SidebarGroup>
-          <SidebarSeparator className="mx-0" />
-        </Fragment>
-        <Fragment key={2}>
-          <SidebarGroup key="key" className="py-0">
-            <Collapsible defaultOpen={false} className="group/collapsible">
-              <SidebarGroupLabel
-                asChild
-                className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
-              >
-                <CollapsibleTrigger>
-                  Output
-                  <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                </CollapsibleTrigger>
-              </SidebarGroupLabel>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <div className="px-2 py-3">
-                    <Select defaultValue="string">
-                      <SelectTrigger className="w-full" disabled>
-                        <SelectValue placeholder="Select output format" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Output Formats</SelectLabel>
-                          <SelectItem value="string">String</SelectItem>
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </SidebarGroup>
-          <SidebarSeparator className="mx-0" />
-        </Fragment>
-        <Fragment key={3}>
-          <SidebarGroup key="key" className="py-0">
-            <Collapsible defaultOpen={false} className="group/collapsible">
-              <SidebarGroupLabel
-                asChild
-                className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
-              >
-                <CollapsibleTrigger>
-                  Model
-                  <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                </CollapsibleTrigger>
-              </SidebarGroupLabel>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <div className="px-2 py-3">
-                    <SelectScrollable
-                      value={model ?? ''}
-                      onChange={handleModelChange}
-                    />
-                  </div>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </SidebarGroup>
-          <SidebarSeparator className="mx-0" />
-        </Fragment>
-        <Fragment key={4}>
-          <SidebarGroup key="key" className="py-0">
-            <Collapsible defaultOpen={false} className="group/collapsible">
-              <SidebarGroupLabel
-                asChild
-                className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
-              >
-                <CollapsibleTrigger>
-                  Temperature
-                  <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                </CollapsibleTrigger>
-              </SidebarGroupLabel>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <div className="px-2 py-3">
-                    <SidebarSlider
-                      value={temperature}
-                      onChange={handleTemperatureChange}
-                    />
-                  </div>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </SidebarGroup>
-          <SidebarSeparator className="mx-0" />
-        </Fragment>
-        <Fragment key={5}>
-          <SidebarGroup key="test" className="py-0">
-            <Collapsible defaultOpen={true} className="group/collapsible">
-              <SidebarGroupLabel
-                asChild
-                className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
-              >
-                <CollapsibleTrigger>
-                  Test
-                  <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                </CollapsibleTrigger>
-              </SidebarGroupLabel>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <div className="flex flex-col gap-y-2">
-                    <div className="px-2 py-3">
-                      <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
-                        Input data
-                      </div>
-                      <div className="rounded-md border border-sidebar-border bg-sidebar/50 p-2 overflow-x-auto">
-                        <JsonEditor
-                          data={inputData}
-                          setData={setInputData}
-                          theme={jsonEditorTheme}
-                          rootFontSize={11}
-                          collapse={1}
-                          showCollectionCount={true}
-                          indent={2}
-                          maxWidth="100%"
-                        />
-                      </div>
-                    </div>
+      // Save to DB
+      const config = {
+        schema: schemaRef.current,
+        model: testModel,
+        temperature: testTemperature,
+      };
+      configFetcher.submit(
+        { intent: 'saveConfig', config: JSON.stringify(config) },
+        { method: 'post', action: location.pathname },
+      );
+    }, [testModel, testTemperature, configFetcher, location.pathname]);
 
-                    <div className="px-2">
-                      <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
-                        Model
-                      </div>
-                      <div className="my-4">
-                        <SelectScrollable
-                          value={testModel ?? ''}
-                          onChange={setTestModel}
-                        />
-                      </div>
-                    </div>
+    const jsonEditorTheme = useMemo(() => {
+      const isDarkMode =
+        typeof document !== 'undefined' &&
+        document.documentElement.classList.contains('dark');
+      return isDarkMode ? sidebarDarkTheme : sidebarLightTheme;
+    }, []);
 
-                    <div className="px-2">
-                      <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
-                        Prompt version
-                      </div>
-                      <div className="my-4">
-                        <Select
-                          value={selectedVersion?.toString() ?? ''}
-                          disabled={versions.length === 0}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue
-                              placeholder={
-                                versions.length === 0
-                                  ? 'No versions'
-                                  : 'Select version'
-                              }
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              <SelectLabel>Versions</SelectLabel>
-                              {versions.map((v) => (
-                                <SelectItem
-                                  key={v.version}
-                                  value={v.version.toString()}
-                                >
-                                  v{v.version}.0.0
-                                  {v.version === latestVersion
-                                    ? ' (latest)'
-                                    : ''}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="px-2">
-                      <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
-                        Temperature
-                      </div>
-                      <div className="my-1">
-                        <SidebarSlider
-                          value={testTemperature}
-                          onChange={setTestTemperature}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="px-2 pt-4 flex flex-col gap-2">
-                      <Button
-                        className={cn(
-                          'w-full font-medium transition-all duration-200',
-                          isStreaming
-                            ? 'bg-primary/80'
-                            : 'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/95 hover:to-primary/85 shadow-sm hover:shadow-md',
-                        )}
-                        onClick={handleRunPrompt}
-                        disabled={isStreaming}
-                      >
-                        {isStreaming ? (
-                          <span className="flex items-center gap-2">
-                            <span className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                            Running...
-                          </span>
-                        ) : (
-                          'Test'
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={handleSaveTestConfig}
-                        disabled={
-                          !hasTestConfigChanges ||
-                          configFetcher.state !== 'idle'
-                        }
-                      >
-                        {configFetcher.state !== 'idle' ? (
-                          <span className="flex items-center gap-2">
-                            <span className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                            Saving...
-                          </span>
-                        ) : (
-                          'Save config'
-                        )}
-                      </Button>
-                    </div>
-
-                    <div className="px-2 pt-6 pb-4">
-                      <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
-                        Response
-                      </div>
-                      <StreamingResponse
-                        text={streamText}
-                        isStreaming={isStreaming}
-                        isComplete={isComplete}
-                        error={streamError}
+    return (
+      <Sidebar
+        collapsible="none"
+        className={cn(
+          'flex w-full',
+          isMobile
+            ? 'relative border-t bg-sidebar'
+            : 'absolute inset-0 h-full border-l',
+        )}
+        {...props}
+      >
+        <SidebarContent>
+          <Fragment key={0}>
+            <SidebarGroup key="key" className="py-1">
+              <Collapsible defaultOpen={true} className="group/collapsible">
+                <SidebarGroupLabel
+                  asChild
+                  className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
+                >
+                  <CollapsibleTrigger>
+                    Versions
+                    <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                  </CollapsibleTrigger>
+                </SidebarGroupLabel>
+                <CollapsibleContent>
+                  <SidebarGroupContent>
+                    <VersionsTable versions={versions} />
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarGroup>
+            <SidebarSeparator className="mx-0" />
+          </Fragment>
+          <Fragment key={1}>
+            <SidebarGroup key="key" className="py-1">
+              <Collapsible defaultOpen={true} className="group/collapsible">
+                <SidebarGroupLabel
+                  asChild
+                  className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
+                >
+                  <CollapsibleTrigger>
+                    Schema Builder
+                    <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                  </CollapsibleTrigger>
+                </SidebarGroupLabel>
+                <CollapsibleContent>
+                  <SidebarGroupContent>
+                    <div className="px-2 py-4">
+                      <SchemaBuilder
+                        fields={schemaFields}
+                        onChange={handleSchemaChange}
                       />
                     </div>
-                  </div>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </SidebarGroup>
-          <SidebarSeparator className="mx-0" />
-        </Fragment>
-      </SidebarContent>
-    </Sidebar>
-  );
-}
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarGroup>
+            <SidebarSeparator className="mx-0" />
+          </Fragment>
+          <Fragment key={1.5}>
+            <SidebarGroup key="code-preview" className="py-1">
+              <Collapsible defaultOpen={false} className="group/collapsible">
+                <SidebarGroupLabel
+                  asChild
+                  className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
+                >
+                  <CollapsibleTrigger>
+                    Generated Code
+                    <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                  </CollapsibleTrigger>
+                </SidebarGroupLabel>
+                <CollapsibleContent>
+                  <SidebarGroupContent>
+                    <div className="px-2 py-4">
+                      <CodePreview fields={schemaFields} />
+                    </div>
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarGroup>
+            <SidebarSeparator className="mx-0" />
+          </Fragment>
+          <Fragment key={2}>
+            <SidebarGroup key="key" className="py-0">
+              <Collapsible defaultOpen={false} className="group/collapsible">
+                <SidebarGroupLabel
+                  asChild
+                  className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
+                >
+                  <CollapsibleTrigger>
+                    Output
+                    <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                  </CollapsibleTrigger>
+                </SidebarGroupLabel>
+                <CollapsibleContent>
+                  <SidebarGroupContent>
+                    <div className="px-2 py-3">
+                      <Select defaultValue="string">
+                        <SelectTrigger className="w-full" disabled>
+                          <SelectValue placeholder="Select output format" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Output Formats</SelectLabel>
+                            <SelectItem value="string">String</SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarGroup>
+            <SidebarSeparator className="mx-0" />
+          </Fragment>
+          <Fragment key={3}>
+            <SidebarGroup key="key" className="py-0">
+              <Collapsible defaultOpen={false} className="group/collapsible">
+                <SidebarGroupLabel
+                  asChild
+                  className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
+                >
+                  <CollapsibleTrigger>
+                    Model
+                    <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                  </CollapsibleTrigger>
+                </SidebarGroupLabel>
+                <CollapsibleContent>
+                  <SidebarGroupContent>
+                    <div className="px-2 py-3">
+                      <SelectScrollable
+                        value={model ?? ''}
+                        onChange={handleModelChange}
+                      />
+                    </div>
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarGroup>
+            <SidebarSeparator className="mx-0" />
+          </Fragment>
+          <Fragment key={4}>
+            <SidebarGroup key="key" className="py-0">
+              <Collapsible defaultOpen={false} className="group/collapsible">
+                <SidebarGroupLabel
+                  asChild
+                  className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
+                >
+                  <CollapsibleTrigger>
+                    Temperature
+                    <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                  </CollapsibleTrigger>
+                </SidebarGroupLabel>
+                <CollapsibleContent>
+                  <SidebarGroupContent>
+                    <div className="px-2 py-3">
+                      <SidebarSlider
+                        value={temperature}
+                        onChange={handleTemperatureChange}
+                      />
+                    </div>
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarGroup>
+            <SidebarSeparator className="mx-0" />
+          </Fragment>
+          <Fragment key={5}>
+            <SidebarGroup ref={testSectionRef} key="test" className="py-0">
+              <Collapsible
+                open={testOpen}
+                onOpenChange={setTestOpen}
+                className="group/collapsible"
+              >
+                <SidebarGroupLabel
+                  asChild
+                  className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
+                >
+                  <CollapsibleTrigger>
+                    Test
+                    <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                  </CollapsibleTrigger>
+                </SidebarGroupLabel>
+                <CollapsibleContent>
+                  <SidebarGroupContent>
+                    <div className="flex flex-col gap-y-2">
+                      <div className="px-2 py-3">
+                        <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
+                          Input data
+                        </div>
+                        <div className="rounded-md border border-sidebar-border bg-sidebar/50 p-2 overflow-x-auto">
+                          <JsonEditor
+                            data={inputData}
+                            setData={setInputData}
+                            theme={jsonEditorTheme}
+                            rootFontSize={11}
+                            collapse={1}
+                            showCollectionCount={true}
+                            indent={2}
+                            maxWidth="100%"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="px-2">
+                        <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
+                          Model
+                        </div>
+                        <div className="my-4">
+                          <SelectScrollable
+                            value={testModel ?? ''}
+                            onChange={setTestModel}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="px-2">
+                        <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
+                          Prompt version
+                        </div>
+                        <div className="my-4">
+                          <Select
+                            value={selectedVersion?.toString() ?? ''}
+                            disabled={versions.length === 0}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue
+                                placeholder={
+                                  versions.length === 0
+                                    ? 'No versions'
+                                    : 'Select version'
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                <SelectLabel>Versions</SelectLabel>
+                                {versions.map((v) => (
+                                  <SelectItem
+                                    key={v.version}
+                                    value={v.version.toString()}
+                                  >
+                                    v{v.version}.0.0
+                                    {v.version === latestVersion
+                                      ? ' (latest)'
+                                      : ''}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="px-2">
+                        <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
+                          Temperature
+                        </div>
+                        <div className="my-1">
+                          <SidebarSlider
+                            value={testTemperature}
+                            onChange={setTestTemperature}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="px-2 pt-4 flex flex-col gap-2">
+                        <Button
+                          className={cn(
+                            'w-full font-medium transition-all duration-200',
+                            isStreaming
+                              ? 'bg-primary/80'
+                              : 'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/95 hover:to-primary/85 shadow-sm hover:shadow-md',
+                          )}
+                          onClick={handleRunPrompt}
+                          disabled={isStreaming}
+                        >
+                          {isStreaming ? (
+                            <span className="flex items-center gap-2">
+                              <span className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                              Running...
+                            </span>
+                          ) : (
+                            'Test'
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          onClick={handleSaveTestConfig}
+                          disabled={
+                            !hasTestConfigChanges ||
+                            configFetcher.state !== 'idle'
+                          }
+                        >
+                          {configFetcher.state !== 'idle' ? (
+                            <span className="flex items-center gap-2">
+                              <span className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                              Saving...
+                            </span>
+                          ) : (
+                            'Save config'
+                          )}
+                        </Button>
+                      </div>
+
+                      <div className="px-2 pt-6 pb-4">
+                        <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
+                          Response
+                        </div>
+                        <StreamingResponse
+                          text={streamText}
+                          isStreaming={isStreaming}
+                          isComplete={isComplete}
+                          error={streamError}
+                        />
+                      </div>
+                    </div>
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarGroup>
+            <SidebarSeparator className="mx-0" />
+          </Fragment>
+        </SidebarContent>
+      </Sidebar>
+    );
+  },
+);
+
+SidebarRight.displayName = 'SidebarRight';

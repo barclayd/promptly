@@ -1,7 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { Outlet, useParams, useRouteLoaderData } from 'react-router';
 import { SidebarLeft } from '~/components/sidebar-left';
-import { SidebarRight } from '~/components/sidebar-right';
+import {
+  SidebarRight,
+  type SidebarRightHandle,
+} from '~/components/sidebar-right';
 import { SiteHeader } from '~/components/site-header';
 import {
   type LayoutStorage,
@@ -59,6 +62,9 @@ export default function PromptDetailLayout() {
   const model = promptDetailData?.model ?? null;
   const temperature = promptDetailData?.temperature ?? 0.5;
 
+  // Ref for external control of SidebarRight (trigger test, get streaming state)
+  const sidebarRightRef = useRef<SidebarRightHandle>(null);
+
   const cookieStorage = useMemo(
     () => createCookieStorage(loaderData?.serverLayoutCookie ?? null),
     [loaderData?.serverLayoutCookie],
@@ -83,10 +89,18 @@ export default function PromptDetailLayout() {
         <div className="flex flex-1 flex-col min-h-svh">
           <SidebarInset className="flex-1">
             <SiteHeader />
-            <Outlet key={params.promptId} />
+            <Outlet
+              key={params.promptId}
+              context={{
+                triggerTest: () => sidebarRightRef.current?.triggerTest(),
+                getIsTestRunning: () =>
+                  sidebarRightRef.current?.isStreaming ?? false,
+              }}
+            />
           </SidebarInset>
           <div className="w-full shrink-0">
             <SidebarRight
+              ref={sidebarRightRef}
               versions={versions}
               schema={schema}
               model={model}
@@ -110,7 +124,14 @@ export default function PromptDetailLayout() {
             <SidebarInset className="h-full flex flex-col">
               <SiteHeader />
               <div className="flex-1 overflow-y-auto">
-                <Outlet key={params.promptId} />
+                <Outlet
+                  key={params.promptId}
+                  context={{
+                    triggerTest: () => sidebarRightRef.current?.triggerTest(),
+                    getIsTestRunning: () =>
+                      sidebarRightRef.current?.isStreaming ?? false,
+                  }}
+                />
               </div>
             </SidebarInset>
           </ResizablePanel>
@@ -122,6 +143,7 @@ export default function PromptDetailLayout() {
             className="h-full relative"
           >
             <SidebarRight
+              ref={sidebarRightRef}
               versions={versions}
               schema={schema}
               model={model}

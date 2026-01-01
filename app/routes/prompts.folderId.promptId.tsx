@@ -1,13 +1,18 @@
 import { RssIcon } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { Suspense, useCallback, useRef, useState } from 'react';
-import { Await, data, useFetcher } from 'react-router';
+import { Await, data, useFetcher, useOutletContext } from 'react-router';
 import { useDebouncedCallback } from 'use-debounce';
 import { PromptReview } from '~/components/prompt-review';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/prompts.folderId.promptId';
+
+type PromptDetailContext = {
+  triggerTest: () => void;
+  getIsTestRunning: () => boolean;
+};
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
 export const meta = ({}: Route.MetaArgs) => {
@@ -226,6 +231,8 @@ export const action = async ({
 
 export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher<typeof action>();
+  const { triggerTest, getIsTestRunning } =
+    useOutletContext<PromptDetailContext>();
 
   const [initialSystem] = useState(loaderData.systemMessage);
   const [initialUser] = useState(loaderData.userMessage);
@@ -310,6 +317,8 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               isPendingSave={isPendingSave}
               isSaving={isSaving}
               lastSavedAt={lastSavedAt}
+              onTest={triggerTest}
+              isTestRunning={getIsTestRunning()}
             />
             <PromptReview
               title="User Prompt"
@@ -319,6 +328,8 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               isPendingSave={isPendingSave}
               isSaving={isSaving}
               lastSavedAt={lastSavedAt}
+              onTest={triggerTest}
+              isTestRunning={getIsTestRunning()}
             />
           </div>
         </div>
