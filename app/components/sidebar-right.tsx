@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  IconCornerDownLeft,
-  IconCreditCard,
-  IconDotsVertical,
-  IconLogout,
-  IconNotification,
-  IconUserCircle,
-} from '@tabler/icons-react';
+import { IconCornerDownLeft } from '@tabler/icons-react';
 import { JsonEditor, type Theme } from 'json-edit-react';
 import { ChevronRight } from 'lucide-react';
 import type * as React from 'react';
@@ -23,15 +16,6 @@ import {
   CollapsibleTrigger,
 } from '~/components/ui/collapsible';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '~/components/ui/dropdown-menu';
-import {
   Select,
   SelectContent,
   SelectGroup,
@@ -46,15 +30,14 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
 } from '~/components/ui/sidebar';
 import { type Version, VersionsTable } from '~/components/versions-table';
 import { useIsMobile } from '~/hooks/use-mobile';
 import type { SchemaField } from '~/lib/schema-types';
+import { cn } from '~/lib/utils';
 
 const DEFAULT_INPUT_DATA = [
   'Brilliant service from start to finish. The team arrived on time, handled everything with care, and nothing was damaged. Would definitely recommend to anyone moving house.',
@@ -62,7 +45,6 @@ const DEFAULT_INPUT_DATA = [
   'Absolutely terrible experience. Driver was two hours late with no apology, then tried to charge extra for stairs that were clearly listed in the booking. Avoid.',
 ];
 
-// Custom theme that integrates with the sidebar's design system
 const sidebarLightTheme: Theme = {
   container: {
     backgroundColor: 'transparent',
@@ -126,7 +108,6 @@ export function SidebarRight({
 
   const isMobile = useIsMobile();
 
-  // Memoized theme selection based on document dark class
   const jsonEditorTheme = useMemo(() => {
     const isDarkMode =
       typeof document !== 'undefined' &&
@@ -137,7 +118,12 @@ export function SidebarRight({
   return (
     <Sidebar
       collapsible="none"
-      className="absolute inset-0 flex h-full w-full border-t md:border-t-0 md:border-l"
+      className={cn(
+        'flex w-full',
+        isMobile
+          ? 'relative border-t bg-sidebar'
+          : 'absolute inset-0 h-full border-l',
+      )}
       {...props}
     >
       <SidebarContent>
