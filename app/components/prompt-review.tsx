@@ -22,7 +22,7 @@ export const PromptReview = ({
         <InputGroupTextarea
           id="textarea-code-32"
           placeholder="Prompt text goes here"
-          className="min-h-[200px]"
+          className="min-h-50"
           defaultValue={input}
         />
         <InputGroupAddon align="block-end" className="border-t">
