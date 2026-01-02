@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
 import { data, redirect } from 'react-router';
 import { z } from 'zod';
+import { orgContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/prompts.create';
 
@@ -44,15 +45,12 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return data({ errors: { _form: ['Not authenticated'] } }, { status: 401 });
   }
 
-  const orgsResponse = await auth.api.listOrganizations({
-    headers: request.headers,
-    asResponse: true,
-  });
-  const orgs = (await orgsResponse.json()) as Organization[];
-
+  const org = context.get(orgContext);
   let orgId: string;
 
-  if (!orgs || orgs?.length === 0) {
+  if (org) {
+    orgId = org.organizationId;
+  } else {
     const createOrgResponse = await auth.api.createOrganization({
       body: {
         name: `${session.user.name}'s Workspace`,
@@ -63,8 +61,6 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     });
     const newOrg = (await createOrgResponse.json()) as Organization;
     orgId = newOrg.id;
-  } else {
-    orgId = orgs[0].id;
   }
 
   const db = context.cloudflare.env.promptly;

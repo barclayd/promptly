@@ -102,6 +102,8 @@ export const PromptReview = ({
   isPendingSave,
   isSaving,
   lastSavedAt,
+  onTest,
+  isTestRunning,
 }: {
   title: string;
   value?: string;
@@ -110,9 +112,19 @@ export const PromptReview = ({
   isPendingSave?: boolean;
   isSaving?: boolean;
   lastSavedAt?: number | null;
+  onTest?: () => void;
+  isTestRunning?: boolean;
 }) => {
   const isCurrentlySaving = isPendingSave || isSaving;
   const [copied, setCopied] = useState(false);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      onTest?.();
+    }
+  };
 
   const handleCopy = async () => {
     if (!value) return;
@@ -133,6 +145,7 @@ export const PromptReview = ({
           )}
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
+          onKeyDown={handleKeyDown}
         />
         <InputGroupAddon align="block-end" className="border-t">
           <InputGroupText className="min-w-0">
@@ -143,8 +156,23 @@ export const PromptReview = ({
               lastSavedAt={lastSavedAt}
             />
           </InputGroupText>
-          <InputGroupButton size="sm" className="ml-auto" variant="default">
-            Run <IconCornerDownLeft />
+          <InputGroupButton
+            size="sm"
+            className="ml-auto"
+            variant="default"
+            onClick={onTest}
+            disabled={isTestRunning}
+          >
+            {isTestRunning ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Running...
+              </>
+            ) : (
+              <>
+                Test <IconCornerDownLeft />
+              </>
+            )}
           </InputGroupButton>
         </InputGroupAddon>
         <InputGroupAddon align="block-start" className="border-b">

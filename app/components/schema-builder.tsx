@@ -1,3 +1,4 @@
+import { IconSparkles } from '@tabler/icons-react';
 import { Plus } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import type { SchemaField } from '~/lib/schema-types';
@@ -6,9 +7,16 @@ import { FieldBuilder } from './schema-builder/field-builder';
 interface SchemaBuilderProps {
   fields: SchemaField[];
   onChange: (fields: SchemaField[]) => void;
+  onGenerateTestData?: () => void;
+  isGeneratingTestData?: boolean;
 }
 
-export const SchemaBuilder = ({ fields, onChange }: SchemaBuilderProps) => {
+export const SchemaBuilder = ({
+  fields,
+  onChange,
+  onGenerateTestData,
+  isGeneratingTestData,
+}: SchemaBuilderProps) => {
   const addField = () => {
     const newField: SchemaField = {
       id: crypto.randomUUID(),
@@ -39,15 +47,32 @@ export const SchemaBuilder = ({ fields, onChange }: SchemaBuilderProps) => {
         />
       ))}
 
-      <Button
-        type="button"
-        variant="outline"
-        onClick={addField}
-        className="w-full"
-      >
+      <Button type="button" onClick={addField} className="w-full">
         <Plus className="h-4 w-4 mr-2" />
         Add Field
       </Button>
+
+      {onGenerateTestData && (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onGenerateTestData}
+          disabled={fields.length === 0 || isGeneratingTestData}
+          className="w-full"
+        >
+          {isGeneratingTestData ? (
+            <>
+              <span className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <IconSparkles className="h-4 w-4 mr-2" />
+              Generate test data
+            </>
+          )}
+        </Button>
+      )}
     </div>
   );
 };

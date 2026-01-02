@@ -14,6 +14,7 @@ import {
 } from '~/components/ui/empty';
 import { Folder } from '~/components/ui/folder';
 import { Paper } from '~/components/ui/paper';
+import { orgContext } from '~/context';
 import type { Route } from './+types/prompts';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
@@ -26,10 +27,16 @@ export const meta = ({}: Route.MetaArgs) => [
 ];
 
 export const loader = async ({ context }: Route.LoaderArgs) => {
+  const org = context.get(orgContext);
+  if (!org) {
+    throw new Response('Unauthorized', { status: 403 });
+  }
+
   const db = context.cloudflare.env.promptly;
 
   const folders = await db
-    .prepare('SELECT id, name FROM prompt_folder')
+    .prepare('SELECT id, name FROM prompt_folder WHERE organization_id = ?')
+    .bind(org.organizationId)
     .all<{ id: string; name: string }>();
 
   const untitledFolder = folders.results?.find((f) => f.name === 'Untitled');
@@ -37,9 +44,9 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
   const prompts = untitledFolder
     ? db
         .prepare(
-          'SELECT id, name, description, updated_at FROM prompt WHERE folder_id = ?',
+          'SELECT id, name, description, updated_at FROM prompt WHERE folder_id = ? AND organization_id = ?',
         )
-        .bind(untitledFolder.id)
+        .bind(untitledFolder.id, org.organizationId)
         .all<{
           id: string;
           name: string;

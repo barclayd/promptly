@@ -1,13 +1,19 @@
 import { RssIcon } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { Suspense, useCallback, useRef, useState } from 'react';
-import { Await, data, useFetcher } from 'react-router';
+import { Await, data, useFetcher, useOutletContext } from 'react-router';
 import { useDebouncedCallback } from 'use-debounce';
 import { PromptReview } from '~/components/prompt-review';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
+import { orgContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/prompts.folderId.promptId';
+
+type PromptDetailContext = {
+  triggerTest: () => void;
+  getIsTestRunning: () => boolean;
+};
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
 export const meta = ({}: Route.MetaArgs) => {
@@ -21,19 +27,26 @@ export const meta = ({}: Route.MetaArgs) => {
 };
 
 export const loader = async ({ params, context }: Route.LoaderArgs) => {
+  const org = context.get(orgContext);
+  if (!org) {
+    throw new Response('Unauthorized', { status: 403 });
+  }
+
   const { folderId, promptId } = params;
   const db = context.cloudflare.env.promptly;
 
   const [folder, prompt] = await Promise.all([
     db
-      .prepare('SELECT id, name FROM prompt_folder WHERE id = ?')
-      .bind(folderId)
+      .prepare(
+        'SELECT id, name FROM prompt_folder WHERE id = ? AND organization_id = ?',
+      )
+      .bind(folderId, org.organizationId)
       .first<{ id: string; name: string }>(),
     db
       .prepare(
-        'SELECT id, name, description FROM prompt WHERE id = ? AND folder_id = ?',
+        'SELECT id, name, description FROM prompt WHERE id = ? AND folder_id = ? AND organization_id = ?',
       )
-      .bind(promptId, folderId)
+      .bind(promptId, folderId, org.organizationId)
       .first<{ id: string; name: string; description: string }>(),
   ]);
 
@@ -81,6 +94,8 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
   let schema: unknown[] = [];
   let model: string | null = null;
   let temperature = 0.5;
+  let inputData: unknown = {};
+  let inputDataRootName: string | null = null;
 
   try {
     if (latestVersion?.config) {
@@ -89,6 +104,8 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
       schema = Array.isArray(parsed.schema) ? parsed.schema : [];
       model = parsed.model ?? null;
       temperature = parsed.temperature ?? 0.5;
+      inputData = parsed.inputData ?? {};
+      inputDataRootName = parsed.inputDataRootName ?? null;
     }
   } catch {
     // Keep defaults
@@ -104,6 +121,8 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
     schema,
     model,
     temperature,
+    inputData,
+    inputDataRootName,
   };
 };
 
@@ -112,6 +131,11 @@ export const action = async ({
   params,
   context,
 }: Route.ActionArgs) => {
+  const org = context.get(orgContext);
+  if (!org) {
+    return data({ error: 'Unauthorized' }, { status: 403 });
+  }
+
   const { promptId } = params;
   const db = context.cloudflare.env.promptly;
 
@@ -122,6 +146,15 @@ export const action = async ({
 
   if (!session?.user) {
     return data({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  const promptOwnership = await db
+    .prepare('SELECT id FROM prompt WHERE id = ? AND organization_id = ?')
+    .bind(promptId, org.organizationId)
+    .first();
+
+  if (!promptOwnership) {
+    return data({ error: 'Prompt not found' }, { status: 404 });
   }
 
   const formData = await request.formData();
@@ -226,6 +259,8 @@ export const action = async ({
 
 export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher<typeof action>();
+  const { triggerTest, getIsTestRunning } =
+    useOutletContext<PromptDetailContext>();
 
   const [initialSystem] = useState(loaderData.systemMessage);
   const [initialUser] = useState(loaderData.userMessage);
@@ -233,7 +268,17 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const [systemMessage, setSystemMessage] = useState(loaderData.systemMessage);
   const [userMessage, setUserMessage] = useState(loaderData.userMessage);
 
-  const [isPendingSave, setIsPendingSave] = useState(false);
+  // Separate pending states and timestamps for each field
+  const [isPendingSystemSave, setIsPendingSystemSave] = useState(false);
+  const [isPendingUserSave, setIsPendingUserSave] = useState(false);
+  const [lastSystemSavedAt, setLastSystemSavedAt] = useState<number | null>(
+    null,
+  );
+  const [lastUserSavedAt, setLastUserSavedAt] = useState<number | null>(null);
+
+  // Use refs to track pending states for the debounced callback
+  const pendingSystemRef = useRef(false);
+  const pendingUserRef = useRef(false);
 
   const systemRef = useRef(systemMessage);
   const userRef = useRef(userMessage);
@@ -241,17 +286,31 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   userRef.current = userMessage;
 
   const debouncedSave = useDebouncedCallback(() => {
+    const now = Date.now();
+    // Update timestamps for fields that were pending (optimistic update)
+    if (pendingSystemRef.current) {
+      setLastSystemSavedAt(now);
+    }
+    if (pendingUserRef.current) {
+      setLastUserSavedAt(now);
+    }
+
     fetcher.submit(
       { systemMessage: systemRef.current, userMessage: userRef.current },
       { method: 'post' },
     );
-    setIsPendingSave(false);
+
+    setIsPendingSystemSave(false);
+    setIsPendingUserSave(false);
+    pendingSystemRef.current = false;
+    pendingUserRef.current = false;
   }, 1000);
 
   const handleSystemChange = useCallback(
     (value: string) => {
       setSystemMessage(value);
-      setIsPendingSave(true);
+      setIsPendingSystemSave(true);
+      pendingSystemRef.current = true;
       debouncedSave();
     },
     [debouncedSave],
@@ -260,7 +319,8 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const handleUserChange = useCallback(
     (value: string) => {
       setUserMessage(value);
-      setIsPendingSave(true);
+      setIsPendingUserSave(true);
+      pendingUserRef.current = true;
       debouncedSave();
     },
     [debouncedSave],
@@ -268,9 +328,6 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
 
   const isSystemDirty = systemMessage !== initialSystem;
   const isUserDirty = userMessage !== initialUser;
-
-  const isSaving = fetcher.state !== 'idle';
-  const lastSavedAt = fetcher.data?.savedAt ?? null;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -307,18 +364,22 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               value={systemMessage}
               onChange={handleSystemChange}
               isDirty={isSystemDirty}
-              isPendingSave={isPendingSave}
-              isSaving={isSaving}
-              lastSavedAt={lastSavedAt}
+              isPendingSave={isPendingSystemSave}
+              isSaving={false}
+              lastSavedAt={lastSystemSavedAt}
+              onTest={triggerTest}
+              isTestRunning={getIsTestRunning()}
             />
             <PromptReview
               title="User Prompt"
               value={userMessage}
               onChange={handleUserChange}
               isDirty={isUserDirty}
-              isPendingSave={isPendingSave}
-              isSaving={isSaving}
-              lastSavedAt={lastSavedAt}
+              isPendingSave={isPendingUserSave}
+              isSaving={false}
+              lastSavedAt={lastUserSavedAt}
+              onTest={triggerTest}
+              isTestRunning={getIsTestRunning()}
             />
           </div>
         </div>
