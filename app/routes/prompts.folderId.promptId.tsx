@@ -1,9 +1,10 @@
 import { RssIcon } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { Suspense, useCallback, useRef, useState } from 'react';
+import { Suspense, useCallback, useMemo, useRef, useState } from 'react';
 import { Await, data, useFetcher, useOutletContext } from 'react-router';
 import { useDebouncedCallback } from 'use-debounce';
 import { PromptReview } from '~/components/prompt-review';
+import { PublishPromptDialog } from '~/components/publish-prompt-dialog';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import { orgContext } from '~/context';
@@ -76,20 +77,48 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
     .bind(promptId)
     .first<{ version: number }>();
 
-  const versionsResult = await db
-    .prepare(
-      `SELECT pv.version, pv.published_at, u.name as published_by
-       FROM prompt_version pv
-       LEFT JOIN user u ON pv.created_by = u.id
-       WHERE pv.prompt_id = ?
-       ORDER BY pv.version DESC`,
-    )
-    .bind(promptId)
-    .all<{
-      version: number;
-      published_at: number | null;
-      published_by: string | null;
-    }>();
+  const [versionsResult, lastPublishedResult] = await Promise.all([
+    db
+      .prepare(
+        `SELECT pv.version, pv.published_at, u.name as published_by
+         FROM prompt_version pv
+         LEFT JOIN user u ON pv.created_by = u.id
+         WHERE pv.prompt_id = ?
+         ORDER BY pv.version DESC`,
+      )
+      .bind(promptId)
+      .all<{
+        version: number;
+        published_at: number | null;
+        published_by: string | null;
+      }>(),
+    db
+      .prepare(
+        'SELECT version, config, system_message, user_message FROM prompt_version WHERE prompt_id = ? AND published_at IS NOT NULL ORDER BY version DESC LIMIT 1',
+      )
+      .bind(promptId)
+      .first<{
+        version: number;
+        config: string | null;
+        system_message: string | null;
+        user_message: string | null;
+      }>(),
+  ]);
+
+  let lastPublishedSchema: unknown[] = [];
+  let lastPublishedSystemMessage: string | null = null;
+  let lastPublishedUserMessage: string | null = null;
+
+  try {
+    if (lastPublishedResult?.config) {
+      const parsed = JSON.parse(lastPublishedResult.config);
+      lastPublishedSchema = Array.isArray(parsed.schema) ? parsed.schema : [];
+    }
+    lastPublishedSystemMessage = lastPublishedResult?.system_message ?? null;
+    lastPublishedUserMessage = lastPublishedResult?.user_message ?? null;
+  } catch {
+    // Keep defaults
+  }
 
   let schema: unknown[] = [];
   let model: string | null = null;
@@ -111,6 +140,8 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
     // Keep defaults
   }
 
+  const hasDraft = versionsResult.results?.some((v) => v.published_at === null) ?? false;
+
   return {
     folder,
     prompt,
@@ -123,6 +154,11 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
     temperature,
     inputData,
     inputDataRootName,
+    lastPublishedVersion: lastPublishedResult?.version ?? null,
+    lastPublishedSchema,
+    lastPublishedSystemMessage,
+    lastPublishedUserMessage,
+    hasDraft,
   };
 };
 
@@ -329,15 +365,70 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const isSystemDirty = systemMessage !== initialSystem;
   const isUserDirty = userMessage !== initialUser;
 
+  const schemasEqual = useMemo(() => {
+    const sortByName = (arr: unknown[]) =>
+      [...arr].sort((a, b) => {
+        const aName = (a as { name?: string })?.name ?? '';
+        const bName = (b as { name?: string })?.name ?? '';
+        return aName.localeCompare(bName);
+      });
+
+    const currentSchema = loaderData.schema as unknown[];
+    const lastSchema = loaderData.lastPublishedSchema as unknown[];
+
+    if (currentSchema.length !== lastSchema.length) return false;
+    return (
+      JSON.stringify(sortByName(currentSchema)) ===
+      JSON.stringify(sortByName(lastSchema))
+    );
+  }, [loaderData.schema, loaderData.lastPublishedSchema]);
+
+  const suggestedVersion = useMemo(() => {
+    const lastVersion = loaderData.lastPublishedVersion ?? 0;
+    if (lastVersion === 0) return '1.0.0';
+    if (!schemasEqual) return `${lastVersion + 1}.0.0`;
+    return `${lastVersion}.1.0`;
+  }, [loaderData.lastPublishedVersion, schemasEqual]);
+
+  const hasContentChanges = useMemo(() => {
+    if (!loaderData.lastPublishedVersion) return true;
+
+    const systemChanged =
+      loaderData.systemMessage !== (loaderData.lastPublishedSystemMessage ?? '');
+    const userChanged =
+      loaderData.userMessage !== (loaderData.lastPublishedUserMessage ?? '');
+    const schemaChanged = !schemasEqual;
+
+    return systemChanged || userChanged || schemaChanged;
+  }, [
+    loaderData.lastPublishedVersion,
+    loaderData.systemMessage,
+    loaderData.userMessage,
+    loaderData.lastPublishedSystemMessage,
+    loaderData.lastPublishedUserMessage,
+    schemasEqual,
+  ]);
+
+  const canPublish = loaderData.hasDraft && hasContentChanges;
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6 flex flex-col gap-y-4">
             <div className="flex gap-x-3 justify-end">
-              <Button className="cursor-pointer">
-                Publish <RssIcon />
-              </Button>
+              <PublishPromptDialog
+                promptId={loaderData.prompt.id}
+                folderId={loaderData.folder.id}
+                suggestedVersion={suggestedVersion}
+                lastPublishedVersion={loaderData.lastPublishedVersion}
+                isSchemaChanged={!schemasEqual}
+                disabled={!canPublish}
+              >
+                <Button className="cursor-pointer" disabled={!canPublish}>
+                  Publish <RssIcon />
+                </Button>
+              </PublishPromptDialog>
             </div>
             <h1 className="text-3xl">{loaderData.prompt.name}</h1>
             <Suspense

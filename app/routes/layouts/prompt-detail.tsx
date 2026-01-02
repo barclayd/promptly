@@ -1,5 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { Outlet, useParams, useRouteLoaderData } from 'react-router';
+import { SidebarAutoHide } from '~/components/sidebar-auto-hide';
 import { SidebarLeft } from '~/components/sidebar-left';
 import {
   SidebarRight,
@@ -88,6 +89,7 @@ export default function PromptDetailLayout() {
         } as React.CSSProperties
       }
     >
+      <SidebarAutoHide />
       <SidebarLeft variant="inset" />
       {isMobile ? (
         <div className="flex flex-1 flex-col min-h-svh">
