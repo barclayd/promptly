@@ -8,6 +8,15 @@ type VersionInputProps = {
   onChange: (value: string) => void;
   disabled?: boolean;
   className?: string;
+  autoFocus?: boolean;
+};
+
+const focusAtEnd = (node: HTMLInputElement | null) => {
+  if (node) {
+    node.focus();
+    const len = node.value.length;
+    node.setSelectionRange(len, len);
+  }
 };
 
 export const VersionInput = ({
@@ -15,6 +24,7 @@ export const VersionInput = ({
   onChange,
   disabled,
   className,
+  autoFocus,
 }: VersionInputProps) => {
   const parts = value.split('.');
   const major = parts[0] ?? '';
@@ -24,6 +34,13 @@ export const VersionInput = ({
   const majorRef = useRef<HTMLInputElement>(null);
   const minorRef = useRef<HTMLInputElement>(null);
   const patchRef = useRef<HTMLInputElement>(null);
+
+  const majorRefCallback = (node: HTMLInputElement | null) => {
+    majorRef.current = node;
+    if (autoFocus) {
+      focusAtEnd(node);
+    }
+  };
 
   const handleChange = useCallback(
     (segment: 'major' | 'minor' | 'patch', newValue: string) => {
@@ -93,7 +110,7 @@ export const VersionInput = ({
   return (
     <div className={cn('flex items-center gap-1', className)}>
       <input
-        ref={majorRef}
+        ref={majorRefCallback}
         type="text"
         inputMode="numeric"
         value={major}

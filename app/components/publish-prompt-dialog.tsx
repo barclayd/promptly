@@ -78,7 +78,10 @@ export const PublishPromptDialog = ({
       <DialogTrigger asChild disabled={disabled}>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <fetcher.Form method="post" action="/api/prompts/publish">
           <input type="hidden" name="promptId" value={promptId} />
           <input type="hidden" name="folderId" value={folderId} />
@@ -108,7 +111,7 @@ export const PublishPromptDialog = ({
             </Item>
             <div className="mt-6 space-y-2">
               <Label>Version number</Label>
-              <VersionInput value={version} onChange={setVersion} />
+              <VersionInput value={version} onChange={setVersion} autoFocus={open} />
               {fetcher.data?.error && (
                 <p className="text-destructive text-sm">{fetcher.data.error}</p>
               )}
