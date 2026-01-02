@@ -1,5 +1,5 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
-import { generateObject } from 'ai';
+import { generateText, Output } from 'ai';
 import { data } from 'react-router';
 import { getAuth } from '~/lib/auth.server';
 import { buildZodSchema } from '~/lib/build-zod-schema';
@@ -22,7 +22,7 @@ const SYSTEM_PROMPT = `You are a placeholder content generator for structured JS
 **Use sensible defaults by type**:
 - Emails: firstname.lastname@example.com
 - URLs: https://example.com/relevant-path
-- Phones: +1 555 XXX XXXX format
+- Phones: +447715968432 format
 - Dates: Recent, reasonable dates in ISO format
 - IDs: Plausible formats (UUIDs, numeric IDs, slugs)
 - Prices/money: Round, realistic figures
@@ -66,35 +66,27 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     const zodSchema = buildZodSchema(schema);
     const schemaCode = generateZodSchema(schema);
 
-    const { object } = await generateObject({
+    const { output } = await generateText({
       model: anthropic('claude-haiku-4-5'),
-      schema: zodSchema,
+      output: Output.object({
+        schema: zodSchema,
+      }),
       system: SYSTEM_PROMPT,
       prompt: `Schema:\n${schemaCode}\n\nTitle: ${title || 'Untitled'}\nDescription: ${description || 'No description'}\n\nGenerate placeholder JSON.`,
     });
 
-    const validated = zodSchema.safeParse(object);
-
-    if (!validated.success) {
-      return data(
-        {
-          error: 'Generated data failed validation',
-          details: validated.error.errors,
-        },
-        { status: 400 },
-      );
+    if (!output) {
+      return data({ error: 'Failed to generate output' }, { status: 500 });
     }
 
     // If schema has exactly 1 field, unwrap the value and return the root name
     if (schema.length === 1) {
       const rootName = schema[0].name;
-      const unwrappedData = (validated.data as Record<string, unknown>)[
-        rootName
-      ];
+      const unwrappedData = (output as Record<string, unknown>)[rootName];
       return data({ inputData: unwrappedData, rootName });
     }
 
-    return data({ inputData: validated.data, rootName: null });
+    return data({ inputData: output, rootName: null });
   } catch (error) {
     console.error('Error generating input data:', error);
     return data({ error: 'Failed to generate input data' }, { status: 500 });
