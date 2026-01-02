@@ -251,6 +251,14 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       [debouncedSaveConfig],
     );
 
+    const handleInputDataChange = useCallback(
+      (value: unknown) => {
+        setInputData(value);
+        debouncedSaveConfig();
+      },
+      [debouncedSaveConfig],
+    );
+
     // Get selected version from URL or default to latest
     const versionParam = searchParams.get('version');
     const latestVersion = versions[0]?.version;
@@ -603,7 +611,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                         <div className="rounded-md border border-sidebar-border bg-sidebar/50 p-2 overflow-x-auto">
                           <JsonEditor
                             data={inputData}
-                            setData={setInputData}
+                            setData={handleInputDataChange}
                             theme={jsonEditorTheme}
                             rootFontSize={11}
                             collapse={1}
