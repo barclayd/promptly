@@ -21,7 +21,6 @@ import {
 import { toast } from 'sonner';
 import { useDebouncedCallback } from 'use-debounce';
 import { CodePreview } from '~/components/code-preview';
-import { removeFieldsFromInputData } from '~/lib/input-data-utils';
 import { SchemaBuilder } from '~/components/schema-builder';
 import { SelectScrollable } from '~/components/select-scrollable';
 import { SidebarSlider } from '~/components/sidebar-slider';
@@ -53,6 +52,7 @@ import {
 } from '~/components/ui/sidebar';
 import { type Version, VersionsTable } from '~/components/versions-table';
 import { useIsMobile } from '~/hooks/use-mobile';
+import { removeFieldsFromInputData } from '~/lib/input-data-utils';
 import type { SchemaField } from '~/lib/schema-types';
 import { cn } from '~/lib/utils';
 
@@ -367,7 +367,15 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       } finally {
         setIsStreaming(false);
       }
-    }, [params, testModel, testTemperature, inputData, inputDataRootName, selectedVersion, showUnusedFieldsToast]);
+    }, [
+      params,
+      testModel,
+      testTemperature,
+      inputData,
+      inputDataRootName,
+      selectedVersion,
+      showUnusedFieldsToast,
+    ]);
 
     // Trigger test from external source (e.g., PromptReview)
     const triggerTest = useCallback(() => {

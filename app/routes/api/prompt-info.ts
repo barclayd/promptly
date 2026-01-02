@@ -1,6 +1,20 @@
+import { orgContext } from '~/context';
+import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/prompt-info';
 
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
+  const auth = getAuth(context);
+  const session = await auth.api.getSession({ headers: request.headers });
+
+  if (!session?.user) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const org = context.get(orgContext);
+  if (!org) {
+    return Response.json({ error: 'Unauthorized' }, { status: 403 });
+  }
+
   const url = new URL(request.url);
   const folderId = url.searchParams.get('folderId');
   const promptId = url.searchParams.get('promptId');
@@ -16,12 +30,16 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 
   const [folder, prompt, versionResult] = await Promise.all([
     db
-      .prepare('SELECT id, name FROM prompt_folder WHERE id = ?')
-      .bind(folderId)
+      .prepare(
+        'SELECT id, name FROM prompt_folder WHERE id = ? AND organization_id = ?',
+      )
+      .bind(folderId, org.organizationId)
       .first<{ id: string; name: string }>(),
     db
-      .prepare('SELECT id, name FROM prompt WHERE id = ? AND folder_id = ?')
-      .bind(promptId, folderId)
+      .prepare(
+        'SELECT id, name FROM prompt WHERE id = ? AND folder_id = ? AND organization_id = ?',
+      )
+      .bind(promptId, folderId, org.organizationId)
       .first<{ id: string; name: string }>(),
     db
       .prepare(

@@ -2,6 +2,7 @@ import { PlusIcon } from 'lucide-react';
 import { NavLink } from 'react-router';
 import { CreatePromptDialog } from '~/components/create-prompt-dialog';
 import { Paper } from '~/components/ui/paper';
+import { orgContext } from '~/context';
 import type { Route } from './+types/prompts.id';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
@@ -14,12 +15,19 @@ export const meta = ({}: Route.MetaArgs) => [
 ];
 
 export const loader = async ({ params, context }: Route.LoaderArgs) => {
+  const org = context.get(orgContext);
+  if (!org) {
+    throw new Response('Unauthorized', { status: 403 });
+  }
+
   const { folderId } = params;
   const db = context.cloudflare.env.promptly;
 
   const folder = await db
-    .prepare('SELECT id, name FROM prompt_folder WHERE id = ?')
-    .bind(folderId)
+    .prepare(
+      'SELECT id, name FROM prompt_folder WHERE id = ? AND organization_id = ?',
+    )
+    .bind(folderId, org.organizationId)
     .first<{ id: string; name: string }>();
 
   if (!folder) {
@@ -28,9 +36,9 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
 
   const prompts = await db
     .prepare(
-      'SELECT id, name, description, updated_at FROM prompt WHERE folder_id = ?',
+      'SELECT id, name, description, updated_at FROM prompt WHERE folder_id = ? AND organization_id = ?',
     )
-    .bind(folderId)
+    .bind(folderId, org.organizationId)
     .all<{
       id: string;
       name: string;

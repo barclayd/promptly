@@ -6,6 +6,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { PromptReview } from '~/components/prompt-review';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
+import { orgContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/prompts.folderId.promptId';
 
@@ -26,19 +27,26 @@ export const meta = ({}: Route.MetaArgs) => {
 };
 
 export const loader = async ({ params, context }: Route.LoaderArgs) => {
+  const org = context.get(orgContext);
+  if (!org) {
+    throw new Response('Unauthorized', { status: 403 });
+  }
+
   const { folderId, promptId } = params;
   const db = context.cloudflare.env.promptly;
 
   const [folder, prompt] = await Promise.all([
     db
-      .prepare('SELECT id, name FROM prompt_folder WHERE id = ?')
-      .bind(folderId)
+      .prepare(
+        'SELECT id, name FROM prompt_folder WHERE id = ? AND organization_id = ?',
+      )
+      .bind(folderId, org.organizationId)
       .first<{ id: string; name: string }>(),
     db
       .prepare(
-        'SELECT id, name, description FROM prompt WHERE id = ? AND folder_id = ?',
+        'SELECT id, name, description FROM prompt WHERE id = ? AND folder_id = ? AND organization_id = ?',
       )
-      .bind(promptId, folderId)
+      .bind(promptId, folderId, org.organizationId)
       .first<{ id: string; name: string; description: string }>(),
   ]);
 
@@ -123,6 +131,11 @@ export const action = async ({
   params,
   context,
 }: Route.ActionArgs) => {
+  const org = context.get(orgContext);
+  if (!org) {
+    return data({ error: 'Unauthorized' }, { status: 403 });
+  }
+
   const { promptId } = params;
   const db = context.cloudflare.env.promptly;
 
@@ -133,6 +146,15 @@ export const action = async ({
 
   if (!session?.user) {
     return data({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  const promptOwnership = await db
+    .prepare('SELECT id FROM prompt WHERE id = ? AND organization_id = ?')
+    .bind(promptId, org.organizationId)
+    .first();
+
+  if (!promptOwnership) {
+    return data({ error: 'Prompt not found' }, { status: 404 });
   }
 
   const formData = await request.formData();

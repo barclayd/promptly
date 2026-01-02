@@ -1,6 +1,7 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { streamText } from 'ai';
 import { data } from 'react-router';
+import { orgContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
 import { preparePrompts } from '~/lib/prompt-interpolation';
 import type { Route } from './+types/prompts.run';
@@ -20,6 +21,11 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return data({ error: 'Not authenticated' }, { status: 401 });
   }
 
+  const org = context.get(orgContext);
+  if (!org) {
+    return data({ error: 'Unauthorized' }, { status: 403 });
+  }
+
   const formData = await request.formData();
   const promptId = formData.get('promptId') as string;
   const folderId = formData.get('folderId') as string;
@@ -37,6 +43,15 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   }
 
   const db = context.cloudflare.env.promptly;
+
+  const promptOwnership = await db
+    .prepare('SELECT id FROM prompt WHERE id = ? AND organization_id = ?')
+    .bind(promptId, org.organizationId)
+    .first();
+
+  if (!promptOwnership) {
+    return data({ error: 'Prompt not found' }, { status: 404 });
+  }
 
   let versionQuery: string;
   let versionParams: string[];

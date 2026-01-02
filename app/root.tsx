@@ -11,11 +11,15 @@ import { RecentsProvider } from '~/context/recents-context';
 import { getAuth } from '~/lib/auth.server';
 import { parseCookie } from '~/lib/cookies';
 import { authMiddleware } from '~/middleware/auth';
+import { orgMiddleware } from '~/middleware/org';
 
 import type { Route } from './+types/root';
 import './app.css';
 
-export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
+export const middleware: Route.MiddlewareFunction[] = [
+  authMiddleware,
+  orgMiddleware,
+];
 
 const LAYOUT_COOKIE_NAME = 'panel-layout';
 
