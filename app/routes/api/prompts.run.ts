@@ -2,6 +2,7 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { streamText } from 'ai';
 import { data } from 'react-router';
 import { getAuth } from '~/lib/auth.server';
+import { preparePrompts } from '~/lib/prompt-interpolation';
 import type { Route } from './+types/prompts.run';
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
@@ -28,7 +29,8 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   const temperature = Number.parseFloat(
     (formData.get('temperature') as string) || '0.5',
   );
-  // const inputDataJson = formData.get('inputData') as string | null;
+  const inputDataJson = formData.get('inputData') as string | null;
+  const inputDataRootName = formData.get('inputDataRootName') as string | null;
 
   if (!promptId || !folderId) {
     return data({ error: 'Missing promptId or folderId' }, { status: 400 });
@@ -36,7 +38,6 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
   const db = context.cloudflare.env.promptly;
 
-  // Get the prompt version data
   let versionQuery: string;
   let versionParams: string[];
 
@@ -62,28 +63,30 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return data({ error: 'Prompt version not found' }, { status: 404 });
   }
 
-  const systemMessage = promptVersion.system_message || '';
-  const userMessage = promptVersion.user_message || '';
+  const prepared = preparePrompts({
+    systemMessage: promptVersion.system_message || '',
+    userMessage: promptVersion.user_message || '',
+    inputDataJson,
+    inputDataRootName,
+  });
 
-  // // Parse and inject input data if provided
-  // if (inputDataJson) {
-  //   try {
-  //     const inputData = JSON.parse(inputDataJson);
-  //     // For now, stringify the input data and append to user message
-  //     if (Array.isArray(inputData) && inputData.length > 0) {
-  //       userMessage = `${userMessage}\n\nInput data:\n${inputData.join('\n')}`;
-  //     }
-  //   } catch {
-  //     // Ignore parse errors
-  //   }
-  // }
+  if (prepared.error) {
+    console.warn('Prompt interpolation warning:', prepared.error);
+  }
 
   const result = streamText({
     model: anthropic('claude-haiku-4-5'),
-    system: systemMessage,
-    prompt: userMessage,
+    system: prepared.systemMessage,
+    prompt: prepared.userMessage,
     temperature,
   });
 
-  return result.toTextStreamResponse();
+  const response = result.toTextStreamResponse();
+  if (prepared.unusedFields.length > 0) {
+    response.headers.set(
+      'X-Unused-Fields',
+      JSON.stringify(prepared.unusedFields),
+    );
+  }
+  return response;
 };

@@ -18,8 +18,10 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router';
+import { toast } from 'sonner';
 import { useDebouncedCallback } from 'use-debounce';
 import { CodePreview } from '~/components/code-preview';
+import { removeFieldsFromInputData } from '~/lib/input-data-utils';
 import { SchemaBuilder } from '~/components/schema-builder';
 import { SelectScrollable } from '~/components/select-scrollable';
 import { SidebarSlider } from '~/components/sidebar-slider';
@@ -256,6 +258,39 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       ? Number.parseInt(versionParam, 10)
       : latestVersion;
 
+    // Handle removing unused fields from schema and input data
+    const handleRemoveUnusedFields = useCallback(
+      (fields: string[]) => {
+        const newSchema = schemaFields.filter((f) => !fields.includes(f.name));
+        setSchemaFields(newSchema);
+
+        const result = removeFieldsFromInputData(
+          { inputData, inputDataRootName },
+          fields,
+        );
+
+        setInputData(result.inputData);
+        setInputDataRootName(result.inputDataRootName);
+        debouncedSaveConfig();
+      },
+      [schemaFields, inputData, inputDataRootName, debouncedSaveConfig],
+    );
+
+    // Show toast for unused fields with option to remove them
+    const showUnusedFieldsToast = useCallback(
+      (fields: string[]) => {
+        const fieldList = fields.join(' and ');
+        toast.warning('Unused fields', {
+          description: `${fieldList} data fields were not referenced in the prompts.`,
+          action: {
+            label: 'Remove',
+            onClick: () => handleRemoveUnusedFields(fields),
+          },
+        });
+      },
+      [handleRemoveUnusedFields],
+    );
+
     // Handle running the prompt
     const handleRunPrompt = useCallback(async () => {
       const { folderId, promptId } = params;
@@ -273,6 +308,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         formData.append('model', testModel || 'anthropic/claude-haiku-4.5');
         formData.append('temperature', testTemperature.toString());
         formData.append('inputData', JSON.stringify(inputData));
+        formData.append('inputDataRootName', inputDataRootName || '');
         if (selectedVersion) {
           formData.append('version', selectedVersion.toString());
         }
@@ -285,6 +321,19 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+
+        // Check for unused fields header before consuming the body
+        const unusedFieldsHeader = response.headers.get('X-Unused-Fields');
+        if (unusedFieldsHeader) {
+          try {
+            const unusedFields = JSON.parse(unusedFieldsHeader) as string[];
+            if (unusedFields.length > 0) {
+              showUnusedFieldsToast(unusedFields);
+            }
+          } catch {
+            // Ignore malformed header
+          }
         }
 
         if (!response.body) {
@@ -310,7 +359,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       } finally {
         setIsStreaming(false);
       }
-    }, [params, testModel, testTemperature, inputData, selectedVersion]);
+    }, [params, testModel, testTemperature, inputData, inputDataRootName, selectedVersion, showUnusedFieldsToast]);
 
     // Trigger test from external source (e.g., PromptReview)
     const triggerTest = useCallback(() => {
