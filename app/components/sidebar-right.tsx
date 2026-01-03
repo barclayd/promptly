@@ -259,14 +259,15 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       [debouncedSaveConfig],
     );
 
-    // Get selected version from URL or default to latest
     const versionParam = searchParams.get('version');
-    const latestVersion = versions[0]?.version;
+    const publishedVersions = versions.filter(
+      (v): v is typeof v & { version: number } => v.version !== null,
+    );
+    const latestPublishedVersion = publishedVersions[0]?.version ?? null;
     const selectedVersion = versionParam
       ? Number.parseInt(versionParam, 10)
-      : latestVersion;
+      : latestPublishedVersion;
 
-    // Handle removing unused fields from schema and input data
     const handleRemoveUnusedFields = useCallback(
       (fields: string[]) => {
         const newSchema = schemaFields.filter((f) => !fields.includes(f.name));
@@ -650,27 +651,27 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                         <div className="my-4">
                           <Select
                             value={selectedVersion?.toString() ?? ''}
-                            disabled={versions.length === 0}
+                            disabled={publishedVersions.length === 0}
                           >
                             <SelectTrigger className="w-full">
                               <SelectValue
                                 placeholder={
-                                  versions.length === 0
-                                    ? 'No versions'
+                                  publishedVersions.length === 0
+                                    ? 'No published versions'
                                     : 'Select version'
                                 }
                               />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectGroup>
-                                <SelectLabel>Versions</SelectLabel>
-                                {versions.map((v) => (
+                                <SelectLabel>Published Versions</SelectLabel>
+                                {publishedVersions.map((v) => (
                                   <SelectItem
                                     key={v.version}
                                     value={v.version.toString()}
                                   >
                                     v{v.version}.0.0
-                                    {v.version === latestVersion
+                                    {v.version === latestPublishedVersion
                                       ? ' (latest)'
                                       : ''}
                                   </SelectItem>
