@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-table';
 import { useSearchParams } from 'react-router';
 import { Badge } from '~/components/ui/badge';
+import { cn } from '~/lib/utils';
 import { Button } from '~/components/ui/button';
 import {
   DropdownMenu,
@@ -31,11 +32,13 @@ export type Version = {
   published_at: number | null;
 };
 
-const formatDate = (timestamp: number): string => {
-  return new Date(timestamp).toLocaleDateString('en-US', {
+const formatDateTime = (timestamp: number): string => {
+  const date = new Date(timestamp);
+  return date.toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
-    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
   });
 };
 
@@ -77,44 +80,47 @@ const columns: ColumnDef<Version>[] = [
         {row.original.version}.0.0
       </span>
     ),
-    size: 70,
-    minSize: 70,
-    maxSize: 70,
+    meta: { className: 'w-[70px]' },
+  },
+  {
+    id: 'status',
+    header: () => <span className="text-xs">Status</span>,
+    cell: ({ row }) => (
+      <Badge
+        variant={row.original.published_at ? 'default' : 'outline'}
+        className="text-[10px] px-1.5 py-0 font-normal whitespace-nowrap"
+      >
+        {row.original.published_at ? 'Published' : 'Draft'}
+      </Badge>
+    ),
+    meta: { className: 'w-[72px]' },
+  },
+  {
+    accessorKey: 'published_at',
+    header: () => <span className="text-xs">Published</span>,
+    cell: ({ row }) => (
+      <span className="text-xs text-muted-foreground whitespace-nowrap">
+        {row.original.published_at
+          ? formatDateTime(row.original.published_at)
+          : '-'}
+      </span>
+    ),
+    meta: { className: 'w-[105px]' },
   },
   {
     accessorKey: 'published_by',
     header: () => <span className="text-xs">Created By</span>,
     cell: ({ row }) => (
-      <span className="text-xs text-muted-foreground truncate block min-w-0">
+      <span className="text-xs text-muted-foreground truncate block max-w-[120px]">
         {row.original.published_by ?? '-'}
       </span>
     ),
-  },
-  {
-    accessorKey: 'published_at',
-    header: () => <span className="text-xs">Status</span>,
-    cell: ({ row }) =>
-      row.original.published_at ? (
-        <span className="text-xs text-muted-foreground whitespace-nowrap">
-          {formatDate(row.original.published_at)}
-        </span>
-      ) : (
-        <Badge
-          variant="outline"
-          className="text-[10px] px-1.5 py-0 font-normal whitespace-nowrap"
-        >
-          Draft
-        </Badge>
-      ),
-    size: 90,
-    minSize: 90,
+    meta: { className: 'w-auto' },
   },
   {
     id: 'actions',
     cell: ({ row }) => <ViewVersionAction version={row.original.version} />,
-    size: 32,
-    minSize: 32,
-    maxSize: 32,
+    meta: { className: 'w-[40px]' },
   },
 ];
 
@@ -137,18 +143,21 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
   return (
     <div className="px-2 py-2">
       <div className="rounded-md border overflow-hidden">
-        <Table className="table-fixed w-full">
+        <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">
                 {headerGroup.headers.map((header) => {
-                  const size = header.column.columnDef.size;
-                  const hasFixedSize = size !== undefined;
+                  const meta = header.column.columnDef.meta as
+                    | { className?: string }
+                    | undefined;
                   return (
                     <TableHead
                       key={header.id}
-                      className="h-8 px-2 first:pl-3 last:pr-2"
-                      style={hasFixedSize ? { width: size } : undefined}
+                      className={cn(
+                        'h-8 px-2 first:pl-3 last:pr-2',
+                        meta?.className,
+                      )}
                     >
                       {header.isPlaceholder
                         ? null
@@ -166,13 +175,16 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
             {table.getRowModel().rows.map((row) => (
               <TableRow key={row.id} className="hover:bg-muted/50">
                 {row.getVisibleCells().map((cell) => {
-                  const size = cell.column.columnDef.size;
-                  const hasFixedSize = size !== undefined;
+                  const meta = cell.column.columnDef.meta as
+                    | { className?: string }
+                    | undefined;
                   return (
                     <TableCell
                       key={cell.id}
-                      className="h-9 px-2 py-1.5 first:pl-3 last:pr-2 overflow-hidden"
-                      style={hasFixedSize ? { width: size } : undefined}
+                      className={cn(
+                        'h-9 px-2 py-1.5 first:pl-3 last:pr-2 overflow-hidden',
+                        meta?.className,
+                      )}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
