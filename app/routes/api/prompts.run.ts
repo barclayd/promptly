@@ -61,8 +61,9 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       'SELECT system_message, user_message FROM prompt_version WHERE prompt_id = ? AND version = ?';
     versionParams = [promptId, versionNumber];
   } else {
+    // Return most recent published version (exclude drafts where version is NULL)
     versionQuery =
-      'SELECT system_message, user_message FROM prompt_version WHERE prompt_id = ? ORDER BY version DESC LIMIT 1';
+      'SELECT system_message, user_message FROM prompt_version WHERE prompt_id = ? AND published_at IS NOT NULL ORDER BY version DESC LIMIT 1';
     versionParams = [promptId];
   }
 

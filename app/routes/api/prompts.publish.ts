@@ -49,7 +49,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       'SELECT id, version FROM prompt_version WHERE prompt_id = ? AND published_at IS NULL ORDER BY created_at DESC LIMIT 1',
     )
     .bind(promptId)
-    .first<{ id: string; version: number }>();
+    .first<{ id: string; version: number | null }>();
 
   if (!currentDraft) {
     return data({ error: 'No draft version to publish' }, { status: 400 });

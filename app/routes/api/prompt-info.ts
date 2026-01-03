@@ -43,7 +43,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
       .first<{ id: string; name: string }>(),
     db
       .prepare(
-        'SELECT version FROM prompt_version WHERE prompt_id = ? ORDER BY version DESC LIMIT 1',
+        'SELECT version FROM prompt_version WHERE prompt_id = ? AND published_at IS NOT NULL ORDER BY version DESC LIMIT 1',
       )
       .bind(promptId)
       .first<{ version: number }>(),

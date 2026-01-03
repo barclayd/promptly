@@ -61,7 +61,7 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
 
   const latestVersion = await db
     .prepare(
-      'SELECT system_message, user_message, config FROM prompt_version WHERE prompt_id = ? ORDER BY created_at DESC LIMIT 1',
+      'SELECT system_message, user_message, config FROM prompt_version WHERE prompt_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
     )
     .bind(promptId)
     .first<{
@@ -72,10 +72,10 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
 
   const version = db
     .prepare(
-      'SELECT version FROM prompt_version WHERE prompt_id = ? ORDER BY version DESC LIMIT 1',
+      'SELECT version FROM prompt_version WHERE prompt_id = ? ORDER BY (published_at IS NULL) DESC, published_at DESC LIMIT 1',
     )
     .bind(promptId)
-    .first<{ version: number }>();
+    .first<{ version: number | null }>();
 
   const [versionsResult, lastPublishedResult] = await Promise.all([
     db
@@ -84,11 +84,11 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
          FROM prompt_version pv
          LEFT JOIN user u ON pv.created_by = u.id
          WHERE pv.prompt_id = ?
-         ORDER BY pv.version DESC`,
+         ORDER BY (pv.published_at IS NULL) DESC, pv.published_at DESC`,
       )
       .bind(promptId)
       .all<{
-        version: number;
+        version: number | null;
         published_at: number | null;
         published_by: string | null;
       }>(),
@@ -201,12 +201,12 @@ export const action = async ({
 
     const currentVersion = await db
       .prepare(
-        'SELECT id, version, published_at, system_message, user_message FROM prompt_version WHERE prompt_id = ? ORDER BY version DESC LIMIT 1',
+        'SELECT id, version, published_at, system_message, user_message FROM prompt_version WHERE prompt_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
       )
       .bind(promptId)
       .first<{
         id: string;
-        version: number;
+        version: number | null;
         published_at: number | null;
         system_message: string | null;
         user_message: string | null;
@@ -215,7 +215,7 @@ export const action = async ({
     if (!currentVersion) {
       await db
         .prepare(
-          'INSERT INTO prompt_version (id, prompt_id, version, config, created_by) VALUES (?, ?, 1, ?, ?)',
+          'INSERT INTO prompt_version (id, prompt_id, config, created_by) VALUES (?, ?, ?, ?)',
         )
         .bind(nanoid(), promptId, configJson, session.user.id)
         .run();
@@ -227,12 +227,11 @@ export const action = async ({
     } else {
       await db
         .prepare(
-          'INSERT INTO prompt_version (id, prompt_id, version, config, system_message, user_message, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          'INSERT INTO prompt_version (id, prompt_id, config, system_message, user_message, created_by) VALUES (?, ?, ?, ?, ?, ?)',
         )
         .bind(
           nanoid(),
           promptId,
-          currentVersion.version + 1,
           configJson,
           currentVersion.system_message,
           currentVersion.user_message,
@@ -249,12 +248,12 @@ export const action = async ({
 
   const currentVersion = await db
     .prepare(
-      'SELECT id, version, published_at, config FROM prompt_version WHERE prompt_id = ? ORDER BY version DESC LIMIT 1',
+      'SELECT id, version, published_at, config FROM prompt_version WHERE prompt_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
     )
     .bind(promptId)
     .first<{
       id: string;
-      version: number;
+      version: number | null;
       published_at: number | null;
       config: string | null;
     }>();
@@ -262,7 +261,7 @@ export const action = async ({
   if (!currentVersion) {
     await db
       .prepare(
-        'INSERT INTO prompt_version (id, prompt_id, version, system_message, user_message, created_by) VALUES (?, ?, 1, ?, ?, ?)',
+        'INSERT INTO prompt_version (id, prompt_id, system_message, user_message, created_by) VALUES (?, ?, ?, ?, ?)',
       )
       .bind(nanoid(), promptId, systemMessage, userMessage, session.user.id)
       .run();
@@ -276,12 +275,11 @@ export const action = async ({
   } else {
     await db
       .prepare(
-        'INSERT INTO prompt_version (id, prompt_id, version, system_message, user_message, config, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO prompt_version (id, prompt_id, system_message, user_message, config, created_by) VALUES (?, ?, ?, ?, ?, ?)',
       )
       .bind(
         nanoid(),
         promptId,
-        currentVersion.version + 1,
         systemMessage,
         userMessage,
         currentVersion.config,
@@ -439,9 +437,11 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               <Await resolve={loaderData.version}>
                 {(version) => (
                   <div className="text-gray-400/75 text-sm -mt-2">
-                    {version?.version
+                    {version?.version !== null && version?.version !== undefined
                       ? `${version.version}.0.0`
-                      : 'Unpublished'}
+                      : version
+                        ? 'Latest'
+                        : 'Unpublished'}
                   </div>
                 )}
               </Await>

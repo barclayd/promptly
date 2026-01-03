@@ -27,7 +27,7 @@ import {
 } from '~/components/ui/table';
 
 export type Version = {
-  version: number;
+  version: number | null;
   published_by: string | null;
   published_at: number | null;
 };
@@ -42,12 +42,19 @@ const formatDateTime = (timestamp: number): string => {
   });
 };
 
-const ViewVersionAction = ({ version }: { version: number }) => {
+const ViewVersionAction = ({ version }: { version: number | null }) => {
   const [, setSearchParams] = useSearchParams();
 
   const handleViewVersion = () => {
-    setSearchParams({ version: version.toString() });
+    if (version !== null) {
+      setSearchParams({ version: version.toString() });
+    }
   };
+
+  // Don't show action menu for drafts (version is null)
+  if (version === null) {
+    return null;
+  }
 
   return (
     <DropdownMenu>
@@ -77,7 +84,7 @@ const columns: ColumnDef<Version>[] = [
     header: () => <span className="text-xs">Version</span>,
     cell: ({ row }) => (
       <span className="text-xs font-mono whitespace-nowrap">
-        {row.original.version}.0.0
+        {row.original.version !== null ? `${row.original.version}.0.0` : 'Latest'}
       </span>
     ),
     meta: { className: 'w-[70px]' },
@@ -129,7 +136,7 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
     data: versions,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getRowId: (row) => row.version.toString(),
+    getRowId: (row) => row.version?.toString() ?? 'draft',
   });
 
   if (versions.length === 0) {
