@@ -9,6 +9,7 @@ export default [
   route('api/auth/*', './routes/api/auth.ts'),
   route('api/prompts/create', './routes/api/prompts.create.ts'),
   route('api/prompts/run', './routes/api/prompts.run.ts'),
+  route('api/prompts/publish', './routes/api/prompts.publish.ts'),
   route('api/prompt-info', './routes/api/prompt-info.ts'),
   route('api/generate-input-data', './routes/api/generate-input-data.ts'),
   route('auth/social', './routes/auth/social.ts'),
