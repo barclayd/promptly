@@ -124,6 +124,7 @@ type SidebarRightProps = React.ComponentProps<typeof Sidebar> & {
   temperature?: number;
   inputData?: unknown;
   inputDataRootName?: string | null;
+  isReadonly?: boolean;
 };
 
 export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
@@ -135,6 +136,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       temperature: initialTemperature = 0.5,
       inputData: initialInputData = DEFAULT_INPUT_DATA,
       inputDataRootName: initialRootName = null,
+      isReadonly = false,
       ...props
     },
     ref,
@@ -261,12 +263,15 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
 
     const versionParam = searchParams.get('version');
     const publishedVersions = versions.filter(
-      (v): v is typeof v & { version: number } => v.version !== null,
+      (v): v is typeof v & { major: number; minor: number; patch: number } =>
+        v.major !== null && v.minor !== null && v.patch !== null,
     );
-    const latestPublishedVersion = publishedVersions[0]?.version ?? null;
-    const selectedVersion = versionParam
-      ? Number.parseInt(versionParam, 10)
-      : latestPublishedVersion;
+    const formatSemver = (v: { major: number; minor: number; patch: number }) =>
+      `${v.major}.${v.minor}.${v.patch}`;
+    const latestPublishedVersion = publishedVersions[0]
+      ? formatSemver(publishedVersions[0])
+      : null;
+    const selectedVersion = versionParam || latestPublishedVersion;
 
     const handleRemoveUnusedFields = useCallback(
       (fields: string[]) => {
@@ -319,7 +324,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         formData.append('inputData', JSON.stringify(inputData));
         formData.append('inputDataRootName', inputDataRootName || '');
         if (selectedVersion) {
-          formData.append('version', selectedVersion.toString());
+          formData.append('version', selectedVersion);
         }
 
         const response = await fetch('/api/prompts/run', {
@@ -475,9 +480,10 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                     <div className="px-2 py-4">
                       <SchemaBuilder
                         fields={schemaFields}
-                        onChange={handleSchemaChange}
+                        onChange={isReadonly ? undefined : handleSchemaChange}
                         onGenerateTestData={handleGenerateInputData}
                         isGeneratingTestData={isGeneratingInputData}
+                        disabled={isReadonly}
                       />
                     </div>
                   </SidebarGroupContent>
@@ -560,6 +566,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                       <SelectScrollable
                         value={model ?? ''}
                         onChange={handleModelChange}
+                        disabled={isReadonly}
                       />
                     </div>
                   </SidebarGroupContent>
@@ -586,6 +593,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                       <SidebarSlider
                         value={temperature}
                         onChange={handleTemperatureChange}
+                        disabled={isReadonly}
                       />
                     </div>
                   </SidebarGroupContent>
@@ -650,7 +658,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                         </div>
                         <div className="my-4">
                           <Select
-                            value={selectedVersion?.toString() ?? ''}
+                            value={selectedVersion ?? ''}
                             disabled={publishedVersions.length === 0}
                           >
                             <SelectTrigger className="w-full">
@@ -665,17 +673,17 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                             <SelectContent>
                               <SelectGroup>
                                 <SelectLabel>Published Versions</SelectLabel>
-                                {publishedVersions.map((v) => (
-                                  <SelectItem
-                                    key={v.version}
-                                    value={v.version.toString()}
-                                  >
-                                    v{v.version}.0.0
-                                    {v.version === latestPublishedVersion
-                                      ? ' (latest)'
-                                      : ''}
-                                  </SelectItem>
-                                ))}
+                                {publishedVersions.map((v) => {
+                                  const ver = formatSemver(v);
+                                  return (
+                                    <SelectItem key={ver} value={ver}>
+                                      v{ver}
+                                      {ver === latestPublishedVersion
+                                        ? ' (latest)'
+                                        : ''}
+                                    </SelectItem>
+                                  );
+                                })}
                               </SelectGroup>
                             </SelectContent>
                           </Select>

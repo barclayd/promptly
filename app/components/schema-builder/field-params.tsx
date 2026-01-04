@@ -13,9 +13,10 @@ import { StringValidations } from './string-validations';
 interface FieldParamsProps {
   field: SchemaField;
   onChange: (params: Partial<SchemaField['params']>) => void;
+  disabled?: boolean;
 }
 
-export const FieldParams = ({ field, onChange }: FieldParamsProps) => {
+export const FieldParams = ({ field, onChange, disabled = false }: FieldParamsProps) => {
   const showEnumValues = ['enum', 'nativeEnum', 'literal'].includes(field.type);
   const showArrayConfig = field.type === 'array';
   const showObjectConfig = field.type === 'object';
@@ -32,6 +33,7 @@ export const FieldParams = ({ field, onChange }: FieldParamsProps) => {
           value={field.params.description || ''}
           onChange={(e) => onChange({ description: e.target.value })}
           placeholder="Field description"
+          disabled={disabled}
         />
       </div>
 
@@ -41,6 +43,7 @@ export const FieldParams = ({ field, onChange }: FieldParamsProps) => {
           id="coerce"
           checked={field.params.coerce || false}
           onCheckedChange={(checked) => onChange({ coerce: checked })}
+          disabled={disabled}
         />
       </div>
 
@@ -51,6 +54,7 @@ export const FieldParams = ({ field, onChange }: FieldParamsProps) => {
           value={field.params.invalid_type_error || ''}
           onChange={(e) => onChange({ invalid_type_error: e.target.value })}
           placeholder="Custom error message"
+          disabled={disabled}
         />
       </div>
 
@@ -61,6 +65,7 @@ export const FieldParams = ({ field, onChange }: FieldParamsProps) => {
           value={field.params.required_error || ''}
           onChange={(e) => onChange({ required_error: e.target.value })}
           placeholder="Custom required error message"
+          disabled={disabled}
         />
       </div>
 
@@ -93,6 +98,7 @@ export const FieldParams = ({ field, onChange }: FieldParamsProps) => {
                   : undefined,
               })
             }
+            disabled={disabled}
           />
         </div>
       )}

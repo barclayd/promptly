@@ -31,7 +31,9 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return data({ error: 'Invalid version format (expected X.X.X)' }, { status: 400 });
   }
 
-  const majorVersion = Number.parseInt(versionMatch[1], 10);
+  const major = Number.parseInt(versionMatch[1], 10);
+  const minor = Number.parseInt(versionMatch[2], 10);
+  const patch = Number.parseInt(versionMatch[3], 10);
 
   const db = context.cloudflare.env.promptly;
 
@@ -46,10 +48,10 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
   const currentDraft = await db
     .prepare(
-      'SELECT id, version FROM prompt_version WHERE prompt_id = ? AND published_at IS NULL ORDER BY created_at DESC LIMIT 1',
+      'SELECT id FROM prompt_version WHERE prompt_id = ? AND published_at IS NULL ORDER BY created_at DESC LIMIT 1',
     )
     .bind(promptId)
-    .first<{ id: string; version: number | null }>();
+    .first<{ id: string }>();
 
   if (!currentDraft) {
     return data({ error: 'No draft version to publish' }, { status: 400 });
@@ -57,21 +59,29 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
   const lastPublished = await db
     .prepare(
-      'SELECT version FROM prompt_version WHERE prompt_id = ? AND published_at IS NOT NULL ORDER BY version DESC LIMIT 1',
+      'SELECT major, minor, patch FROM prompt_version WHERE prompt_id = ? AND published_at IS NOT NULL ORDER BY major DESC, minor DESC, patch DESC LIMIT 1',
     )
     .bind(promptId)
-    .first<{ version: number }>();
+    .first<{ major: number; minor: number; patch: number }>();
 
-  if (lastPublished && majorVersion <= lastPublished.version) {
-    return data(
-      { error: `Version must be greater than ${lastPublished.version}.0.0` },
-      { status: 400 },
-    );
+  // Compare semver: new version must be greater than last published
+  if (lastPublished) {
+    const isGreater =
+      major > lastPublished.major ||
+      (major === lastPublished.major && minor > lastPublished.minor) ||
+      (major === lastPublished.major && minor === lastPublished.minor && patch > lastPublished.patch);
+
+    if (!isGreater) {
+      return data(
+        { error: `Version must be greater than ${lastPublished.major}.${lastPublished.minor}.${lastPublished.patch}` },
+        { status: 400 },
+      );
+    }
   }
 
   await db
-    .prepare('UPDATE prompt_version SET version = ?, published_at = ? WHERE id = ?')
-    .bind(majorVersion, Date.now(), currentDraft.id)
+    .prepare('UPDATE prompt_version SET major = ?, minor = ?, patch = ?, published_at = ? WHERE id = ?')
+    .bind(major, minor, patch, Date.now(), currentDraft.id)
     .run();
 
   await db
@@ -79,5 +89,5 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     .bind(Date.now(), promptId)
     .run();
 
-  return { success: true, version: majorVersion };
+  return { success: true, version: `${major}.${minor}.${patch}` };
 };

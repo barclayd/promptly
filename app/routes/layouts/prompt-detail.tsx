@@ -27,6 +27,7 @@ type PromptDetailLoaderData = {
   temperature: number;
   inputData: unknown;
   inputDataRootName: string | null;
+  isViewingOldVersion?: boolean;
 };
 
 const LAYOUT_COOKIE_NAME = 'panel-layout';
@@ -66,6 +67,7 @@ export default function PromptDetailLayout() {
   const temperature = promptDetailData?.temperature ?? 0.5;
   const inputData = promptDetailData?.inputData ?? {};
   const inputDataRootName = promptDetailData?.inputDataRootName ?? null;
+  const isViewingOldVersion = promptDetailData?.isViewingOldVersion ?? false;
 
   // Ref for external control of SidebarRight (trigger test, get streaming state)
   const sidebarRightRef = useRef<SidebarRightHandle>(null);
@@ -113,6 +115,7 @@ export default function PromptDetailLayout() {
               temperature={temperature}
               inputData={inputData}
               inputDataRootName={inputDataRootName}
+              isReadonly={isViewingOldVersion}
             />
           </div>
         </div>
@@ -158,6 +161,7 @@ export default function PromptDetailLayout() {
               temperature={temperature}
               inputData={inputData}
               inputDataRootName={inputDataRootName}
+              isReadonly={isViewingOldVersion}
             />
           </ResizablePanel>
         </ResizablePanelGroup>

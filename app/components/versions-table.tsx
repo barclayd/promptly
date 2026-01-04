@@ -9,7 +9,6 @@ import {
 } from '@tanstack/react-table';
 import { useSearchParams } from 'react-router';
 import { Badge } from '~/components/ui/badge';
-import { cn } from '~/lib/utils';
 import { Button } from '~/components/ui/button';
 import {
   DropdownMenu,
@@ -25,11 +24,21 @@ import {
   TableHeader,
   TableRow,
 } from '~/components/ui/table';
+import { cn } from '~/lib/utils';
 
 export type Version = {
-  version: number | null;
+  major: number | null;
+  minor: number | null;
+  patch: number | null;
   published_by: string | null;
   published_at: number | null;
+};
+
+const formatVersion = (v: Version): string | null => {
+  if (v.major === null || v.minor === null || v.patch === null) {
+    return null;
+  }
+  return `${v.major}.${v.minor}.${v.patch}`;
 };
 
 const formatDateTime = (timestamp: number): string => {
@@ -42,17 +51,18 @@ const formatDateTime = (timestamp: number): string => {
   });
 };
 
-const ViewVersionAction = ({ version }: { version: number | null }) => {
+const ViewVersionAction = ({ version }: { version: Version }) => {
   const [, setSearchParams] = useSearchParams();
+  const versionString = formatVersion(version);
 
   const handleViewVersion = () => {
-    if (version !== null) {
-      setSearchParams({ version: version.toString() });
+    if (versionString !== null) {
+      setSearchParams({ version: versionString });
     }
   };
 
   // Don't show action menu for drafts (version is null)
-  if (version === null) {
+  if (versionString === null) {
     return null;
   }
 
@@ -80,13 +90,16 @@ const ViewVersionAction = ({ version }: { version: number | null }) => {
 
 const columns: ColumnDef<Version>[] = [
   {
-    accessorKey: 'version',
+    id: 'version',
     header: () => <span className="text-xs">Version</span>,
-    cell: ({ row }) => (
-      <span className="text-xs font-mono whitespace-nowrap">
-        {row.original.version !== null ? `${row.original.version}.0.0` : 'Latest'}
-      </span>
-    ),
+    cell: ({ row }) => {
+      const versionString = formatVersion(row.original);
+      return (
+        <span className="text-xs font-mono whitespace-nowrap">
+          {versionString ?? 'Latest'}
+        </span>
+      );
+    },
     meta: { className: 'w-[70px]' },
   },
   {
@@ -126,18 +139,32 @@ const columns: ColumnDef<Version>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => <ViewVersionAction version={row.original.version} />,
+    cell: ({ row }) => <ViewVersionAction version={row.original} />,
     meta: { className: 'w-[40px]' },
   },
 ];
 
 export const VersionsTable = ({ versions }: { versions: Version[] }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentVersion = searchParams.get('version');
+
   const table = useReactTable({
     data: versions,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getRowId: (row) => row.version?.toString() ?? 'draft',
+    getRowId: (row) => formatVersion(row) ?? 'draft',
   });
+
+  const handleRowClick = (version: Version) => {
+    const versionString = formatVersion(version);
+    if (versionString !== null) {
+      // Navigate to published version
+      setSearchParams({ version: versionString });
+    } else {
+      // Navigate to latest (draft) by clearing version param
+      setSearchParams({});
+    }
+  };
 
   if (versions.length === 0) {
     return (
@@ -179,29 +206,45 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} className="hover:bg-muted/50">
-                {row.getVisibleCells().map((cell) => {
-                  const meta = cell.column.columnDef.meta as
-                    | { className?: string }
-                    | undefined;
-                  return (
-                    <TableCell
-                      key={cell.id}
-                      className={cn(
-                        'h-9 px-2 py-1.5 first:pl-3 last:pr-2 overflow-hidden',
-                        meta?.className,
-                      )}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
-            ))}
+            {table.getRowModel().rows.map((row) => {
+              const versionString = formatVersion(row.original);
+              const isCurrentVersion =
+                versionString === currentVersion ||
+                (versionString === null && currentVersion === null);
+
+              return (
+                <TableRow
+                  key={row.id}
+                  className={cn(
+                    'cursor-pointer transition-colors',
+                    isCurrentVersion
+                      ? 'bg-muted hover:bg-muted'
+                      : 'hover:bg-muted/50',
+                  )}
+                  onClick={() => handleRowClick(row.original)}
+                >
+                  {row.getVisibleCells().map((cell) => {
+                    const meta = cell.column.columnDef.meta as
+                      | { className?: string }
+                      | undefined;
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        className={cn(
+                          'h-9 px-2 py-1.5 first:pl-3 last:pr-2 overflow-hidden',
+                          meta?.className,
+                        )}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

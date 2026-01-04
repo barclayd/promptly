@@ -53,27 +53,41 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return data({ error: 'Prompt not found' }, { status: 404 });
   }
 
-  let versionQuery: string;
-  let versionParams: string[];
+  let promptVersion: {
+    system_message: string | null;
+    user_message: string | null;
+  } | null = null;
 
   if (versionNumber) {
-    versionQuery =
-      'SELECT system_message, user_message FROM prompt_version WHERE prompt_id = ? AND version = ?';
-    versionParams = [promptId, versionNumber];
-  } else {
-    // Return most recent published version (exclude drafts where version is NULL)
-    versionQuery =
-      'SELECT system_message, user_message FROM prompt_version WHERE prompt_id = ? AND published_at IS NOT NULL ORDER BY version DESC LIMIT 1';
-    versionParams = [promptId];
-  }
+    // Parse semver format (e.g., "1.2.3")
+    const match = versionNumber.match(/^(\d+)\.(\d+)\.(\d+)$/);
+    if (match) {
+      const major = Number.parseInt(match[1], 10);
+      const minor = Number.parseInt(match[2], 10);
+      const patch = Number.parseInt(match[3], 10);
 
-  const promptVersion = await db
-    .prepare(versionQuery)
-    .bind(...versionParams)
-    .first<{
-      system_message: string | null;
-      user_message: string | null;
-    }>();
+      promptVersion = await db
+        .prepare(
+          'SELECT system_message, user_message FROM prompt_version WHERE prompt_id = ? AND major = ? AND minor = ? AND patch = ?',
+        )
+        .bind(promptId, major, minor, patch)
+        .first<{
+          system_message: string | null;
+          user_message: string | null;
+        }>();
+    }
+  } else {
+    // Return most recent published version (exclude drafts where major/minor/patch are NULL)
+    promptVersion = await db
+      .prepare(
+        'SELECT system_message, user_message FROM prompt_version WHERE prompt_id = ? AND published_at IS NOT NULL ORDER BY major DESC, minor DESC, patch DESC LIMIT 1',
+      )
+      .bind(promptId)
+      .first<{
+        system_message: string | null;
+        user_message: string | null;
+      }>();
+  }
 
   if (!promptVersion) {
     return data({ error: 'Prompt version not found' }, { status: 404 });

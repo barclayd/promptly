@@ -11,14 +11,16 @@ import {
 interface SelectScrollableProps {
   value?: string;
   onChange?: (value: string) => void;
+  disabled?: boolean;
 }
 
 export const SelectScrollable = ({
   value,
   onChange,
+  disabled,
 }: SelectScrollableProps) => {
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger>
         <SelectValue placeholder="Select a model" />
       </SelectTrigger>
