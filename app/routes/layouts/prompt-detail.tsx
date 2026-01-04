@@ -1,5 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { Outlet, useParams, useRouteLoaderData } from 'react-router';
+import { SidebarAutoHide } from '~/components/sidebar-auto-hide';
 import { SidebarLeft } from '~/components/sidebar-left';
 import {
   SidebarRight,
@@ -26,6 +27,7 @@ type PromptDetailLoaderData = {
   temperature: number;
   inputData: unknown;
   inputDataRootName: string | null;
+  isViewingOldVersion?: boolean;
 };
 
 const LAYOUT_COOKIE_NAME = 'panel-layout';
@@ -65,6 +67,7 @@ export default function PromptDetailLayout() {
   const temperature = promptDetailData?.temperature ?? 0.5;
   const inputData = promptDetailData?.inputData ?? {};
   const inputDataRootName = promptDetailData?.inputDataRootName ?? null;
+  const isViewingOldVersion = promptDetailData?.isViewingOldVersion ?? false;
 
   // Ref for external control of SidebarRight (trigger test, get streaming state)
   const sidebarRightRef = useRef<SidebarRightHandle>(null);
@@ -88,6 +91,7 @@ export default function PromptDetailLayout() {
         } as React.CSSProperties
       }
     >
+      <SidebarAutoHide />
       <SidebarLeft variant="inset" />
       {isMobile ? (
         <div className="flex flex-1 flex-col min-h-svh">
@@ -111,6 +115,7 @@ export default function PromptDetailLayout() {
               temperature={temperature}
               inputData={inputData}
               inputDataRootName={inputDataRootName}
+              isReadonly={isViewingOldVersion}
             />
           </div>
         </div>
@@ -156,6 +161,7 @@ export default function PromptDetailLayout() {
               temperature={temperature}
               inputData={inputData}
               inputDataRootName={inputDataRootName}
+              isReadonly={isViewingOldVersion}
             />
           </ResizablePanel>
         </ResizablePanelGroup>

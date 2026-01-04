@@ -15,11 +15,13 @@ import { getValidationOptions } from '~/lib/validation-options';
 interface ValidationBuilderProps {
   field: SchemaField;
   onChange: (validations: ValidationRule[]) => void;
+  disabled?: boolean;
 }
 
 export const ValidationBuilder = ({
   field,
   onChange,
+  disabled = false,
 }: ValidationBuilderProps) => {
   const validationOptions = getValidationOptions(field.type);
 
@@ -68,6 +70,7 @@ export const ValidationBuilder = ({
           variant="outline"
           size="sm"
           onClick={addValidation}
+          disabled={disabled}
         >
           <Plus className="h-4 w-4 mr-1" />
           Add Validation
@@ -85,6 +88,7 @@ export const ValidationBuilder = ({
               onValueChange={(value) =>
                 updateValidation(validation.id, { type: value })
               }
+              disabled={disabled}
             >
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -102,6 +106,7 @@ export const ValidationBuilder = ({
               variant="ghost"
               size="icon"
               onClick={() => removeValidation(validation.id)}
+              disabled={disabled}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -116,6 +121,7 @@ export const ValidationBuilder = ({
                   updateValidation(validation.id, { value: e.target.value })
                 }
                 placeholder="Validation value"
+                disabled={disabled}
               />
             </div>
           )}
@@ -128,6 +134,7 @@ export const ValidationBuilder = ({
                 updateValidation(validation.id, { message: e.target.value })
               }
               placeholder="Error message"
+              disabled={disabled}
             />
           </div>
         </div>

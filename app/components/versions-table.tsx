@@ -24,27 +24,47 @@ import {
   TableHeader,
   TableRow,
 } from '~/components/ui/table';
+import { cn } from '~/lib/utils';
 
 export type Version = {
-  version: number;
+  major: number | null;
+  minor: number | null;
+  patch: number | null;
   published_by: string | null;
   published_at: number | null;
 };
 
-const formatDate = (timestamp: number): string => {
-  return new Date(timestamp).toLocaleDateString('en-US', {
+const formatVersion = (v: Version): string | null => {
+  if (v.major === null || v.minor === null || v.patch === null) {
+    return null;
+  }
+  return `${v.major}.${v.minor}.${v.patch}`;
+};
+
+const formatDateTime = (timestamp: number): string => {
+  const date = new Date(timestamp);
+  return date.toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
-    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
   });
 };
 
-const ViewVersionAction = ({ version }: { version: number }) => {
+const ViewVersionAction = ({ version }: { version: Version }) => {
   const [, setSearchParams] = useSearchParams();
+  const versionString = formatVersion(version);
 
   const handleViewVersion = () => {
-    setSearchParams({ version: version.toString() });
+    if (versionString !== null) {
+      setSearchParams({ version: versionString });
+    }
   };
+
+  // Don't show action menu for drafts (version is null)
+  if (versionString === null) {
+    return null;
+  }
 
   return (
     <DropdownMenu>
@@ -70,61 +90,81 @@ const ViewVersionAction = ({ version }: { version: number }) => {
 
 const columns: ColumnDef<Version>[] = [
   {
-    accessorKey: 'version',
+    id: 'version',
     header: () => <span className="text-xs">Version</span>,
+    cell: ({ row }) => {
+      const versionString = formatVersion(row.original);
+      return (
+        <span className="text-xs font-mono whitespace-nowrap">
+          {versionString ?? 'Latest'}
+        </span>
+      );
+    },
+    meta: { className: 'w-[70px]' },
+  },
+  {
+    id: 'status',
+    header: () => <span className="text-xs">Status</span>,
     cell: ({ row }) => (
-      <span className="text-xs font-mono whitespace-nowrap">
-        {row.original.version}.0.0
+      <Badge
+        variant={row.original.published_at ? 'default' : 'outline'}
+        className="text-[10px] px-1.5 py-0 font-normal whitespace-nowrap"
+      >
+        {row.original.published_at ? 'Published' : 'Draft'}
+      </Badge>
+    ),
+    meta: { className: 'w-[72px]' },
+  },
+  {
+    accessorKey: 'published_at',
+    header: () => <span className="text-xs">Published</span>,
+    cell: ({ row }) => (
+      <span className="text-xs text-muted-foreground whitespace-nowrap">
+        {row.original.published_at
+          ? formatDateTime(row.original.published_at)
+          : '-'}
       </span>
     ),
-    size: 70,
-    minSize: 70,
-    maxSize: 70,
+    meta: { className: 'w-[105px]' },
   },
   {
     accessorKey: 'published_by',
     header: () => <span className="text-xs">Created By</span>,
     cell: ({ row }) => (
-      <span className="text-xs text-muted-foreground truncate block min-w-0">
+      <span className="text-xs text-muted-foreground truncate block max-w-[120px]">
         {row.original.published_by ?? '-'}
       </span>
     ),
-  },
-  {
-    accessorKey: 'published_at',
-    header: () => <span className="text-xs">Status</span>,
-    cell: ({ row }) =>
-      row.original.published_at ? (
-        <span className="text-xs text-muted-foreground whitespace-nowrap">
-          {formatDate(row.original.published_at)}
-        </span>
-      ) : (
-        <Badge
-          variant="outline"
-          className="text-[10px] px-1.5 py-0 font-normal whitespace-nowrap"
-        >
-          Draft
-        </Badge>
-      ),
-    size: 90,
-    minSize: 90,
+    meta: { className: 'w-auto' },
   },
   {
     id: 'actions',
-    cell: ({ row }) => <ViewVersionAction version={row.original.version} />,
-    size: 32,
-    minSize: 32,
-    maxSize: 32,
+    cell: ({ row }) => <ViewVersionAction version={row.original} />,
+    meta: { className: 'w-[40px]' },
   },
 ];
 
 export const VersionsTable = ({ versions }: { versions: Version[] }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentVersion = searchParams.get('version');
+
   const table = useReactTable({
     data: versions,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getRowId: (row) => row.version.toString(),
+    getRowId: (row) => formatVersion(row) ?? 'draft',
   });
+
+  const handleRowClick = (version: Version) => {
+    const versionString = formatVersion(version);
+    if (versionString !== null) {
+      // Navigate to published version
+      setSearchParams({ version: versionString });
+    } else {
+      // Navigate to latest (draft) by clearing version param
+      setSearchParams({});
+    }
+  };
 
   if (versions.length === 0) {
     return (
@@ -137,18 +177,21 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
   return (
     <div className="px-2 py-2">
       <div className="rounded-md border overflow-hidden">
-        <Table className="table-fixed w-full">
+        <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">
                 {headerGroup.headers.map((header) => {
-                  const size = header.column.columnDef.size;
-                  const hasFixedSize = size !== undefined;
+                  const meta = header.column.columnDef.meta as
+                    | { className?: string }
+                    | undefined;
                   return (
                     <TableHead
                       key={header.id}
-                      className="h-8 px-2 first:pl-3 last:pr-2"
-                      style={hasFixedSize ? { width: size } : undefined}
+                      className={cn(
+                        'h-8 px-2 first:pl-3 last:pr-2',
+                        meta?.className,
+                      )}
                     >
                       {header.isPlaceholder
                         ? null
@@ -163,26 +206,45 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} className="hover:bg-muted/50">
-                {row.getVisibleCells().map((cell) => {
-                  const size = cell.column.columnDef.size;
-                  const hasFixedSize = size !== undefined;
-                  return (
-                    <TableCell
-                      key={cell.id}
-                      className="h-9 px-2 py-1.5 first:pl-3 last:pr-2 overflow-hidden"
-                      style={hasFixedSize ? { width: size } : undefined}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
-            ))}
+            {table.getRowModel().rows.map((row) => {
+              const versionString = formatVersion(row.original);
+              const isCurrentVersion =
+                versionString === currentVersion ||
+                (versionString === null && currentVersion === null);
+
+              return (
+                <TableRow
+                  key={row.id}
+                  className={cn(
+                    'cursor-pointer transition-colors',
+                    isCurrentVersion
+                      ? 'bg-muted hover:bg-muted'
+                      : 'hover:bg-muted/50',
+                  )}
+                  onClick={() => handleRowClick(row.original)}
+                >
+                  {row.getVisibleCells().map((cell) => {
+                    const meta = cell.column.columnDef.meta as
+                      | { className?: string }
+                      | undefined;
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        className={cn(
+                          'h-9 px-2 py-1.5 first:pl-3 last:pr-2 overflow-hidden',
+                          meta?.className,
+                        )}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

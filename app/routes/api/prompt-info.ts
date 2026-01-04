@@ -43,10 +43,10 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
       .first<{ id: string; name: string }>(),
     db
       .prepare(
-        'SELECT version FROM prompt_version WHERE prompt_id = ? ORDER BY version DESC LIMIT 1',
+        'SELECT major, minor, patch FROM prompt_version WHERE prompt_id = ? AND published_at IS NOT NULL ORDER BY major DESC, minor DESC, patch DESC LIMIT 1',
       )
       .bind(promptId)
-      .first<{ version: number }>(),
+      .first<{ major: number; minor: number; patch: number }>(),
   ]);
 
   if (!folder || !prompt) {
@@ -58,7 +58,9 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     promptName: prompt.name,
     folderId: folder.id,
     folderName: folder.name,
-    version: versionResult?.version ? `${versionResult.version}.0.0` : null,
+    version: versionResult
+      ? `${versionResult.major}.${versionResult.minor}.${versionResult.patch}`
+      : null,
     url: `/prompts/${folderId}/${promptId}`,
   });
 };

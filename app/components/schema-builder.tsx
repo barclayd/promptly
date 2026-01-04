@@ -6,9 +6,10 @@ import { FieldBuilder } from './schema-builder/field-builder';
 
 interface SchemaBuilderProps {
   fields: SchemaField[];
-  onChange: (fields: SchemaField[]) => void;
+  onChange?: (fields: SchemaField[]) => void;
   onGenerateTestData?: () => void;
   isGeneratingTestData?: boolean;
+  disabled?: boolean;
 }
 
 export const SchemaBuilder = ({
@@ -16,8 +17,10 @@ export const SchemaBuilder = ({
   onChange,
   onGenerateTestData,
   isGeneratingTestData,
+  disabled = false,
 }: SchemaBuilderProps) => {
   const addField = () => {
+    if (!onChange) return;
     const newField: SchemaField = {
       id: crypto.randomUUID(),
       name: '',
@@ -29,11 +32,11 @@ export const SchemaBuilder = ({
   };
 
   const updateField = (id: string, updatedField: SchemaField) => {
-    onChange(fields.map((field) => (field.id === id ? updatedField : field)));
+    onChange?.(fields.map((field) => (field.id === id ? updatedField : field)));
   };
 
   const deleteField = (id: string) => {
-    onChange(fields.filter((field) => field.id !== id));
+    onChange?.(fields.filter((field) => field.id !== id));
   };
 
   return (
@@ -44,10 +47,11 @@ export const SchemaBuilder = ({
           field={field}
           onChange={(updatedField) => updateField(field.id, updatedField)}
           onDelete={() => deleteField(field.id)}
+          disabled={disabled}
         />
       ))}
 
-      <Button type="button" onClick={addField} className="w-full">
+      <Button type="button" onClick={addField} className="w-full" disabled={disabled}>
         <Plus className="h-4 w-4 mr-2" />
         Add Field
       </Button>
@@ -57,7 +61,7 @@ export const SchemaBuilder = ({
           type="button"
           variant="outline"
           onClick={onGenerateTestData}
-          disabled={fields.length === 0 || isGeneratingTestData}
+          disabled={disabled || fields.length === 0 || isGeneratingTestData}
           className="w-full"
         >
           {isGeneratingTestData ? (

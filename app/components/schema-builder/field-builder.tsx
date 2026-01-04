@@ -23,6 +23,7 @@ interface FieldBuilderProps {
   field: SchemaField;
   onChange: (field: SchemaField) => void;
   onDelete: () => void;
+  disabled?: boolean;
 }
 
 const zodTypes = [
@@ -62,6 +63,7 @@ export const FieldBuilder = ({
   field,
   onChange,
   onDelete,
+  disabled = false,
 }: FieldBuilderProps) => {
   return (
     <div className="space-y-4 p-4 border rounded-lg bg-card">
@@ -74,6 +76,7 @@ export const FieldBuilder = ({
               value={field.name}
               onChange={(e) => onChange({ ...field, name: e.target.value })}
               placeholder="Field name"
+              disabled={disabled}
             />
           </div>
 
@@ -82,6 +85,7 @@ export const FieldBuilder = ({
             <Select
               value={field.type}
               onValueChange={(value) => onChange({ ...field, type: value })}
+              disabled={disabled}
             >
               <SelectTrigger id={`type-${field.id}`}>
                 <SelectValue />
@@ -103,30 +107,33 @@ export const FieldBuilder = ({
           size="icon"
           onClick={onDelete}
           className="mt-8"
+          disabled={disabled}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
 
-      <Accordion type="single" collapsible className="w-full">
+      <Accordion type="single" collapsible className="w-full" disabled={disabled}>
         <AccordionItem value="params">
-          <AccordionTrigger>Parameters</AccordionTrigger>
+          <AccordionTrigger disabled={disabled}>Parameters</AccordionTrigger>
           <AccordionContent>
             <FieldParams
               field={field}
               onChange={(params) =>
                 onChange({ ...field, params: { ...field.params, ...params } })
               }
+              disabled={disabled}
             />
           </AccordionContent>
         </AccordionItem>
 
         <AccordionItem value="validations">
-          <AccordionTrigger>Validations</AccordionTrigger>
+          <AccordionTrigger disabled={disabled}>Validations</AccordionTrigger>
           <AccordionContent>
             <ValidationBuilder
               field={field}
               onChange={(validations) => onChange({ ...field, validations })}
+              disabled={disabled}
             />
           </AccordionContent>
         </AccordionItem>

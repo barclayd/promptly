@@ -10,11 +10,13 @@ import { Slider } from '~/components/ui/slider';
 interface SidebarSliderProps {
   value?: number;
   onChange?: (value: number) => void;
+  disabled?: boolean;
 }
 
 export const SidebarSlider = ({
   value = 0.25,
   onChange,
+  disabled,
 }: SidebarSliderProps) => {
   return (
     <div className="space-y-3">
@@ -34,6 +36,7 @@ export const SidebarSlider = ({
               onValueChange={(v) => onChange?.(v[0])}
               aria-label="Temperature"
               className="cursor-pointer"
+              disabled={disabled}
             />
           </div>
         </HoverCardTrigger>
