@@ -113,7 +113,12 @@ export const FieldBuilder = ({
         </Button>
       </div>
 
-      <Accordion type="single" collapsible className="w-full" disabled={disabled}>
+      <Accordion
+        type="single"
+        collapsible
+        className="w-full"
+        disabled={disabled}
+      >
         <AccordionItem value="params">
           <AccordionTrigger disabled={disabled}>Parameters</AccordionTrigger>
           <AccordionContent>
