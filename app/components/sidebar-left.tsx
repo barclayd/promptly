@@ -110,7 +110,7 @@ const data = {
       icon: IconSettings,
     },
     {
-      title: 'Get Help',
+      title: 'Help',
       url: '#',
       icon: IconHelp,
     },
