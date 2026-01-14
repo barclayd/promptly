@@ -434,10 +434,9 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       <Sidebar
         collapsible="none"
         className={cn(
-          'flex w-full',
           isMobile
-            ? 'relative border-t bg-sidebar'
-            : 'absolute inset-0 h-full border-l',
+            ? 'relative border-t bg-sidebar w-full'
+            : 'border-l',
         )}
         {...props}
       >
@@ -465,7 +464,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
           </Fragment>
           <Fragment key={1}>
             <SidebarGroup key="key" className="py-1">
-              <Collapsible defaultOpen={true} className="group/collapsible">
+              <Collapsible defaultOpen={false} className="group/collapsible">
                 <SidebarGroupLabel
                   asChild
                   className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"

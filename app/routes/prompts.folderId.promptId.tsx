@@ -225,9 +225,10 @@ export const loader = async ({
 
   // Format current version string
   const currentVersionString =
-    targetVersion?.major !== null &&
-    targetVersion?.minor !== null &&
-    targetVersion?.patch !== null
+    targetVersion &&
+    targetVersion.major !== null &&
+    targetVersion.minor !== null &&
+    targetVersion.patch !== null
       ? `${targetVersion.major}.${targetVersion.minor}.${targetVersion.patch}`
       : null;
 
