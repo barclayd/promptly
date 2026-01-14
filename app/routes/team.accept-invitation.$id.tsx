@@ -261,7 +261,7 @@ const AcceptInvitation = ({ loaderData, actionData }: Route.ComponentProps) => {
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
             <p className="text-xs text-gray-500 text-center">
               This invitation expires on{' '}
-              {new Date(invitation.expiresAt).toLocaleDateString(undefined, {
+              {new Date(invitation.expiresAt).toLocaleDateString('en-GB', {
                 dateStyle: 'long',
               })}
             </p>

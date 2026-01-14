@@ -27,11 +27,7 @@ interface PendingInvitationsTableProps {
   invitations: Invitation[];
 }
 
-const CancelInvitationButton = ({
-  invitationId,
-}: {
-  invitationId: string;
-}) => {
+const CancelInvitationButton = ({ invitationId }: { invitationId: string }) => {
   const fetcher = useFetcher();
   const isDeleting = fetcher.state !== 'idle';
 
@@ -91,8 +87,12 @@ export const PendingInvitationsTable = ({
               <TableHead className="font-semibold text-gray-700">
                 Email
               </TableHead>
-              <TableHead className="font-semibold text-gray-700">Role</TableHead>
-              <TableHead className="font-semibold text-gray-700">Sent</TableHead>
+              <TableHead className="font-semibold text-gray-700">
+                Role
+              </TableHead>
+              <TableHead className="font-semibold text-gray-700">
+                Sent
+              </TableHead>
               <TableHead className="font-semibold text-gray-700">
                 Expires
               </TableHead>
@@ -130,7 +130,7 @@ export const PendingInvitationsTable = ({
                   </TableCell>
                   <TableCell className="text-gray-500">
                     {new Date(invitation.createdAt).toLocaleDateString(
-                      undefined,
+                      'en-GB',
                       {
                         month: 'short',
                         day: 'numeric',
@@ -148,7 +148,7 @@ export const PendingInvitationsTable = ({
                     ) : expiringSoon ? (
                       <span className="text-amber-600 font-medium text-sm">
                         {new Date(invitation.expiresAt).toLocaleDateString(
-                          undefined,
+                          'en-US',
                           {
                             month: 'short',
                             day: 'numeric',
@@ -158,7 +158,7 @@ export const PendingInvitationsTable = ({
                     ) : (
                       <span className="text-gray-500">
                         {new Date(invitation.expiresAt).toLocaleDateString(
-                          undefined,
+                          'en-US',
                           {
                             month: 'short',
                             day: 'numeric',

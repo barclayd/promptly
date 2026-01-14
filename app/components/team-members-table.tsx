@@ -133,7 +133,7 @@ export const TeamMembersTable = ({
                   </Badge>
                 </TableCell>
                 <TableCell className="text-gray-500">
-                  {new Date(member.createdAt).toLocaleDateString(undefined, {
+                  {new Date(member.createdAt).toLocaleDateString('en-GB', {
                     month: 'short',
                     day: 'numeric',
                     year: 'numeric',
