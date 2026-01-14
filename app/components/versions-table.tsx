@@ -43,7 +43,7 @@ const formatVersion = (v: Version): string | null => {
 
 const formatDateTime = (timestamp: number): string => {
   const date = new Date(timestamp);
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString('en-GB', {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',

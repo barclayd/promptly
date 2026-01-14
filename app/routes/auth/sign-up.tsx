@@ -1,3 +1,4 @@
+import { nanoid } from 'nanoid';
 import { data, redirect, useFetcher } from 'react-router';
 import { z } from 'zod';
 import { SignUpForm } from '~/components/sign-up-form';
@@ -45,6 +46,17 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     });
 
     const setCookie = response.headers.get('set-cookie');
+
+    // Create a default organization for the new user
+    if (setCookie) {
+      await auth.api.createOrganization({
+        body: {
+          name: `${result.data.name}'s Workspace`,
+          slug: nanoid(10),
+        },
+        headers: { Cookie: setCookie },
+      });
+    }
 
     return redirect('/', {
       headers: setCookie ? { 'Set-Cookie': setCookie } : {},

@@ -16,7 +16,11 @@ interface FieldParamsProps {
   disabled?: boolean;
 }
 
-export const FieldParams = ({ field, onChange, disabled = false }: FieldParamsProps) => {
+export const FieldParams = ({
+  field,
+  onChange,
+  disabled = false,
+}: FieldParamsProps) => {
   const showEnumValues = ['enum', 'nativeEnum', 'literal'].includes(field.type);
   const showArrayConfig = field.type === 'array';
   const showObjectConfig = field.type === 'object';

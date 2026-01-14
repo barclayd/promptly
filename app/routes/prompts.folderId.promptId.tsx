@@ -16,10 +16,10 @@ import { PublishPromptDialog } from '~/components/publish-prompt-dialog';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
+import type { Version } from '~/components/versions-table';
 import { orgContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/prompts.folderId.promptId';
-import type { Version } from '~/components/versions-table';
 
 type PromptDetailContext = {
   triggerTest: () => void;
@@ -225,9 +225,10 @@ export const loader = async ({
 
   // Format current version string
   const currentVersionString =
-    targetVersion?.major !== null &&
-    targetVersion?.minor !== null &&
-    targetVersion?.patch !== null
+    targetVersion &&
+    targetVersion.major !== null &&
+    targetVersion.minor !== null &&
+    targetVersion.patch !== null
       ? `${targetVersion.major}.${targetVersion.minor}.${targetVersion.patch}`
       : null;
 

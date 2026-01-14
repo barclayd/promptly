@@ -58,7 +58,18 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     user_message: string | null;
   } | null = null;
 
-  if (versionNumber) {
+  if (versionNumber === 'draft') {
+    // Fetch the latest draft version (unpublished)
+    promptVersion = await db
+      .prepare(
+        'SELECT system_message, user_message FROM prompt_version WHERE prompt_id = ? AND published_at IS NULL ORDER BY created_at DESC LIMIT 1',
+      )
+      .bind(promptId)
+      .first<{
+        system_message: string | null;
+        user_message: string | null;
+      }>();
+  } else if (versionNumber) {
     // Parse semver format (e.g., "1.2.3")
     const match = versionNumber.match(/^(\d+)\.(\d+)\.(\d+)$/);
     if (match) {

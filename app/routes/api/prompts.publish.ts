@@ -28,7 +28,10 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
   const versionMatch = version?.match(/^(\d+)\.(\d+)\.(\d+)$/);
   if (!versionMatch) {
-    return data({ error: 'Invalid version format (expected X.X.X)' }, { status: 400 });
+    return data(
+      { error: 'Invalid version format (expected X.X.X)' },
+      { status: 400 },
+    );
   }
 
   const major = Number.parseInt(versionMatch[1], 10);
@@ -69,18 +72,24 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     const isGreater =
       major > lastPublished.major ||
       (major === lastPublished.major && minor > lastPublished.minor) ||
-      (major === lastPublished.major && minor === lastPublished.minor && patch > lastPublished.patch);
+      (major === lastPublished.major &&
+        minor === lastPublished.minor &&
+        patch > lastPublished.patch);
 
     if (!isGreater) {
       return data(
-        { error: `Version must be greater than ${lastPublished.major}.${lastPublished.minor}.${lastPublished.patch}` },
+        {
+          error: `Version must be greater than ${lastPublished.major}.${lastPublished.minor}.${lastPublished.patch}`,
+        },
         { status: 400 },
       );
     }
   }
 
   await db
-    .prepare('UPDATE prompt_version SET major = ?, minor = ?, patch = ?, published_at = ? WHERE id = ?')
+    .prepare(
+      'UPDATE prompt_version SET major = ?, minor = ?, patch = ?, published_at = ? WHERE id = ?',
+    )
     .bind(major, minor, patch, Date.now(), currentDraft.id)
     .run();
 

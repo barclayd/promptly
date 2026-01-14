@@ -266,12 +266,16 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       (v): v is typeof v & { major: number; minor: number; patch: number } =>
         v.major !== null && v.minor !== null && v.patch !== null,
     );
+
+    const hasDraftVersion = versions.some((v) => v.published_at === null);
     const formatSemver = (v: { major: number; minor: number; patch: number }) =>
       `${v.major}.${v.minor}.${v.patch}`;
     const latestPublishedVersion = publishedVersions[0]
       ? formatSemver(publishedVersions[0])
       : null;
-    const selectedVersion = versionParam || latestPublishedVersion;
+
+    const selectedVersion =
+      versionParam || (hasDraftVersion ? 'draft' : latestPublishedVersion);
 
     const handleRemoveUnusedFields = useCallback(
       (fields: string[]) => {
@@ -434,10 +438,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       <Sidebar
         collapsible="none"
         className={cn(
-          'flex w-full',
-          isMobile
-            ? 'relative border-t bg-sidebar'
-            : 'absolute inset-0 h-full border-l',
+          isMobile ? 'relative border-t bg-sidebar w-full' : 'border-l',
         )}
         {...props}
       >
@@ -465,7 +466,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
           </Fragment>
           <Fragment key={1}>
             <SidebarGroup key="key" className="py-1">
-              <Collapsible defaultOpen={true} className="group/collapsible">
+              <Collapsible defaultOpen={false} className="group/collapsible">
                 <SidebarGroupLabel
                   asChild
                   className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full text-sm"
@@ -659,32 +660,45 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                         <div className="my-4">
                           <Select
                             value={selectedVersion ?? ''}
-                            disabled={publishedVersions.length === 0}
+                            disabled={
+                              !hasDraftVersion && publishedVersions.length === 0
+                            }
                           >
                             <SelectTrigger className="w-full">
                               <SelectValue
                                 placeholder={
+                                  !hasDraftVersion &&
                                   publishedVersions.length === 0
-                                    ? 'No published versions'
+                                    ? 'No versions available'
                                     : 'Select version'
                                 }
                               />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectGroup>
-                                <SelectLabel>Published Versions</SelectLabel>
-                                {publishedVersions.map((v) => {
-                                  const ver = formatSemver(v);
-                                  return (
-                                    <SelectItem key={ver} value={ver}>
-                                      v{ver}
-                                      {ver === latestPublishedVersion
-                                        ? ' (latest)'
-                                        : ''}
-                                    </SelectItem>
-                                  );
-                                })}
-                              </SelectGroup>
+                              {hasDraftVersion && (
+                                <SelectGroup>
+                                  <SelectLabel>Current</SelectLabel>
+                                  <SelectItem value="draft">
+                                    Draft (current)
+                                  </SelectItem>
+                                </SelectGroup>
+                              )}
+                              {publishedVersions.length > 0 && (
+                                <SelectGroup>
+                                  <SelectLabel>Published Versions</SelectLabel>
+                                  {publishedVersions.map((v) => {
+                                    const ver = formatSemver(v);
+                                    return (
+                                      <SelectItem key={ver} value={ver}>
+                                        v{ver}
+                                        {ver === latestPublishedVersion
+                                          ? ' (latest)'
+                                          : ''}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectGroup>
+                              )}
                             </SelectContent>
                           </Select>
                         </div>

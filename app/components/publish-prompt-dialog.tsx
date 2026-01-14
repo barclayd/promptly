@@ -111,7 +111,11 @@ export const PublishPromptDialog = ({
             </Item>
             <div className="mt-6 space-y-2">
               <Label>Version number</Label>
-              <VersionInput value={version} onChange={setVersion} autoFocus={open} />
+              <VersionInput
+                value={version}
+                onChange={setVersion}
+                autoFocus={open}
+              />
               {fetcher.data?.error && (
                 <p className="text-destructive text-sm">{fetcher.data.error}</p>
               )}

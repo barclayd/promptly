@@ -12,6 +12,9 @@ export default [
   route('api/prompts/publish', './routes/api/prompts.publish.ts'),
   route('api/prompt-info', './routes/api/prompt-info.ts'),
   route('api/generate-input-data', './routes/api/generate-input-data.ts'),
+  route('api/team/invite', './routes/api/team.invite.ts'),
+  route('api/team/cancel-invite', './routes/api/team.cancel-invite.ts'),
+  route('team/accept-invitation/:id', './routes/team.accept-invitation.$id.tsx'),
   route('auth/social', './routes/auth/social.ts'),
   layout('./routes/layouts/auth.tsx', [
     route('login', './routes/auth/login.tsx'),
@@ -23,6 +26,7 @@ export default [
     route('logout', './routes/logout.tsx'),
     route('prompts', './routes/prompts.tsx'),
     route('prompts/:folderId', './routes/prompts.id.tsx'),
+    route('team', './routes/team.tsx'),
   ]),
   layout('./routes/layouts/prompt-detail.tsx', [
     route(
