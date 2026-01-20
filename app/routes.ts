@@ -15,6 +15,8 @@ export default [
   route('api/team/invite', './routes/api/team.invite.ts'),
   route('api/team/cancel-invite', './routes/api/team.cancel-invite.ts'),
   route('team/accept-invitation/:id', './routes/team.accept-invitation.$id.tsx'),
+  route('invite/:id', './routes/invite.$id.tsx'),
+  route('invite/:id/callback', './routes/invite.$id.callback.tsx'),
   route('auth/social', './routes/auth/social.ts'),
   layout('./routes/layouts/auth.tsx', [
     route('login', './routes/auth/login.tsx'),
