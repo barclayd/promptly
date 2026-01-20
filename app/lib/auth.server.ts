@@ -36,64 +36,70 @@ export const getAuth = (ctx: RouterContextProvider) => {
     hooks: {
       after: createAuthMiddleware(async (hookCtx) => {
         // Only run on OAuth callback for new users
-        if (hookCtx.path !== '/callback/:id') {
+        // Path format is /callback/:id (e.g., /callback/google)
+        if (!hookCtx.path.startsWith('/callback/')) {
           return;
         }
 
         const newSession = hookCtx.context.newSession;
-        if (!newSession) {
+        if (!newSession?.user?.id || !newSession?.session?.id) {
           return; // Not a new user, just a sign-in
         }
 
-        // Check if this is an invite flow
         try {
-          const oauthState = await getOAuthState();
-          if (
-            oauthState &&
-            typeof oauthState === 'object' &&
-            'callbackURL' in oauthState &&
-            typeof oauthState.callbackURL === 'string' &&
-            oauthState.callbackURL.includes('/invite/')
-          ) {
-            return; // Skip - invite flow handles org membership
+          // Check if this is an invite flow
+          try {
+            const oauthState = await getOAuthState();
+            if (
+              oauthState &&
+              typeof oauthState === 'object' &&
+              'callbackURL' in oauthState &&
+              typeof oauthState.callbackURL === 'string' &&
+              oauthState.callbackURL.includes('/invite/')
+            ) {
+              return; // Skip - invite flow handles org membership
+            }
+          } catch {
+            // State not available, continue with org creation
           }
-        } catch {
-          // State not available, continue with org creation
+
+          // Create default organization for new OAuth user
+          const adapter = hookCtx.context.adapter;
+          const orgId = hookCtx.context.generateId({ model: 'organization' });
+          const slug = nanoid(10);
+
+          await adapter.create({
+            model: 'organization',
+            data: {
+              id: orgId,
+              name: `${newSession.user.name}'s Workspace`,
+              slug,
+              createdAt: new Date(),
+            },
+          });
+
+          // Add user as owner
+          await adapter.create({
+            model: 'member',
+            data: {
+              id: hookCtx.context.generateId({ model: 'member' }),
+              userId: newSession.user.id,
+              organizationId: orgId,
+              role: 'owner',
+              createdAt: new Date(),
+            },
+          });
+
+          // Set as active organization on the session
+          await adapter.update({
+            model: 'session',
+            where: [{ field: 'id', value: newSession.session.id }],
+            update: { activeOrganizationId: orgId },
+          });
+        } catch (error) {
+          console.error('Failed to create default organization for OAuth user:', error);
+          // Don't throw - let the user continue even if org creation fails
         }
-
-        // Create default organization for new OAuth user
-        const adapter = hookCtx.context.adapter;
-        const orgId = hookCtx.context.generateId({ model: 'organization' });
-        const slug = nanoid(10);
-
-        await adapter.create({
-          model: 'organization',
-          data: {
-            id: orgId,
-            name: `${newSession.user.name}'s Workspace`,
-            slug,
-            createdAt: new Date(),
-          },
-        });
-
-        // Add user as owner
-        await adapter.create({
-          model: 'member',
-          data: {
-            id: hookCtx.context.generateId({ model: 'member' }),
-            userId: newSession.user.id,
-            organizationId: orgId,
-            role: 'owner',
-            createdAt: new Date(),
-          },
-        });
-
-        // Set as active organization on the session
-        await adapter.update({
-          model: 'session',
-          where: [{ field: 'id', value: newSession.session.id }],
-          update: { activeOrganizationId: orgId },
-        });
       }),
     },
     plugins: [
