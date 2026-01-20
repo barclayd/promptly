@@ -59,6 +59,12 @@ export const loader = async ({ params, request, context }: Route.LoaderArgs) => 
       return redirect(`/invite/${id}?error=accept_failed`);
     }
 
+    // Set the joined organization as active
+    await auth.api.setActiveOrganization({
+      body: { organizationId: invitation.organizationId },
+      headers: request.headers,
+    });
+
     return redirect('/?joined=true');
   } catch {
     return redirect(`/invite/${id}?error=accept_failed`);
