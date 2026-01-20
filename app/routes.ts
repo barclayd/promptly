@@ -18,6 +18,7 @@ export default [
   route('invite/:id', './routes/invite.$id.tsx'),
   route('invite/:id/callback', './routes/invite.$id.callback.tsx'),
   route('auth/social', './routes/auth/social.ts'),
+  route('onboarding/setup-workspace', './routes/onboarding.setup-workspace.tsx'),
   layout('./routes/layouts/auth.tsx', [
     route('login', './routes/auth/login.tsx'),
     route('sign-up', './routes/auth/sign-up.tsx'),
