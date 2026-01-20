@@ -1,3 +1,4 @@
+import { IconLock } from '@tabler/icons-react';
 import { useEffect } from 'react';
 import type { FetcherWithComponents } from 'react-router';
 import { NavLink } from 'react-router';
@@ -12,6 +13,13 @@ import {
   FieldSeparator,
 } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from '~/components/ui/item';
 import { cn } from '~/lib/utils';
 
 type ActionData = {
@@ -23,17 +31,33 @@ type ActionData = {
   };
 };
 
+type InvitationContext = {
+  id: string;
+  email: string;
+  organization: {
+    name: string;
+    logo?: string | null;
+  };
+  inviter: {
+    name: string;
+  };
+  role: string;
+};
+
 interface SignUpFormProps extends React.ComponentProps<'div'> {
   fetcher: FetcherWithComponents<ActionData>;
+  invitation?: InvitationContext;
 }
 
 export const SignUpForm = ({
   className,
   fetcher,
+  invitation,
   ...props
 }: SignUpFormProps) => {
   const errors = fetcher.data?.errors;
   const isSubmitting = fetcher.state === 'submitting';
+  const isInvite = !!invitation;
 
   useEffect(() => {
     if (errors && Object.keys(errors).length > 0) {
@@ -43,16 +67,46 @@ export const SignUpForm = ({
 
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
+      {/* Organization context - shown when signing up via invitation */}
+      {invitation && (
+        <Item variant="outline" className="bg-card">
+          <ItemMedia variant="icon" className="bg-primary/10 border-primary/20">
+            {invitation.organization.logo ? (
+              <img
+                src={invitation.organization.logo}
+                alt={invitation.organization.name}
+                className="size-full object-cover"
+              />
+            ) : (
+              <span className="text-primary text-lg font-semibold">
+                {invitation.organization.name.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>Joining {invitation.organization.name}</ItemTitle>
+            <ItemDescription>
+              {invitation.inviter.name} invited you as {invitation.role}
+            </ItemDescription>
+          </ItemContent>
+        </Item>
+      )}
+
       <Card className="overflow-hidden p-0">
         <CardContent className="grid p-0 md:grid-cols-2">
           <fetcher.Form method="post" className="p-6 md:p-8">
+            {isInvite && <input type="hidden" name="intent" value="signup" />}
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
                 <h1 className="text-2xl font-bold">
-                  Create your Promptly account
+                  {isInvite
+                    ? `Join ${invitation.organization.name}`
+                    : 'Create your Promptly account'}
                 </h1>
                 <p className="text-muted-foreground text-sm text-balance">
-                  Enter your details below to create your account
+                  {isInvite
+                    ? 'Create your account to accept the invitation'
+                    : 'Enter your details below to create your account'}
                 </p>
               </div>
               <Field>
@@ -70,19 +124,36 @@ export const SignUpForm = ({
               </Field>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                />
+                {isInvite ? (
+                  <div className="relative">
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={invitation.email}
+                      readOnly
+                      className="bg-muted/50 text-muted-foreground pr-10 cursor-not-allowed"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <IconLock className="size-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                ) : (
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="m@example.com"
+                    required
+                  />
+                )}
                 {errors?.email ? (
                   <p className="text-destructive text-sm">{errors.email[0]}</p>
                 ) : (
                   <FieldDescription>
-                    We&apos;ll use this to contact you. We will not share your
-                    email with anyone else.
+                    {isInvite
+                      ? 'Your account will be created with this email'
+                      : "We'll use this to contact you. We will not share your email with anyone else."}
                   </FieldDescription>
                 )}
               </Field>
@@ -125,7 +196,11 @@ export const SignUpForm = ({
               </Field>
               <Field>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Creating Account...' : 'Create Account'}
+                  {isSubmitting
+                    ? 'Creating Account...'
+                    : isInvite
+                      ? 'Create Account & Join'
+                      : 'Create Account'}
                 </Button>
               </Field>
               <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
@@ -165,7 +240,14 @@ export const SignUpForm = ({
               </Field>
               <FieldDescription className="text-center">
                 Already have an account?{' '}
-                <NavLink to="/login" className="underline">
+                <NavLink
+                  to={
+                    isInvite
+                      ? `/login?redirect=/invite/${invitation.id}`
+                      : '/login'
+                  }
+                  className="underline"
+                >
                   Sign in
                 </NavLink>
               </FieldDescription>

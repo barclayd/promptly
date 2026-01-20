@@ -9,6 +9,8 @@ const publicRoutes = [
   '/logout',
   '/api/auth',
   '/auth/social',
+  '/invite',
+  '/team/accept-invitation',
 ];
 
 const isPublicRoute = (pathname: string) =>

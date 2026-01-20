@@ -39,17 +39,17 @@ export const getAuth = (ctx: RouterContextProvider) => {
             console.log('Resend API key not configured, skipping email');
             console.log(
               'Invitation link:',
-              `${baseURL}/team/accept-invitation/${data.id}`,
+              `${baseURL}/invite/${data.id}`,
             );
             return;
           }
 
           const resend = new Resend(resendApiKey);
-          const inviteLink = `${baseURL}/team/accept-invitation/${data.id}`;
+          const inviteLink = `${baseURL}/invite/${data.id}`;
 
           try {
             await resend.emails.send({
-              from: 'Promptly <hello@promptlycms.com>',
+              from: 'Promptly <hello@info.promptlycms.com>',
               to: data.email,
               subject: `${data.inviter.user.name} invited you to join ${data.organization.name} on Promptly`,
               html: `
