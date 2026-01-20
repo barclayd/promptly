@@ -175,7 +175,7 @@ export const StreamingResponse = ({
           ) : (
             <ItemDescription
               className={cn(
-                'whitespace-pre-wrap font-mono text-xs leading-relaxed text-foreground/90',
+                'whitespace-pre-wrap font-mono text-xs leading-relaxed text-foreground/90 line-clamp-none',
                 'selection:bg-primary/20',
               )}
             >
