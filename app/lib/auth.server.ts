@@ -49,7 +49,7 @@ export const getAuth = (ctx: RouterContextProvider) => {
 
           try {
             await resend.emails.send({
-              from: 'Promptly <hello@promptlycms.com>',
+              from: 'Promptly <hello@info.promptlycms.com>',
               to: data.email,
               subject: `${data.inviter.user.name} invited you to join ${data.organization.name} on Promptly`,
               html: `
