@@ -37,7 +37,10 @@ export const getAuth = (ctx: RouterContextProvider) => {
           // Skip email sending if no API key is configured
           if (!resendApiKey) {
             console.log('Resend API key not configured, skipping email');
-            console.log('Invitation link:', `${baseURL}/team/accept-invitation/${data.id}`);
+            console.log(
+              'Invitation link:',
+              `${baseURL}/team/accept-invitation/${data.id}`,
+            );
             return;
           }
 
@@ -46,7 +49,7 @@ export const getAuth = (ctx: RouterContextProvider) => {
 
           try {
             await resend.emails.send({
-              from: 'Promptly <team@promptly.dev>',
+              from: 'Promptly <hello@promptlycms.com>',
               to: data.email,
               subject: `${data.inviter.user.name} invited you to join ${data.organization.name} on Promptly`,
               html: `
