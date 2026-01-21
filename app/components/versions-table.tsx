@@ -30,8 +30,10 @@ export type Version = {
   major: number | null;
   minor: number | null;
   patch: number | null;
-  published_by: string | null;
+  updated_at: number | null;
+  updated_by: string | null;
   published_at: number | null;
+  published_by: string | null;
 };
 
 const formatVersion = (v: Version): string | null => {
@@ -100,7 +102,7 @@ const columns: ColumnDef<Version>[] = [
         </span>
       );
     },
-    meta: { className: 'w-[70px]' },
+    meta: { className: 'w-[60px]' },
   },
   {
     id: 'status',
@@ -113,7 +115,24 @@ const columns: ColumnDef<Version>[] = [
         {row.original.published_at ? 'Published' : 'Draft'}
       </Badge>
     ),
-    meta: { className: 'w-[72px]' },
+    meta: { className: 'w-[70px]' },
+  },
+  {
+    id: 'last_updated',
+    header: () => <span className="text-xs">Last Updated</span>,
+    cell: ({ row }) => (
+      <div className="flex flex-col gap-0.5">
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
+          {row.original.updated_at
+            ? formatDateTime(row.original.updated_at)
+            : '-'}
+        </span>
+        <span className="text-[10px] text-muted-foreground/70 truncate max-w-[100px]">
+          {row.original.updated_by ?? '-'}
+        </span>
+      </div>
+    ),
+    meta: { className: 'w-[130px]' },
   },
   {
     accessorKey: 'published_at',
@@ -125,13 +144,13 @@ const columns: ColumnDef<Version>[] = [
           : '-'}
       </span>
     ),
-    meta: { className: 'w-[105px]' },
+    meta: { className: 'w-[90px]' },
   },
   {
     accessorKey: 'published_by',
     header: () => <span className="text-xs">Created By</span>,
     cell: ({ row }) => (
-      <span className="text-xs text-muted-foreground truncate block max-w-[120px]">
+      <span className="text-xs text-muted-foreground truncate block max-w-[100px]">
         {row.original.published_by ?? '-'}
       </span>
     ),
@@ -176,8 +195,8 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
 
   return (
     <div className="px-2 py-2">
-      <div className="rounded-md border overflow-hidden">
-        <Table>
+      <div className="rounded-md border overflow-hidden overflow-x-auto">
+        <Table className="min-w-[520px]">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">

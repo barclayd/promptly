@@ -92,9 +92,10 @@ export const loader = async ({
   // Fetch all versions for the versions table
   const versionsResult = await db
     .prepare(
-      `SELECT pv.major, pv.minor, pv.patch, pv.published_at, u.name as published_by
+      `SELECT pv.major, pv.minor, pv.patch, pv.updated_at, u_updated.name as updated_by, pv.published_at, u_created.name as published_by
        FROM prompt_version pv
-       LEFT JOIN user u ON pv.created_by = u.id
+       LEFT JOIN user u_created ON pv.created_by = u_created.id
+       LEFT JOIN user u_updated ON pv.updated_by = u_updated.id
        WHERE pv.prompt_id = ?
        ORDER BY (pv.published_at IS NULL) DESC, pv.major DESC, pv.minor DESC, pv.patch DESC`,
     )
@@ -103,6 +104,8 @@ export const loader = async ({
       major: number | null;
       minor: number | null;
       patch: number | null;
+      updated_at: number | null;
+      updated_by: string | null;
       published_at: number | null;
       published_by: string | null;
     }>();
@@ -309,22 +312,32 @@ export const action = async ({
         user_message: string | null;
       }>();
 
+    const now = Date.now();
     if (!currentVersion) {
       await db
         .prepare(
-          'INSERT INTO prompt_version (id, prompt_id, config, created_by) VALUES (?, ?, ?, ?)',
+          'INSERT INTO prompt_version (id, prompt_id, config, created_by, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?)',
         )
-        .bind(nanoid(), promptId, configJson, session.user.id)
+        .bind(
+          nanoid(),
+          promptId,
+          configJson,
+          session.user.id,
+          now,
+          session.user.id,
+        )
         .run();
     } else if (currentVersion.published_at === null) {
       await db
-        .prepare('UPDATE prompt_version SET config = ? WHERE id = ?')
-        .bind(configJson, currentVersion.id)
+        .prepare(
+          'UPDATE prompt_version SET config = ?, updated_at = ?, updated_by = ? WHERE id = ?',
+        )
+        .bind(configJson, now, session.user.id, currentVersion.id)
         .run();
     } else {
       await db
         .prepare(
-          'INSERT INTO prompt_version (id, prompt_id, config, system_message, user_message, created_by) VALUES (?, ?, ?, ?, ?, ?)',
+          'INSERT INTO prompt_version (id, prompt_id, config, system_message, user_message, created_by, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         )
         .bind(
           nanoid(),
@@ -332,6 +345,8 @@ export const action = async ({
           configJson,
           currentVersion.system_message,
           currentVersion.user_message,
+          session.user.id,
+          now,
           session.user.id,
         )
         .run();
@@ -354,24 +369,33 @@ export const action = async ({
       config: string | null;
     }>();
 
+  const now = Date.now();
   if (!currentVersion) {
     await db
       .prepare(
-        'INSERT INTO prompt_version (id, prompt_id, system_message, user_message, created_by) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO prompt_version (id, prompt_id, system_message, user_message, created_by, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
       )
-      .bind(nanoid(), promptId, systemMessage, userMessage, session.user.id)
+      .bind(
+        nanoid(),
+        promptId,
+        systemMessage,
+        userMessage,
+        session.user.id,
+        now,
+        session.user.id,
+      )
       .run();
   } else if (currentVersion.published_at === null) {
     await db
       .prepare(
-        'UPDATE prompt_version SET system_message = ?, user_message = ? WHERE id = ?',
+        'UPDATE prompt_version SET system_message = ?, user_message = ?, updated_at = ?, updated_by = ? WHERE id = ?',
       )
-      .bind(systemMessage, userMessage, currentVersion.id)
+      .bind(systemMessage, userMessage, now, session.user.id, currentVersion.id)
       .run();
   } else {
     await db
       .prepare(
-        'INSERT INTO prompt_version (id, prompt_id, system_message, user_message, config, created_by) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO prompt_version (id, prompt_id, system_message, user_message, config, created_by, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       )
       .bind(
         nanoid(),
@@ -379,6 +403,8 @@ export const action = async ({
         systemMessage,
         userMessage,
         currentVersion.config,
+        session.user.id,
+        now,
         session.user.id,
       )
       .run();

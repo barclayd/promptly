@@ -1,9 +1,9 @@
 import { IconUserPlus } from '@tabler/icons-react';
-import { Button } from '~/components/ui/button';
 import { InviteMemberDialog } from '~/components/invite-member-dialog';
 import { PendingInvitationsTable } from '~/components/pending-invitations-table';
 import { TeamEmptyState } from '~/components/team-empty-state';
 import { TeamMembersTable } from '~/components/team-members-table';
+import { Button } from '~/components/ui/button';
 import { orgContext, userContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/team';
@@ -88,9 +88,13 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     });
 
     if (membersResponse.ok) {
-      const membersData = (await membersResponse.json()) as { data: Member[] } | Member[];
+      const membersData = (await membersResponse.json()) as
+        | { data: Member[] }
+        | Member[];
       // Handle both response formats
-      allMembers = Array.isArray(membersData) ? membersData : (membersData.data ?? []);
+      allMembers = Array.isArray(membersData)
+        ? membersData
+        : (membersData.data ?? []);
     }
   }
 
