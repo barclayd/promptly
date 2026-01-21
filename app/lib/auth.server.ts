@@ -37,10 +37,7 @@ export const getAuth = (ctx: RouterContextProvider) => {
           // Skip email sending if no API key is configured
           if (!resendApiKey) {
             console.log('Resend API key not configured, skipping email');
-            console.log(
-              'Invitation link:',
-              `${baseURL}/invite/${data.id}`,
-            );
+            console.log('Invitation link:', `${baseURL}/invite/${data.id}`);
             return;
           }
 

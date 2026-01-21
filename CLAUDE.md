@@ -11,3 +11,9 @@
 
 # Agent Preferences
 - Use typescript-developer agent when writing TypeScript code
+- Use frontend-design skill plugin when implementing UI features
+- Always test frontend changes using Chrome Dev Tools MCP
+
+# Local Testing
+- Test user email: test@promptlycms.com
+- Test user password: Testing123

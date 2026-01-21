@@ -38,7 +38,10 @@ export default function Home() {
                 variant="outline"
                 className="mb-6 bg-emerald-50/50 border-emerald-200"
               >
-                <ItemMedia variant="icon" className="bg-emerald-100 border-emerald-200">
+                <ItemMedia
+                  variant="icon"
+                  className="bg-emerald-100 border-emerald-200"
+                >
                   <IconCheck className="text-emerald-600" />
                 </ItemMedia>
                 <ItemContent>

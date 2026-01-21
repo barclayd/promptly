@@ -107,12 +107,22 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
   // Create initial draft version
   const versionId = nanoid();
+  const now = Date.now();
   await db
     .prepare(
-      `INSERT INTO prompt_version (id, prompt_id, system_message, user_message, config, created_by)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO prompt_version (id, prompt_id, system_message, user_message, config, created_by, updated_at, updated_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     )
-    .bind(versionId, promptId, '', '', '{}', session.user.id)
+    .bind(
+      versionId,
+      promptId,
+      '',
+      '',
+      '{}',
+      session.user.id,
+      now,
+      session.user.id,
+    )
     .run();
 
   return redirect(`/prompts/${folderId}/${promptId}`);

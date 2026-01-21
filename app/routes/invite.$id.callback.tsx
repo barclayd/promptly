@@ -11,7 +11,11 @@ type Invitation = {
   organizationId: string;
 };
 
-export const loader = async ({ params, request, context }: Route.LoaderArgs) => {
+export const loader = async ({
+  params,
+  request,
+  context,
+}: Route.LoaderArgs) => {
   const { id } = params;
 
   if (!id) {
@@ -41,7 +45,9 @@ export const loader = async ({ params, request, context }: Route.LoaderArgs) => 
   const invitation = (await invitationResponse.json()) as Invitation;
 
   if (invitation.status !== 'pending') {
-    throw new Response('This invitation has already been used', { status: 400 });
+    throw new Response('This invitation has already been used', {
+      status: 400,
+    });
   }
 
   if (invitation.email !== session.user.email) {

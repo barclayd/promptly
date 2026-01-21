@@ -28,10 +28,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   });
 
   if (!session?.user) {
-    return data(
-      { errors: { _form: ['Not authenticated'] } },
-      { status: 401 },
-    );
+    return data({ errors: { _form: ['Not authenticated'] } }, { status: 401 });
   }
 
   const org = context.get(orgContext);

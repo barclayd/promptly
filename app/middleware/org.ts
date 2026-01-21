@@ -1,5 +1,5 @@
-import { redirect } from 'react-router';
 import type { RouterContextProvider } from 'react-router';
+import { redirect } from 'react-router';
 import { orgContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
 import { getActiveOrganization } from '~/lib/org.server';

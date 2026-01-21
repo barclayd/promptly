@@ -82,7 +82,9 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
                 </EmptyHeader>
                 <EmptyContent>
                   <div className="flex gap-2">
-                    <Button>Create Prompt</Button>
+                    <CreatePromptDialog>
+                      <Button>Create Prompt</Button>
+                    </CreatePromptDialog>
                     <Button variant="outline">Create Project</Button>
                   </div>
                 </EmptyContent>

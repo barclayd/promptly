@@ -1,8 +1,7 @@
 import { IconCheck } from '@tabler/icons-react';
 import { CamelCasePlugin, Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
-import { data, redirect, useFetcher } from 'react-router';
-import { NavLink } from 'react-router';
+import { data, NavLink, redirect, useFetcher } from 'react-router';
 import { z } from 'zod';
 import { SignUpForm } from '~/components/sign-up-form';
 import { Button } from '~/components/ui/button';
@@ -85,7 +84,11 @@ export const meta = ({}: Route.MetaArgs) => [
   },
 ];
 
-export const loader = async ({ params, request, context }: Route.LoaderArgs) => {
+export const loader = async ({
+  params,
+  request,
+  context,
+}: Route.LoaderArgs) => {
   const { id } = params;
 
   if (!id) {
@@ -132,7 +135,9 @@ export const loader = async ({ params, request, context }: Route.LoaderArgs) => 
   }
 
   if (invitationRow.status !== 'pending') {
-    throw new Response('This invitation has already been used', { status: 400 });
+    throw new Response('This invitation has already been used', {
+      status: 400,
+    });
   }
 
   if (new Date(invitationRow.expiresAt) < new Date()) {
@@ -168,13 +173,20 @@ export const loader = async ({ params, request, context }: Route.LoaderArgs) => 
   };
 };
 
-export const action = async ({ params, request, context }: Route.ActionArgs) => {
+export const action = async ({
+  params,
+  request,
+  context,
+}: Route.ActionArgs) => {
   const { id } = params;
   const formData = await request.formData();
   const intent = formData.get('intent');
 
   if (!id) {
-    return data({ errors: { form: ['Invitation not found'] } }, { status: 404 });
+    return data(
+      { errors: { form: ['Invitation not found'] } },
+      { status: 404 },
+    );
   }
 
   const auth = getAuth(context);
@@ -236,7 +248,8 @@ export const action = async ({ params, request, context }: Route.ActionArgs) => 
       if (!signUpResponse.ok) {
         const errorBody = await signUpResponse.json().catch(() => ({}));
         const errorMessage =
-          (errorBody as { message?: string })?.message || 'Failed to create account';
+          (errorBody as { message?: string })?.message ||
+          'Failed to create account';
         return data({ errors: { form: [errorMessage] } }, { status: 400 });
       }
 
@@ -371,7 +384,10 @@ const InvitePage = ({ loaderData, actionData }: Route.ComponentProps) => {
         <div className="w-full max-w-md flex flex-col gap-6">
           {/* Organization context */}
           <Item variant="outline" className="bg-card">
-            <ItemMedia variant="icon" className="bg-primary/10 border-primary/20">
+            <ItemMedia
+              variant="icon"
+              className="bg-primary/10 border-primary/20"
+            >
               {invitation.organization?.logo ? (
                 <img
                   src={invitation.organization.logo}
@@ -403,7 +419,9 @@ const InvitePage = ({ loaderData, actionData }: Route.ComponentProps) => {
               <div className="bg-muted rounded-lg p-4 text-sm">
                 <p className="text-muted-foreground">
                   Signed in as{' '}
-                  <span className="font-medium text-foreground">{userEmail}</span>
+                  <span className="font-medium text-foreground">
+                    {userEmail}
+                  </span>
                 </p>
               </div>
 
