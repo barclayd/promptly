@@ -92,10 +92,11 @@ export const loader = async ({
   // Fetch all versions for the versions table
   const versionsResult = await db
     .prepare(
-      `SELECT pv.major, pv.minor, pv.patch, pv.updated_at, u_updated.name as updated_by, pv.published_at, u_created.name as published_by
+      `SELECT pv.major, pv.minor, pv.patch, pv.updated_at, u_updated.name as updated_by, pv.published_at, u_published.name as published_by, u_created.name as created_by
        FROM prompt_version pv
        LEFT JOIN user u_created ON pv.created_by = u_created.id
        LEFT JOIN user u_updated ON pv.updated_by = u_updated.id
+       LEFT JOIN user u_published ON pv.published_by = u_published.id
        WHERE pv.prompt_id = ?
        ORDER BY (pv.published_at IS NULL) DESC, pv.major DESC, pv.minor DESC, pv.patch DESC`,
     )
@@ -108,6 +109,7 @@ export const loader = async ({
       updated_by: string | null;
       published_at: number | null;
       published_by: string | null;
+      created_by: string | null;
     }>();
 
   // If version param provided, try to fetch that specific version

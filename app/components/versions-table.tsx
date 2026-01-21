@@ -34,6 +34,7 @@ export type Version = {
   updated_by: string | null;
   published_at: number | null;
   published_by: string | null;
+  created_by: string | null;
 };
 
 const formatVersion = (v: Version): string | null => {
@@ -138,20 +139,27 @@ const columns: ColumnDef<Version>[] = [
     accessorKey: 'published_at',
     header: () => <span className="text-xs">Published</span>,
     cell: ({ row }) => (
-      <span className="text-xs text-muted-foreground whitespace-nowrap">
-        {row.original.published_at
-          ? formatDateTime(row.original.published_at)
-          : '-'}
-      </span>
+      <div className="flex flex-col gap-0.5">
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
+          {row.original.published_at
+            ? formatDateTime(row.original.published_at)
+            : '-'}
+        </span>
+        {row.original.published_at && (
+          <span className="text-[10px] text-muted-foreground/70 truncate max-w-[100px]">
+            {row.original.published_by ?? '-'}
+          </span>
+        )}
+      </div>
     ),
-    meta: { className: 'w-[90px]' },
+    meta: { className: 'w-[130px]' },
   },
   {
-    accessorKey: 'published_by',
+    accessorKey: 'created_by',
     header: () => <span className="text-xs">Created By</span>,
     cell: ({ row }) => (
       <span className="text-xs text-muted-foreground truncate block max-w-[100px]">
-        {row.original.published_by ?? '-'}
+        {row.original.created_by ?? '-'}
       </span>
     ),
     meta: { className: 'w-auto' },
