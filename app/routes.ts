@@ -7,6 +7,7 @@ import {
 
 export default [
   route('api/auth/*', './routes/api/auth.ts'),
+  route('api/prompts/get', './routes/api/prompts.get.ts'),
   route('api/prompts/create', './routes/api/prompts.create.ts'),
   route('api/prompts/run', './routes/api/prompts.run.ts'),
   route('api/prompts/publish', './routes/api/prompts.publish.ts'),
