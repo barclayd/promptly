@@ -8,6 +8,7 @@ const publicRoutes = [
   '/sign-up',
   '/logout',
   '/api/auth',
+  '/api/prompts/get',
   '/auth/social',
   '/invite',
   '/team/accept-invitation',
