@@ -89,9 +89,9 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   const now = Date.now();
   await db
     .prepare(
-      'UPDATE prompt_version SET major = ?, minor = ?, patch = ?, published_at = ?, updated_at = ?, updated_by = ? WHERE id = ?',
+      'UPDATE prompt_version SET major = ?, minor = ?, patch = ?, published_at = ?, published_by = ?, updated_at = ?, updated_by = ? WHERE id = ?',
     )
-    .bind(major, minor, patch, now, now, session.user.id, currentDraft.id)
+    .bind(major, minor, patch, now, session.user.id, now, session.user.id, currentDraft.id)
     .run();
 
   await db
