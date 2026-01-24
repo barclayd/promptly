@@ -2,6 +2,7 @@
 
 import { cva, type VariantProps } from 'class-variance-authority';
 import type * as React from 'react';
+import { HighlightedPromptText } from '~/components/highlighted-prompt-text';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Textarea } from '~/components/ui/textarea';
@@ -145,17 +146,38 @@ function InputGroupInput({
 
 function InputGroupTextarea({
   className,
+  highlightVariables,
   ...props
-}: React.ComponentProps<'textarea'>) {
+}: React.ComponentProps<'textarea'> & { highlightVariables?: boolean }) {
+  const textareaClassName = cn(
+    'flex-1 resize-none rounded-none border-0 bg-transparent py-3 shadow-none focus-visible:ring-0 dark:bg-transparent',
+    className,
+  );
+
+  if (!highlightVariables) {
+    return (
+      <Textarea
+        data-slot="input-group-control"
+        className={textareaClassName}
+        {...props}
+      />
+    );
+  }
+
   return (
-    <Textarea
-      data-slot="input-group-control"
-      className={cn(
-        'flex-1 resize-none rounded-none border-0 bg-transparent py-3 shadow-none focus-visible:ring-0 dark:bg-transparent',
-        className,
-      )}
-      {...props}
-    />
+    <div className="relative flex-1 w-full self-stretch">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 overflow-hidden px-3 py-3 text-base text-left md:text-sm"
+      >
+        <HighlightedPromptText text={String(props.value ?? '')} />
+      </div>
+      <Textarea
+        data-slot="input-group-control"
+        className={cn(textareaClassName, 'text-transparent caret-foreground')}
+        {...props}
+      />
+    </div>
   );
 }
 

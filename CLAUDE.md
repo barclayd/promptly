@@ -17,3 +17,10 @@
 # Local Testing
 - Test user email: test@promptlycms.com
 - Test user password: Testing123
+- Local dev server: http://localhost:5173
+
+# Production Testing
+- Production URL: https://promptlycms.com
+- Test user email: test@promptlycms.com
+- Test user password: Testing123
+- To test prompts: Create a new prompt via the "Create" button in the sidebar or navigate to /prompts

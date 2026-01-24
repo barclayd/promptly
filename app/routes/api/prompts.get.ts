@@ -6,7 +6,10 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const version = url.searchParams.get('version');
 
   if (!promptId) {
-    return Response.json({ error: 'Missing promptId parameter' }, { status: 400 });
+    return Response.json(
+      { error: 'Missing promptId parameter' },
+      { status: 400 },
+    );
   }
 
   const db = context.cloudflare.env.promptly;

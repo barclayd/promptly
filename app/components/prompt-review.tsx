@@ -146,6 +146,7 @@ export const PromptReview = ({
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
           onKeyDown={handleKeyDown}
+          highlightVariables
         />
         <InputGroupAddon align="block-end" className="border-t">
           <InputGroupText className="min-w-0">
