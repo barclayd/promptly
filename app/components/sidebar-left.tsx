@@ -3,7 +3,6 @@
 import {
   IconCamera,
   IconChartBar,
-  IconDashboard,
   IconFileAi,
   IconFileDescription,
   IconFileText,
@@ -34,11 +33,6 @@ import type { loader as rootLoader } from '~/root';
 
 const data = {
   navMain: [
-    {
-      title: 'Dashboard',
-      url: '/dashboard',
-      icon: IconDashboard,
-    },
     {
       title: 'Analytics',
       url: '/analytics',

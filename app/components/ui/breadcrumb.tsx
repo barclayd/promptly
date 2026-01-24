@@ -14,7 +14,6 @@ import type { loader as promptLoader } from '~/routes/prompts.folderId.promptId'
 import type { loader as folderLoader } from '~/routes/prompts.id';
 
 const SECTIONS = [
-  { name: 'Dashboard', path: '/dashboard' },
   { name: 'Analytics', path: '/analytics' },
   { name: 'Team', path: '/team' },
   { name: 'Prompts', path: '/prompts' },
