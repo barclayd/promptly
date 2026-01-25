@@ -1,5 +1,5 @@
 import { betterAuth } from 'better-auth';
-import { organization } from 'better-auth/plugins';
+import { apiKey, organization } from 'better-auth/plugins';
 import { CamelCasePlugin, Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
 import type { RouterContextProvider } from 'react-router';
@@ -32,6 +32,14 @@ export const getAuth = (ctx: RouterContextProvider) => {
       type: 'sqlite',
     },
     plugins: [
+      apiKey({
+        defaultPrefix: 'promptly_',
+        enableMetadata: true,
+        startingCharactersConfig: {
+          // Store prefix (9 chars) + 4 unique characters = 13 total
+          charactersLength: 13,
+        },
+      }),
       organization({
         async sendInvitationEmail(data) {
           // Skip email sending if no API key is configured

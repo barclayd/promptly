@@ -14,7 +14,6 @@ type Organization = {
 const createPromptSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   description: z.string().optional(),
-  project: z.string().optional(),
 });
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
@@ -23,7 +22,6 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   const rawData = {
     name: formData.get('name'),
     description: formData.get('description') || undefined,
-    project: formData.get('project') || undefined,
   };
 
   const result = createPromptSchema.safeParse(rawData);
@@ -65,9 +63,9 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
   const db = context.cloudflare.env.promptly;
 
-  let folderId = result.data.project;
+  let folderId: string | undefined;
 
-  if (!folderId) {
+  {
     const existingFolder = await db
       .prepare(
         'SELECT id FROM prompt_folder WHERE organization_id = ? AND name = ?',
