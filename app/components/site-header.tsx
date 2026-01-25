@@ -24,7 +24,7 @@ export function SiteHeader() {
         </Button>
         <Separator orientation="vertical" className="mr-2 h-4" />
         <BreadcrumbWithDropdown />
-        <SearchForm className="w-full sm:ml-auto sm:w-auto" />
+        <SearchForm className="ml-auto" />
       </div>
     </header>
   );

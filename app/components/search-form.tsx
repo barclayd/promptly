@@ -1,20 +1,29 @@
 import { Search } from 'lucide-react';
 
+import { cn } from '~/lib/utils';
 import { useSearchContext } from '~/context/search-context';
 
-export const SearchForm = ({ ...props }: React.ComponentProps<'button'>) => {
+export const SearchForm = ({
+  className,
+  ...props
+}: React.ComponentProps<'button'>) => {
   const { setOpen } = useSearchContext();
 
   return (
     <button
       type="button"
       onClick={() => setOpen(true)}
-      className="group bg-muted/50 text-muted-foreground border-input hover:bg-muted hover:border-muted-foreground/20 flex h-9 min-w-[200px] max-w-[260px] items-center gap-2 rounded-lg border px-3 text-sm shadow-sm transition-all duration-150"
+      className={cn(
+        'inline-flex h-8 w-64 items-center justify-between gap-2 rounded-md border border-input bg-muted/40 px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+        className
+      )}
       {...props}
     >
-      <Search className="size-4 shrink-0 opacity-50 transition-opacity group-hover:opacity-70" />
-      <span className="flex-1 truncate text-left">Search prompts...</span>
-      <kbd className="bg-background text-muted-foreground/70 border-border pointer-events-none hidden h-5 shrink-0 select-none items-center gap-0.5 rounded border px-1.5 font-mono text-[10px] font-medium shadow-sm sm:flex">
+      <span className="inline-flex items-center gap-2">
+        <Search className="size-4" />
+        <span>Search prompts...</span>
+      </span>
+      <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
         <span className="text-xs">⌘</span>K
       </kbd>
     </button>
