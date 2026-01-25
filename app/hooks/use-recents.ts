@@ -38,15 +38,13 @@ const addRecentToStorage = (prompt: PromptInfo) => {
   window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }));
 };
 
-// Parse prompt URL to extract folderId and promptId
-const parsePromptUrl = (
-  url: string,
-): { folderId: string; promptId: string } | null => {
+// Parse prompt URL to extract promptId
+const parsePromptUrl = (url: string): { promptId: string } | null => {
   try {
     const { pathname } = new URL(url);
-    const match = pathname.match(/^\/prompts\/([^/]+)\/([^/]+)$/);
+    const match = pathname.match(/^\/prompts\/([^/]+)$/);
     if (!match) return null;
-    return { folderId: match[1], promptId: match[2] };
+    return { promptId: match[1] };
   } catch {
     return null;
   }
@@ -54,13 +52,10 @@ const parsePromptUrl = (
 
 // Fetch prompt info from server
 const fetchPromptInfo = async (
-  folderId: string,
   promptId: string,
 ): Promise<PromptInfo | null> => {
   try {
-    const response = await fetch(
-      `/api/prompt-info?folderId=${folderId}&promptId=${promptId}`,
-    );
+    const response = await fetch(`/api/prompt-info?promptId=${promptId}`);
     if (!response.ok) return null;
     return response.json();
   } catch {
@@ -89,7 +84,7 @@ const setupNavigationListener = () => {
     const parsed = parsePromptUrl(fromUrl);
     if (!parsed) return;
 
-    fetchPromptInfo(parsed.folderId, parsed.promptId).then((info) => {
+    fetchPromptInfo(parsed.promptId).then((info) => {
       if (info) {
         addRecentToStorage(info);
       }

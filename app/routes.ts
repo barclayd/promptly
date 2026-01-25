@@ -35,16 +35,11 @@ export default [
     route('home', './routes/home.tsx'),
     route('logout', './routes/logout.tsx'),
     route('prompts', './routes/prompts.tsx'),
-    route('prompts/:folderId', './routes/prompts.id.tsx'),
     route('team', './routes/team.tsx'),
   ]),
   layout('./routes/layouts/prompt-detail.tsx', [
-    route(
-      'prompts/:folderId/:promptId',
-      './routes/prompts.folderId.promptId.tsx',
-      {
-        id: 'prompt-detail',
-      },
-    ),
+    route('prompts/:promptId', './routes/prompts.promptId.tsx', {
+      id: 'prompt-detail',
+    }),
   ]),
 ] satisfies RouteConfig;

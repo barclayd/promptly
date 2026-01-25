@@ -67,7 +67,7 @@ export default function Home() {
             <NavLink to="/prompts">
               <div className="flex flex-col">
                 <Folder />
-                <h4 className="w-48 text-center my-4">All Prompts</h4>
+                <h4 className="w-48 text-center my-4">All prompts</h4>
               </div>
             </NavLink>
           </div>

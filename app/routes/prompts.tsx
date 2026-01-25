@@ -119,12 +119,10 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
               <div className="font-semibold text-gray-500/75 mb-4">Folders</div>
               <div className="flex flex-wrap gap-4">
                 {visibleFolders.map((folder) => (
-                  <NavLink key={folder.id} to={`/prompts/${folder.id}`}>
-                    <div className="flex flex-col">
-                      <Folder />
-                      <h4 className="w-48 text-center my-4">{folder.name}</h4>
-                    </div>
-                  </NavLink>
+                  <div key={folder.id} className="flex flex-col">
+                    <Folder />
+                    <h4 className="w-48 text-center my-4">{folder.name}</h4>
+                  </div>
                 ))}
               </div>
             </div>
@@ -140,10 +138,7 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
                 {(promptsResult) => (
                   <div className="flex flex-wrap gap-4">
                     {promptsResult.results?.map((prompt) => (
-                      <NavLink
-                        key={prompt.id}
-                        to={`/prompts/${loaderData.untitledFolderId}/${prompt.id}`}
-                      >
+                      <NavLink key={prompt.id} to={`/prompts/${prompt.id}`}>
                         <Paper className="items-start">
                           <div className="flex flex-wrap text-pretty flex-col gap-y-2 p-4 w-full h-full">
                             <div className="flex flex-col gap-y-1 mb-8 select-none">

@@ -311,8 +311,8 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
 
     // Handle running the prompt
     const handleRunPrompt = useCallback(async () => {
-      const { folderId, promptId } = params;
-      if (!folderId || !promptId) return;
+      const { promptId } = params;
+      if (!promptId) return;
 
       setStreamText('');
       setIsStreaming(true);
@@ -322,7 +322,6 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       try {
         const formData = new FormData();
         formData.append('promptId', promptId);
-        formData.append('folderId', folderId);
         formData.append('model', testModel || 'anthropic/claude-haiku-4.5');
         formData.append('temperature', testTemperature.toString());
         formData.append('inputData', JSON.stringify(inputData));
