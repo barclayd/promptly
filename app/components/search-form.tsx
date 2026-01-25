@@ -1,22 +1,22 @@
 import { Search } from 'lucide-react';
 
-import { Label } from '~/components/ui/label';
-import { SidebarInput } from '~/components/ui/sidebar';
+import { useSearchContext } from '~/context/search-context';
 
-export function SearchForm({ ...props }: React.ComponentProps<'form'>) {
+export const SearchForm = ({ ...props }: React.ComponentProps<'button'>) => {
+  const { setOpen } = useSearchContext();
+
   return (
-    <form {...props}>
-      <div className="relative">
-        <Label htmlFor="search" className="sr-only">
-          Search
-        </Label>
-        <SidebarInput
-          id="search"
-          placeholder="Type to search..."
-          className="h-8 pl-7"
-        />
-        <Search className="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 opacity-50 select-none" />
-      </div>
-    </form>
+    <button
+      type="button"
+      onClick={() => setOpen(true)}
+      className="group bg-muted/50 text-muted-foreground border-input hover:bg-muted hover:border-muted-foreground/20 flex h-9 min-w-[200px] max-w-[260px] items-center gap-2 rounded-lg border px-3 text-sm shadow-sm transition-all duration-150"
+      {...props}
+    >
+      <Search className="size-4 shrink-0 opacity-50 transition-opacity group-hover:opacity-70" />
+      <span className="flex-1 truncate text-left">Search prompts...</span>
+      <kbd className="bg-background text-muted-foreground/70 border-border pointer-events-none hidden h-5 shrink-0 select-none items-center gap-0.5 rounded border px-1.5 font-mono text-[10px] font-medium shadow-sm sm:flex">
+        <span className="text-xs">⌘</span>K
+      </kbd>
+    </button>
   );
-}
+};
