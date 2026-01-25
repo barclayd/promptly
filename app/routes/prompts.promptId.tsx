@@ -1,8 +1,7 @@
 import { ArrowLeft, GitBranch, RssIcon } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { Suspense, useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  Await,
   data,
   useFetcher,
   useLocation,
@@ -19,7 +18,7 @@ import { Separator } from '~/components/ui/separator';
 import type { Version } from '~/components/versions-table';
 import { orgContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
-import type { Route } from './+types/prompts.folderId.promptId';
+import type { Route } from './+types/prompts.promptId';
 
 type PromptDetailContext = {
   triggerTest: () => void;
@@ -47,7 +46,7 @@ export const loader = async ({
     throw new Response('Unauthorized', { status: 403 });
   }
 
-  const { folderId, promptId } = params;
+  const { promptId } = params;
   const db = context.cloudflare.env.promptly;
 
   // Parse version query param (e.g., ?version=1.2.3)
@@ -66,27 +65,31 @@ export const loader = async ({
     }
   }
 
-  const [folder, prompt] = await Promise.all([
-    db
-      .prepare(
-        'SELECT id, name FROM prompt_folder WHERE id = ? AND organization_id = ?',
-      )
-      .bind(folderId, org.organizationId)
-      .first<{ id: string; name: string }>(),
-    db
-      .prepare(
-        'SELECT id, name, description FROM prompt WHERE id = ? AND folder_id = ? AND organization_id = ?',
-      )
-      .bind(promptId, folderId, org.organizationId)
-      .first<{ id: string; name: string; description: string }>(),
-  ]);
-
-  if (!folder) {
-    throw new Response('Folder not found', { status: 404 });
-  }
+  const prompt = await db
+    .prepare(
+      'SELECT id, name, description, folder_id FROM prompt WHERE id = ? AND organization_id = ?',
+    )
+    .bind(promptId, org.organizationId)
+    .first<{
+      id: string;
+      name: string;
+      description: string;
+      folder_id: string;
+    }>();
 
   if (!prompt) {
     throw new Response('Prompt not found', { status: 404 });
+  }
+
+  const folder = await db
+    .prepare(
+      'SELECT id, name FROM prompt_folder WHERE id = ? AND organization_id = ?',
+    )
+    .bind(prompt.folder_id, org.organizationId)
+    .first<{ id: string; name: string }>();
+
+  if (!folder) {
+    throw new Response('Folder not found', { status: 404 });
   }
 
   // Fetch all versions for the versions table
@@ -663,7 +666,6 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               <div className="flex gap-x-3 justify-end">
                 <PublishPromptDialog
                   promptId={loaderData.prompt.id}
-                  folderId={loaderData.folder.id}
                   suggestedVersion={suggestedVersion}
                   lastPublishedVersion={loaderData.lastPublishedVersion}
                   isSchemaChanged={!schemasEqual}

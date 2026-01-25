@@ -64,10 +64,10 @@ export default function Home() {
               </Item>
             )}
             <div className="font-semibold text-gray-500/75 mb-4">Folders</div>
-            <NavLink to="/prompts/1">
+            <NavLink to="/prompts">
               <div className="flex flex-col">
                 <Folder />
-                <h4 className="w-48 text-center my-4">Reviews</h4>
+                <h4 className="w-48 text-center my-4">All prompts</h4>
               </div>
             </NavLink>
           </div>

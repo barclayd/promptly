@@ -32,9 +32,8 @@ type ActionData = {
 type PublishPromptDialogProps = {
   children: React.ReactNode;
   promptId: string;
-  folderId: string;
   suggestedVersion: string;
-  lastPublishedVersion: number | null;
+  lastPublishedVersion: string | null;
   isSchemaChanged: boolean;
   disabled?: boolean;
 };
@@ -42,7 +41,6 @@ type PublishPromptDialogProps = {
 export const PublishPromptDialog = ({
   children,
   promptId,
-  folderId,
   suggestedVersion,
   lastPublishedVersion,
   isSchemaChanged,
@@ -84,7 +82,6 @@ export const PublishPromptDialog = ({
       >
         <fetcher.Form method="post" action="/api/prompts/publish">
           <input type="hidden" name="promptId" value={promptId} />
-          <input type="hidden" name="folderId" value={folderId} />
           <input type="hidden" name="version" value={version} />
           <DialogHeader>
             <DialogTitle>Publish version</DialogTitle>

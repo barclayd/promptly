@@ -10,11 +10,9 @@ import {
 } from '~/components/ui/dropdown-menu';
 
 import { cn } from '~/lib/utils';
-import type { loader as promptLoader } from '~/routes/prompts.folderId.promptId';
-import type { loader as folderLoader } from '~/routes/prompts.id';
+import type { loader as promptLoader } from '~/routes/prompts.promptId';
 
 const SECTIONS = [
-  { name: 'Dashboard', path: '/dashboard' },
   { name: 'Analytics', path: '/analytics' },
   { name: 'Team', path: '/team' },
   { name: 'Prompts', path: '/prompts' },
@@ -34,8 +32,6 @@ const Breadcrumb = ({ ...props }: ComponentProps<'nav'>) => (
 
 export const BreadcrumbWithDropdown = () => {
   const location = useLocation();
-  const folderData =
-    useRouteLoaderData<typeof folderLoader>('routes/prompts.id');
   const promptData = useRouteLoaderData<typeof promptLoader>('prompt-detail');
 
   const segments = location.pathname.split('/').filter(Boolean);
@@ -45,7 +41,7 @@ export const BreadcrumbWithDropdown = () => {
     (s) => s.path.slice(1).toLowerCase() === currentSection.toLowerCase(),
   );
 
-  const folder = folderData?.folder ?? promptData?.folder;
+  const folder = promptData?.folder;
 
   const deepSegments = segments
     .slice(1)

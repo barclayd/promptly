@@ -28,7 +28,6 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
   const formData = await request.formData();
   const promptId = formData.get('promptId') as string;
-  const folderId = formData.get('folderId') as string;
   const versionNumber = formData.get('version') as string | null;
   const model =
     (formData.get('model') as string) || 'anthropic/claude-haiku-4.5';
@@ -38,8 +37,8 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   const inputDataJson = formData.get('inputData') as string | null;
   const inputDataRootName = formData.get('inputDataRootName') as string | null;
 
-  if (!promptId || !folderId) {
-    return data({ error: 'Missing promptId or folderId' }, { status: 400 });
+  if (!promptId) {
+    return data({ error: 'Missing promptId' }, { status: 400 });
   }
 
   const db = context.cloudflare.env.promptly;

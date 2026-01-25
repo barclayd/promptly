@@ -16,30 +16,31 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   }
 
   const url = new URL(request.url);
-  const folderId = url.searchParams.get('folderId');
   const promptId = url.searchParams.get('promptId');
 
-  if (!folderId || !promptId) {
-    return Response.json(
-      { error: 'Missing folderId or promptId' },
-      { status: 400 },
-    );
+  if (!promptId) {
+    return Response.json({ error: 'Missing promptId' }, { status: 400 });
   }
 
   const db = context.cloudflare.env.promptly;
 
-  const [folder, prompt, versionResult] = await Promise.all([
+  const prompt = await db
+    .prepare(
+      'SELECT id, name, folder_id FROM prompt WHERE id = ? AND organization_id = ?',
+    )
+    .bind(promptId, org.organizationId)
+    .first<{ id: string; name: string; folder_id: string }>();
+
+  if (!prompt) {
+    return Response.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  const [folder, versionResult] = await Promise.all([
     db
       .prepare(
         'SELECT id, name FROM prompt_folder WHERE id = ? AND organization_id = ?',
       )
-      .bind(folderId, org.organizationId)
-      .first<{ id: string; name: string }>(),
-    db
-      .prepare(
-        'SELECT id, name FROM prompt WHERE id = ? AND folder_id = ? AND organization_id = ?',
-      )
-      .bind(promptId, folderId, org.organizationId)
+      .bind(prompt.folder_id, org.organizationId)
       .first<{ id: string; name: string }>(),
     db
       .prepare(
@@ -49,8 +50,8 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
       .first<{ major: number; minor: number; patch: number }>(),
   ]);
 
-  if (!folder || !prompt) {
-    return Response.json({ error: 'Not found' }, { status: 404 });
+  if (!folder) {
+    return Response.json({ error: 'Folder not found' }, { status: 404 });
   }
 
   return Response.json({
@@ -61,6 +62,6 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     version: versionResult
       ? `${versionResult.major}.${versionResult.minor}.${versionResult.patch}`
       : null,
-    url: `/prompts/${folderId}/${promptId}`,
+    url: `/prompts/${promptId}`,
   });
 };
