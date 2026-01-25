@@ -16,6 +16,7 @@ const SECTIONS = [
   { name: 'Analytics', path: '/analytics' },
   { name: 'Team', path: '/team' },
   { name: 'Prompts', path: '/prompts' },
+  { name: 'Settings', path: '/settings' },
 ];
 
 const toTitleCase = (str: string): string => {
