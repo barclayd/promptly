@@ -1,3 +1,4 @@
+import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/prompts.get';
 
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
@@ -12,15 +13,69 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     );
   }
 
+  // Extract Bearer token from Authorization header
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return Response.json(
+      { error: 'Missing or invalid Authorization header' },
+      { status: 401 },
+    );
+  }
+
+  const apiKey = authHeader.slice(7); // Remove 'Bearer ' prefix
+
+  // Verify the API key using Better Auth
+  const auth = getAuth(context);
+  const verifyResult = await auth.api.verifyApiKey({
+    body: {
+      key: apiKey,
+      permissions: {
+        prompt: ['read'],
+      },
+    },
+  });
+
+  if (!verifyResult.valid || !verifyResult.key) {
+    return Response.json(
+      {
+        error: verifyResult.error?.message || 'Invalid API key',
+        code: verifyResult.error?.code || 'INVALID_KEY',
+      },
+      { status: 401 },
+    );
+  }
+
+  // Get the organization ID from the API key metadata
+  const keyMetadata = verifyResult.key.metadata as {
+    organizationId?: string;
+  } | null;
+  const organizationId = keyMetadata?.organizationId;
+
+  if (!organizationId) {
+    return Response.json(
+      { error: 'API key is not associated with an organization' },
+      { status: 403 },
+    );
+  }
+
   const db = context.cloudflare.env.promptly;
 
+  // Fetch prompt with organization_id to verify ownership
   const prompt = await db
-    .prepare('SELECT id, name FROM prompt WHERE id = ?')
+    .prepare('SELECT id, name, organization_id FROM prompt WHERE id = ?')
     .bind(promptId)
-    .first<{ id: string; name: string }>();
+    .first<{ id: string; name: string; organization_id: string }>();
 
   if (!prompt) {
     return Response.json({ error: 'Prompt not found' }, { status: 404 });
+  }
+
+  // Verify the API key's organization owns the prompt
+  if (prompt.organization_id !== organizationId) {
+    return Response.json(
+      { error: 'Access denied: API key does not have access to this prompt' },
+      { status: 403 },
+    );
   }
 
   let versionData;

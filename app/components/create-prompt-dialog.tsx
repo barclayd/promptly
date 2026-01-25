@@ -14,20 +14,12 @@ import {
 } from '~/components/ui/dialog';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select';
 import { Textarea } from '~/components/ui/textarea';
 
 type ActionData = {
   errors?: {
     name?: string[];
     description?: string[];
-    project?: string[];
   };
 };
 
@@ -50,8 +42,7 @@ export const CreatePromptDialog = ({ children }: CreatePromptDialogProps) => {
           <DialogHeader>
             <DialogTitle>Create a new prompt</DialogTitle>
             <DialogDescription>
-              Make a standalone prompt or add it to an existing project. Click
-              save when you&apos;re done.
+              Create a new prompt. Click save when you&apos;re done.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -69,22 +60,6 @@ export const CreatePromptDialog = ({ children }: CreatePromptDialogProps) => {
                 <p className="text-destructive text-sm">
                   {errors.description[0]}
                 </p>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="project">Project</Label>
-              <Select name="project">
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a project" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="intro">Intro</SelectItem>
-                  <SelectItem value="review">Review</SelectItem>
-                  <SelectItem value="outro">Outro</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors?.project && (
-                <p className="text-destructive text-sm">{errors.project[0]}</p>
               )}
             </div>
           </div>

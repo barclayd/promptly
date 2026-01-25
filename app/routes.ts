@@ -15,6 +15,8 @@ export default [
   route('api/generate-input-data', './routes/api/generate-input-data.ts'),
   route('api/team/invite', './routes/api/team.invite.ts'),
   route('api/team/cancel-invite', './routes/api/team.cancel-invite.ts'),
+  route('api/settings/create-api-key', './routes/api/settings.create-api-key.ts'),
+  route('api/settings/delete-api-key', './routes/api/settings.delete-api-key.ts'),
   route(
     'team/accept-invitation/:id',
     './routes/team.accept-invitation.$id.tsx',
@@ -36,6 +38,7 @@ export default [
     route('logout', './routes/logout.tsx'),
     route('prompts', './routes/prompts.tsx'),
     route('team', './routes/team.tsx'),
+    route('settings', './routes/settings.tsx'),
   ]),
   layout('./routes/layouts/prompt-detail.tsx', [
     route('prompts/:promptId', './routes/prompts.promptId.tsx', {

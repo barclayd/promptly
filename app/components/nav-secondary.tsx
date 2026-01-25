@@ -2,6 +2,7 @@
 
 import type { Icon } from '@tabler/icons-react';
 import type * as React from 'react';
+import { NavLink } from 'react-router';
 
 import {
   SidebarGroup,
@@ -28,10 +29,10 @@ export function NavSecondary({
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild>
-                <a href={item.url}>
+                <NavLink to={item.url}>
                   <item.icon />
                   <span>{item.title}</span>
-                </a>
+                </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
