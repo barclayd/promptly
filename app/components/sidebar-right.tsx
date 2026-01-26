@@ -153,6 +153,9 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
     // Test section has its own model/temperature that can differ from main config
     const [testModel, setTestModel] = useState<string | null>(initialModel);
     const [testTemperature, setTestTemperature] = useState(initialTemperature);
+    const [testVersionOverride, setTestVersionOverride] = useState<string | null>(
+      null,
+    );
 
     // Test section open state and ref for external control
     const [testOpen, setTestOpen] = useState(true);
@@ -277,6 +280,9 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
     const selectedVersion =
       versionParam || (hasDraftVersion ? 'draft' : latestPublishedVersion);
 
+    // Allow test panel to override version selection
+    const testVersionToUse = testVersionOverride ?? selectedVersion;
+
     const handleRemoveUnusedFields = useCallback(
       (fields: string[]) => {
         const newSchema = schemaFields.filter((f) => !fields.includes(f.name));
@@ -326,8 +332,8 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         formData.append('temperature', testTemperature.toString());
         formData.append('inputData', JSON.stringify(inputData));
         formData.append('inputDataRootName', inputDataRootName || '');
-        if (selectedVersion) {
-          formData.append('version', selectedVersion);
+        if (testVersionToUse) {
+          formData.append('version', testVersionToUse);
         }
 
         const response = await fetch('/api/prompts/run', {
@@ -382,7 +388,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       testTemperature,
       inputData,
       inputDataRootName,
-      selectedVersion,
+      testVersionToUse,
       showUnusedFieldsToast,
     ]);
 
@@ -658,7 +664,8 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                         </div>
                         <div className="my-4">
                           <Select
-                            value={selectedVersion ?? ''}
+                            value={testVersionToUse ?? ''}
+                            onValueChange={setTestVersionOverride}
                             disabled={
                               !hasDraftVersion && publishedVersions.length === 0
                             }
