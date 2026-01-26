@@ -9,6 +9,12 @@
 - Use `useSyncExternalStore` for external state synchronization
 - Use Navigation API listeners, event handlers, and other non-effect patterns when possible
 
+# Routing
+- Routes are explicitly configured in `app/routes.ts` (not auto-discovered from file names)
+- New routes must be added to the `RouteConfig` array in `app/routes.ts`
+- App routes (authenticated pages) go inside the `layout('./routes/layouts/app.tsx', [...])` block
+- Route types are auto-generated at `./+types/{routeName}` after adding to routes.ts
+
 # Agent Preferences
 - Use typescript-developer agent when writing TypeScript code
 - Use frontend-design skill plugin when implementing UI features

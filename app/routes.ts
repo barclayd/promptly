@@ -38,6 +38,7 @@ export default [
     route('home', './routes/home.tsx'),
     route('logout', './routes/logout.tsx'),
     route('prompts', './routes/prompts.tsx'),
+    route('analytics', './routes/analytics.tsx'),
     route('team', './routes/team.tsx'),
     route('settings', './routes/settings.tsx'),
   ]),
