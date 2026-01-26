@@ -5,11 +5,21 @@ import {
   type ColumnDef,
   flexRender,
   getCoreRowModel,
+  getPaginationRowModel,
   useReactTable,
 } from '@tanstack/react-table';
 import { useSearchParams } from 'react-router';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '~/components/ui/pagination';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -179,7 +189,13 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
     data: versions,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     getRowId: (row) => formatVersion(row) ?? 'draft',
+    initialState: {
+      pagination: {
+        pageSize: 5,
+      },
+    },
   });
 
   const handleRowClick = (version: Version) => {
@@ -275,6 +291,66 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
           </TableBody>
         </Table>
       </div>
+      {table.getPageCount() > 1 && (
+        <Pagination className="pt-2">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              />
+            </PaginationItem>
+            {(() => {
+              const currentPage = table.getState().pagination.pageIndex;
+              const totalPages = table.getPageCount();
+              const pages: (number | 'ellipsis')[] = [];
+
+              if (totalPages <= 5) {
+                for (let i = 0; i < totalPages; i++) {
+                  pages.push(i);
+                }
+              } else {
+                pages.push(0);
+                if (currentPage > 2) {
+                  pages.push('ellipsis');
+                }
+                const start = Math.max(1, currentPage - 1);
+                const end = Math.min(totalPages - 2, currentPage + 1);
+                for (let i = start; i <= end; i++) {
+                  pages.push(i);
+                }
+                if (currentPage < totalPages - 3) {
+                  pages.push('ellipsis');
+                }
+                pages.push(totalPages - 1);
+              }
+
+              return pages.map((page, idx) =>
+                page === 'ellipsis' ? (
+                  <PaginationItem key={`ellipsis-${idx}`}>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                ) : (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      isActive={currentPage === page}
+                      onClick={() => table.setPageIndex(page)}
+                    >
+                      {page + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ),
+              );
+            })()}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 };
