@@ -35,6 +35,9 @@ export const getAuth = (ctx: RouterContextProvider) => {
       apiKey({
         defaultPrefix: 'promptly_',
         enableMetadata: true,
+        rateLimit: {
+          enabled: false,
+        },
         startingCharactersConfig: {
           // Store prefix (9 chars) + 4 unique characters = 13 total
           charactersLength: 13,
