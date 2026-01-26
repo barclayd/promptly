@@ -150,32 +150,73 @@ function InputGroupTextarea({
   ...props
 }: React.ComponentProps<'textarea'> & { highlightVariables?: boolean }) {
   const textareaClassName = cn(
-    'flex-1 resize-none rounded-none border-0 bg-transparent py-3 shadow-none focus-visible:ring-0 dark:bg-transparent',
+    'flex-1 resize-none rounded-none border-0 bg-transparent py-3 shadow-none focus-visible:ring-0 dark:bg-transparent max-h-[80vh] overflow-y-auto',
     className,
   );
+
+  // Auto-resize for browsers that don't support field-sizing-content (Safari)
+  const autoResize = (textarea: HTMLTextAreaElement) => {
+    if (CSS.supports('field-sizing', 'content')) {
+      return;
+    }
+
+    textarea.style.height = 'auto';
+
+    const maxHeight = window.innerHeight * 0.8;
+    textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
+  };
 
   if (!highlightVariables) {
     return (
       <Textarea
         data-slot="input-group-control"
         className={textareaClassName}
+        ref={(el) => {
+          if (el) autoResize(el);
+        }}
         {...props}
+        onInput={(e) => {
+          autoResize(e.currentTarget);
+          props.onInput?.(e);
+        }}
       />
     );
   }
 
+  let overlayRef: HTMLDivElement | null = null;
+  let textareaRef: HTMLTextAreaElement | null = null;
+
+  const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    if (overlayRef) {
+      overlayRef.scrollTop = e.currentTarget.scrollTop;
+    }
+    props.onScroll?.(e);
+  };
+
   return (
-    <div className="relative flex-1 w-full self-stretch">
+    <div className="relative flex-1 w-full self-stretch max-h-[80vh]">
       <div
+        ref={(el) => {
+          overlayRef = el;
+        }}
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 overflow-hidden px-3 py-3 text-base text-left md:text-sm"
+        className="pointer-events-none absolute inset-0 overflow-y-auto px-3 py-3 text-base text-left md:text-sm"
       >
         <HighlightedPromptText text={String(props.value ?? '')} />
       </div>
       <Textarea
         data-slot="input-group-control"
         className={cn(textareaClassName, 'text-transparent caret-foreground')}
+        ref={(el) => {
+          textareaRef = el;
+          if (el) autoResize(el);
+        }}
         {...props}
+        onScroll={handleScroll}
+        onInput={(e) => {
+          autoResize(e.currentTarget);
+          props.onInput?.(e);
+        }}
       />
     </div>
   );
