@@ -9,7 +9,28 @@ import {
   InputGroupText,
   InputGroupTextarea,
 } from '~/components/ui/input-group';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '~/components/ui/tooltip';
 import { cn } from '~/lib/utils';
+
+const getPromptTooltipContent = (title: string) => {
+  if (title === 'System Prompt') {
+    return {
+      heading: 'System Prompt',
+      description:
+        "Sets the AI's behavior and personality. Define the tone, rules, and context that apply to every response.",
+      tip: 'Keep this static for prompt caching benefits. Place variables in the User Prompt instead.',
+    };
+  }
+  return {
+    heading: 'User Prompt',
+    description:
+      'The message template sent to the AI. Use ${variables} to insert dynamic values at runtime.',
+  };
+};
 
 const formatRelativeTime = (timestamp: number): string => {
   const seconds = Math.floor((Date.now() - timestamp) / 1000);
@@ -181,9 +202,30 @@ export const PromptReview = ({
             {title}
           </InputGroupText>
           <div className="grow" />
-          <InputGroupButton variant="ghost" size="icon-xs">
-            <InfoIcon />
-          </InputGroupButton>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <InputGroupButton variant="ghost" size="icon-xs">
+                <InfoIcon />
+              </InputGroupButton>
+            </TooltipTrigger>
+            <TooltipContent
+              side="bottom"
+              className="max-w-72 p-3"
+              sideOffset={4}
+            >
+              <p className="text-sm font-medium leading-none">
+                {getPromptTooltipContent(title).heading}
+              </p>
+              <p className="mt-2 text-sm leading-relaxed opacity-90">
+                {getPromptTooltipContent(title).description}
+              </p>
+              {getPromptTooltipContent(title).tip && (
+                <p className="mt-2.5 border-t border-white/10 pt-2.5 text-xs leading-relaxed opacity-70">
+                  {getPromptTooltipContent(title).tip}
+                </p>
+              )}
+            </TooltipContent>
+          </Tooltip>
           <InputGroupButton
             variant="ghost"
             size="icon-xs"

@@ -7,7 +7,9 @@ import {
   IconShare3,
   IconTrash,
 } from '@tabler/icons-react';
-import { NavLink } from 'react-router';
+import { NavLink, useNavigate } from 'react-router';
+import { toast } from 'sonner';
+import { useRecentsContext } from '~/context/recents-context';
 
 import { Badge } from '~/components/ui/badge';
 import {
@@ -27,7 +29,8 @@ import {
   useSidebar,
 } from '~/components/ui/sidebar';
 
-interface NavDocumentItem {
+export interface NavDocumentItem {
+  promptId: string;
   name: string;
   url: string;
   icon: Icon;
@@ -37,6 +40,23 @@ interface NavDocumentItem {
 
 export const NavDocuments = ({ items }: { items: NavDocumentItem[] }) => {
   const { isMobile } = useSidebar();
+  const navigate = useNavigate();
+  const { removeRecent } = useRecentsContext();
+
+  const handleOpen = (url: string) => {
+    navigate(url);
+  };
+
+  const handleShare = async (url: string) => {
+    const fullUrl = `${window.location.origin}${url}`;
+    await navigator.clipboard.writeText(fullUrl);
+    toast.success('Link copied to clipboard', { position: 'bottom-center' });
+  };
+
+  const handleDelete = (promptId: string, name: string) => {
+    removeRecent(promptId);
+    toast.success(`Removed "${name}" from recents`, { position: 'bottom-center' });
+  };
 
   if (items.length === 0) {
     return null;
@@ -85,16 +105,19 @@ export const NavDocuments = ({ items }: { items: NavDocumentItem[] }) => {
                 side={isMobile ? 'bottom' : 'right'}
                 align={isMobile ? 'end' : 'start'}
               >
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleOpen(item.url)}>
                   <IconFolder />
                   <span>Open</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare(item.url)}>
                   <IconShare3 />
                   <span>Share</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive">
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => handleDelete(item.promptId, item.name)}
+                >
                   <IconTrash />
                   <span>Delete</span>
                 </DropdownMenuItem>
