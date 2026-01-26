@@ -427,11 +427,32 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
 
   const { isViewingOldVersion, versionNotFound, requestedVersion } = loaderData;
 
-  const [initialSystem] = useState(loaderData.systemMessage);
-  const [initialUser] = useState(loaderData.userMessage);
+  const [initialSystem, setInitialSystem] = useState(loaderData.systemMessage);
+  const [initialUser, setInitialUser] = useState(loaderData.userMessage);
 
   const [systemMessage, setSystemMessage] = useState(loaderData.systemMessage);
   const [userMessage, setUserMessage] = useState(loaderData.userMessage);
+
+  // Track previous loaderData to detect version changes and sync state
+  const prevLoaderDataRef = useRef({
+    systemMessage: loaderData.systemMessage,
+    userMessage: loaderData.userMessage,
+  });
+
+  // Sync state with loaderData when version changes (without useEffect)
+  if (
+    prevLoaderDataRef.current.systemMessage !== loaderData.systemMessage ||
+    prevLoaderDataRef.current.userMessage !== loaderData.userMessage
+  ) {
+    prevLoaderDataRef.current = {
+      systemMessage: loaderData.systemMessage,
+      userMessage: loaderData.userMessage,
+    };
+    setSystemMessage(loaderData.systemMessage);
+    setUserMessage(loaderData.userMessage);
+    setInitialSystem(loaderData.systemMessage);
+    setInitialUser(loaderData.userMessage);
+  }
 
   // Separate pending states and timestamps for each field
   const [isPendingSystemSave, setIsPendingSystemSave] = useState(false);
