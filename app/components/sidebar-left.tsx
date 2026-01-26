@@ -130,6 +130,7 @@ export const SidebarLeft = ({
 
   // Transform recents to NavDocuments format
   const recentItems = recents.map((r) => ({
+    promptId: r.promptId,
     name: r.promptName,
     url: r.url,
     icon: IconFileText,

@@ -38,6 +38,13 @@ const addRecentToStorage = (prompt: PromptInfo) => {
   window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }));
 };
 
+const removeRecentFromStorage = (promptId: string) => {
+  const current = getRecentsFromStorage();
+  const updated = current.filter((r) => r.promptId !== promptId);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }));
+};
+
 // Parse prompt URL to extract promptId
 const parsePromptUrl = (url: string): { promptId: string } | null => {
   try {
@@ -125,5 +132,9 @@ export const useRecents = () => {
     }
   })();
 
-  return { recents };
+  const removeRecent = (promptId: string) => {
+    removeRecentFromStorage(promptId);
+  };
+
+  return { recents, removeRecent };
 };
