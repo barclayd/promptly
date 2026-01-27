@@ -18,6 +18,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   const response = await auth.api.signInSocial({
     body: {
       provider,
+      callbackURL: '/auth/oauth-complete',
     },
     asResponse: true,
   });

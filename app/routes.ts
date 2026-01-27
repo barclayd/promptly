@@ -29,6 +29,7 @@ export default [
     'onboarding/setup-workspace',
     './routes/onboarding.setup-workspace.tsx',
   ),
+  route('auth/oauth-complete', './routes/auth/oauth-complete.ts'),
   layout('./routes/layouts/auth.tsx', [
     route('login', './routes/auth/login.tsx'),
     route('sign-up', './routes/auth/sign-up.tsx'),
