@@ -43,6 +43,19 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
     const setCookie = response.headers.get('set-cookie');
 
+    if (setCookie) {
+      const orgsResponse = await auth.api.listOrganizations({
+        headers: { Cookie: setCookie },
+      });
+
+      if (orgsResponse && orgsResponse.length > 0) {
+        await auth.api.setActiveOrganization({
+          body: { organizationId: orgsResponse[0].id },
+          headers: { Cookie: setCookie },
+        });
+      }
+    }
+
     return redirect('/', {
       headers: setCookie ? { 'Set-Cookie': setCookie } : {},
     });

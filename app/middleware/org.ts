@@ -11,6 +11,7 @@ const publicRoutes = [
   '/api/auth',
   '/api/prompts/get',
   '/auth/social',
+  '/auth/oauth-complete',
   '/onboarding',
   '/invite',
 ];
