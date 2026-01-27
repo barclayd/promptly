@@ -168,6 +168,7 @@ export const PromptReview = ({
           onChange={(e) => onChange?.(e.target.value)}
           onKeyDown={handleKeyDown}
           highlightVariables
+          data-managed-undo
         />
         <InputGroupAddon align="block-end" className="border-t">
           <InputGroupText className="min-w-0">

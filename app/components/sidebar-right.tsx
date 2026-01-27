@@ -46,8 +46,6 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuItem,
   SidebarSeparator,
 } from '~/components/ui/sidebar';
 import { type Version, VersionsTable } from '~/components/versions-table';
@@ -55,6 +53,7 @@ import { useIsMobile } from '~/hooks/use-mobile';
 import { removeFieldsFromInputData } from '~/lib/input-data-utils';
 import type { SchemaField } from '~/lib/schema-types';
 import { cn } from '~/lib/utils';
+import { usePromptEditorStore } from '~/stores/prompt-editor-store';
 
 const DEFAULT_INPUT_DATA: unknown = {};
 
@@ -131,31 +130,45 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
   (
     {
       versions = [],
-      schema = [],
-      model: initialModel = null,
-      temperature: initialTemperature = 0.5,
-      inputData: initialInputData = DEFAULT_INPUT_DATA,
-      inputDataRootName: initialRootName = null,
       isReadonly = false,
       ...props
     },
     ref,
   ) => {
-    const [schemaFields, setSchemaFields] = useState<SchemaField[]>(schema);
-    const [model, setModel] = useState<string | null>(initialModel);
-    const [temperature, setTemperature] = useState(initialTemperature);
-    const [inputData, setInputData] = useState<unknown>(initialInputData);
-    const [inputDataRootName, setInputDataRootName] = useState<string | null>(
-      initialRootName,
+    // Get state from the store
+    const schemaFields = usePromptEditorStore((state) => state.schemaFields);
+    const model = usePromptEditorStore((state) => state.model);
+    const temperature = usePromptEditorStore((state) => state.temperature);
+    const inputData = usePromptEditorStore((state) => state.inputData);
+    const inputDataRootName = usePromptEditorStore(
+      (state) => state.inputDataRootName,
     );
-    const [isGeneratingInputData, setIsGeneratingInputData] = useState(false);
+    const testModel = usePromptEditorStore((state) => state.testModel);
+    const testTemperature = usePromptEditorStore(
+      (state) => state.testTemperature,
+    );
+    const testVersionOverride = usePromptEditorStore(
+      (state) => state.testVersionOverride,
+    );
 
-    // Test section has its own model/temperature that can differ from main config
-    const [testModel, setTestModel] = useState<string | null>(initialModel);
-    const [testTemperature, setTestTemperature] = useState(initialTemperature);
-    const [testVersionOverride, setTestVersionOverride] = useState<string | null>(
-      null,
+    // Get actions from the store
+    const setSchemaFields = usePromptEditorStore(
+      (state) => state.setSchemaFields,
     );
+    const setModel = usePromptEditorStore((state) => state.setModel);
+    const setTemperature = usePromptEditorStore(
+      (state) => state.setTemperature,
+    );
+    const setInputData = usePromptEditorStore((state) => state.setInputData);
+    const setTestModel = usePromptEditorStore((state) => state.setTestModel);
+    const setTestTemperature = usePromptEditorStore(
+      (state) => state.setTestTemperature,
+    );
+    const setTestVersionOverride = usePromptEditorStore(
+      (state) => state.setTestVersionOverride,
+    );
+
+    const [isGeneratingInputData, setIsGeneratingInputData] = useState(false);
 
     // Test section open state and ref for external control
     const [testOpen, setTestOpen] = useState(true);
@@ -177,25 +190,14 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
     const hasTestConfigChanges =
       testModel !== model || testTemperature !== temperature;
 
-    // Use refs to access current values in debounced callback
-    const schemaRef = useRef(schemaFields);
-    const modelRef = useRef(model);
-    const temperatureRef = useRef(temperature);
-    const inputDataRef = useRef(inputData);
-    const inputDataRootNameRef = useRef(inputDataRootName);
-    schemaRef.current = schemaFields;
-    modelRef.current = model;
-    temperatureRef.current = temperature;
-    inputDataRef.current = inputData;
-    inputDataRootNameRef.current = inputDataRootName;
-
     const debouncedSaveConfig = useDebouncedCallback(() => {
+      const state = usePromptEditorStore.getState();
       const config = {
-        schema: schemaRef.current,
-        model: modelRef.current,
-        temperature: temperatureRef.current,
-        inputData: inputDataRef.current,
-        inputDataRootName: inputDataRootNameRef.current,
+        schema: state.schemaFields,
+        model: state.model,
+        temperature: state.temperature,
+        inputData: state.inputData,
+        inputDataRootName: state.inputDataRootName,
       };
       configFetcher.submit(
         { intent: 'saveConfig', config: JSON.stringify(config) },
@@ -218,10 +220,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         if (response.ok) {
           const result = await response.json();
           if (result.inputData !== undefined) {
-            setInputData(result.inputData);
-            setInputDataRootName(result.rootName ?? null);
-            inputDataRef.current = result.inputData;
-            inputDataRootNameRef.current = result.rootName ?? null;
+            setInputData(result.inputData, result.rootName ?? null);
             debouncedSaveConfig();
           }
         }
@@ -230,14 +229,14 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       } finally {
         setIsGeneratingInputData(false);
       }
-    }, [schemaFields, debouncedSaveConfig]);
+    }, [schemaFields, debouncedSaveConfig, setInputData]);
 
     const handleSchemaChange = useCallback(
       (fields: SchemaField[]) => {
         setSchemaFields(fields);
         debouncedSaveConfig();
       },
-      [debouncedSaveConfig],
+      [debouncedSaveConfig, setSchemaFields],
     );
 
     const handleModelChange = useCallback(
@@ -245,7 +244,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         setModel(value);
         debouncedSaveConfig();
       },
-      [debouncedSaveConfig],
+      [debouncedSaveConfig, setModel],
     );
 
     const handleTemperatureChange = useCallback(
@@ -253,7 +252,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         setTemperature(value);
         debouncedSaveConfig();
       },
-      [debouncedSaveConfig],
+      [debouncedSaveConfig, setTemperature],
     );
 
     const handleInputDataChange = useCallback(
@@ -261,7 +260,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         setInputData(value);
         debouncedSaveConfig();
       },
-      [debouncedSaveConfig],
+      [debouncedSaveConfig, setInputData],
     );
 
     const versionParam = searchParams.get('version');
@@ -293,11 +292,17 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
           fields,
         );
 
-        setInputData(result.inputData);
-        setInputDataRootName(result.inputDataRootName);
+        setInputData(result.inputData, result.inputDataRootName);
         debouncedSaveConfig();
       },
-      [schemaFields, inputData, inputDataRootName, debouncedSaveConfig],
+      [
+        schemaFields,
+        inputData,
+        inputDataRootName,
+        debouncedSaveConfig,
+        setSchemaFields,
+        setInputData,
+      ],
     );
 
     // Show toast for unused fields with option to remove them
@@ -329,7 +334,10 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         const formData = new FormData();
         formData.append('promptId', promptId);
         formData.append('model', testModel || 'anthropic/claude-haiku-4.5');
-        formData.append('temperature', testTemperature.toString());
+        formData.append(
+          'temperature',
+          (testTemperature ?? temperature).toString(),
+        );
         formData.append('inputData', JSON.stringify(inputData));
         formData.append('inputDataRootName', inputDataRootName || '');
         if (testVersionToUse) {
@@ -386,6 +394,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       params,
       testModel,
       testTemperature,
+      temperature,
       inputData,
       inputDataRootName,
       testVersionToUse,
@@ -416,21 +425,30 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
     // Save test config to main config and DB
     const handleSaveTestConfig = useCallback(() => {
       setModel(testModel);
-      setTemperature(testTemperature);
+      setTemperature(testTemperature ?? temperature);
 
       // Save to DB
+      const state = usePromptEditorStore.getState();
       const config = {
-        schema: schemaRef.current,
+        schema: state.schemaFields,
         model: testModel,
-        temperature: testTemperature,
-        inputData: inputDataRef.current,
-        inputDataRootName: inputDataRootNameRef.current,
+        temperature: testTemperature ?? temperature,
+        inputData: state.inputData,
+        inputDataRootName: state.inputDataRootName,
       };
       configFetcher.submit(
         { intent: 'saveConfig', config: JSON.stringify(config) },
         { method: 'post', action: location.pathname },
       );
-    }, [testModel, testTemperature, configFetcher, location.pathname]);
+    }, [
+      testModel,
+      testTemperature,
+      temperature,
+      configFetcher,
+      location.pathname,
+      setModel,
+      setTemperature,
+    ]);
 
     const jsonEditorTheme = useMemo(() => {
       const isDarkMode =
@@ -633,7 +651,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                         </div>
                         <div className="rounded-md border border-sidebar-border bg-sidebar/50 p-2 overflow-x-auto">
                           <JsonEditor
-                            data={inputData}
+                            data={inputData ?? DEFAULT_INPUT_DATA}
                             setData={handleInputDataChange}
                             theme={jsonEditorTheme}
                             rootFontSize={11}
@@ -716,7 +734,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                         </div>
                         <div className="my-1">
                           <SidebarSlider
-                            value={testTemperature}
+                            value={testTemperature ?? temperature}
                             onChange={setTestTemperature}
                           />
                         </div>

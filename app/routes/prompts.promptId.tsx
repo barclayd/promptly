@@ -1,6 +1,6 @@
 import { ArrowLeft, GitBranch, RssIcon } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import {
   data,
   useFetcher,
@@ -17,7 +17,10 @@ import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import type { Version } from '~/components/versions-table';
 import { orgContext } from '~/context';
+import { useUndoRedo } from '~/hooks/use-undo-redo';
 import { getAuth } from '~/lib/auth.server';
+import type { SchemaField } from '~/lib/schema-types';
+import { usePromptEditorStore } from '~/stores/prompt-editor-store';
 import type { Route } from './+types/prompts.promptId';
 
 type PromptDetailContext = {
@@ -427,93 +430,98 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
 
   const { isViewingOldVersion, versionNotFound, requestedVersion } = loaderData;
 
-  const [initialSystem, setInitialSystem] = useState(loaderData.systemMessage);
-  const [initialUser, setInitialUser] = useState(loaderData.userMessage);
+  // Initialize undo/redo keyboard listener
+  useUndoRedo();
 
-  const [systemMessage, setSystemMessage] = useState(loaderData.systemMessage);
-  const [userMessage, setUserMessage] = useState(loaderData.userMessage);
+  // Track initial values for dirty detection
+  const initialSystemRef = useRef(loaderData.systemMessage);
+  const initialUserRef = useRef(loaderData.userMessage);
 
-  // Track previous loaderData to detect version changes and sync state
-  const prevLoaderDataRef = useRef({
-    systemMessage: loaderData.systemMessage,
-    userMessage: loaderData.userMessage,
-  });
+  // Track the last initialized prompt ID to detect navigation changes
+  const lastInitializedRef = useRef<string | null>(null);
 
-  // Sync state with loaderData when version changes (without useEffect)
-  if (
-    prevLoaderDataRef.current.systemMessage !== loaderData.systemMessage ||
-    prevLoaderDataRef.current.userMessage !== loaderData.userMessage
-  ) {
-    prevLoaderDataRef.current = {
+  // Initialize store synchronously before first render if needed
+  // This pattern avoids the "setState during render" warning by using getState/setState
+  const needsInit =
+    lastInitializedRef.current !== loaderData.prompt.id ||
+    usePromptEditorStore.getState()._promptId !== loaderData.prompt.id;
+
+  if (needsInit) {
+    lastInitializedRef.current = loaderData.prompt.id;
+    initialSystemRef.current = loaderData.systemMessage;
+    initialUserRef.current = loaderData.userMessage;
+
+    // Use getState().initialize() to avoid triggering React's render warning
+    usePromptEditorStore.getState().initialize({
       systemMessage: loaderData.systemMessage,
       userMessage: loaderData.userMessage,
-    };
-    setSystemMessage(loaderData.systemMessage);
-    setUserMessage(loaderData.userMessage);
-    setInitialSystem(loaderData.systemMessage);
-    setInitialUser(loaderData.userMessage);
+      schemaFields: (loaderData.schema ?? []) as SchemaField[],
+      model: loaderData.model,
+      temperature: loaderData.temperature,
+      inputData: loaderData.inputData,
+      inputDataRootName: loaderData.inputDataRootName,
+      testModel: loaderData.model,
+      testTemperature: loaderData.temperature,
+      testVersionOverride: null,
+      promptId: loaderData.prompt.id,
+    });
   }
 
-  // Separate pending states and timestamps for each field
-  const [isPendingSystemSave, setIsPendingSystemSave] = useState(false);
-  const [isPendingUserSave, setIsPendingUserSave] = useState(false);
-  const [lastSystemSavedAt, setLastSystemSavedAt] = useState<number | null>(
-    null,
+  // Get state and actions from store (after initialization)
+  const systemMessage = usePromptEditorStore((state) => state.systemMessage);
+  const userMessage = usePromptEditorStore((state) => state.userMessage);
+  const setSystemMessage = usePromptEditorStore(
+    (state) => state.setSystemMessage,
   );
-  const [lastUserSavedAt, setLastUserSavedAt] = useState<number | null>(null);
+  const setUserMessage = usePromptEditorStore((state) => state.setUserMessage);
 
-  // Use refs to track pending states for the debounced callback
-  const pendingSystemRef = useRef(false);
-  const pendingUserRef = useRef(false);
-
-  const systemRef = useRef(systemMessage);
-  const userRef = useRef(userMessage);
-  systemRef.current = systemMessage;
-  userRef.current = userMessage;
+  // Separate pending states and timestamps for each field
+  const isPendingSystemSaveRef = useRef(false);
+  const isPendingUserSaveRef = useRef(false);
+  const lastSystemSavedAtRef = useRef<number | null>(null);
+  const lastUserSavedAtRef = useRef<number | null>(null);
 
   const debouncedSave = useDebouncedCallback(() => {
+    const state = usePromptEditorStore.getState();
     const now = Date.now();
+
     // Update timestamps for fields that were pending (optimistic update)
-    if (pendingSystemRef.current) {
-      setLastSystemSavedAt(now);
+    if (isPendingSystemSaveRef.current) {
+      lastSystemSavedAtRef.current = now;
     }
-    if (pendingUserRef.current) {
-      setLastUserSavedAt(now);
+    if (isPendingUserSaveRef.current) {
+      lastUserSavedAtRef.current = now;
     }
 
     fetcher.submit(
-      { systemMessage: systemRef.current, userMessage: userRef.current },
+      { systemMessage: state.systemMessage, userMessage: state.userMessage },
       { method: 'post' },
     );
 
-    setIsPendingSystemSave(false);
-    setIsPendingUserSave(false);
-    pendingSystemRef.current = false;
-    pendingUserRef.current = false;
+    isPendingSystemSaveRef.current = false;
+    isPendingUserSaveRef.current = false;
   }, 1000);
 
   const handleSystemChange = useCallback(
     (value: string) => {
       setSystemMessage(value);
-      setIsPendingSystemSave(true);
-      pendingSystemRef.current = true;
+      isPendingSystemSaveRef.current = true;
       debouncedSave();
     },
-    [debouncedSave],
+    [setSystemMessage, debouncedSave],
   );
 
   const handleUserChange = useCallback(
     (value: string) => {
       setUserMessage(value);
-      setIsPendingUserSave(true);
-      pendingUserRef.current = true;
+      isPendingUserSaveRef.current = true;
       debouncedSave();
     },
-    [debouncedSave],
+    [setUserMessage, debouncedSave],
   );
 
-  const isSystemDirty = systemMessage !== initialSystem;
-  const isUserDirty = userMessage !== initialUser;
+  const isSystemDirty = systemMessage !== initialSystemRef.current;
+  const isUserDirty = userMessage !== initialUserRef.current;
 
   const schemasEqual = useMemo(() => {
     const sortByName = (arr: unknown[]) =>
@@ -713,9 +721,9 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               value={systemMessage}
               onChange={isViewingOldVersion ? undefined : handleSystemChange}
               isDirty={isSystemDirty}
-              isPendingSave={isPendingSystemSave}
+              isPendingSave={isPendingSystemSaveRef.current}
               isSaving={false}
-              lastSavedAt={lastSystemSavedAt}
+              lastSavedAt={lastSystemSavedAtRef.current}
               onTest={triggerTest}
               isTestRunning={getIsTestRunning()}
             />
@@ -724,9 +732,9 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               value={userMessage}
               onChange={isViewingOldVersion ? undefined : handleUserChange}
               isDirty={isUserDirty}
-              isPendingSave={isPendingUserSave}
+              isPendingSave={isPendingUserSaveRef.current}
               isSaving={false}
-              lastSavedAt={lastUserSavedAt}
+              lastSavedAt={lastUserSavedAtRef.current}
               onTest={triggerTest}
               isTestRunning={getIsTestRunning()}
             />
