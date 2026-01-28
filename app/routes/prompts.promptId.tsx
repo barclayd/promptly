@@ -1,6 +1,6 @@
 import { ArrowLeft, GitBranch, RssIcon } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   data,
   useFetcher,
@@ -18,6 +18,7 @@ import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import type { Version } from '~/components/versions-table';
 import { orgContext } from '~/context';
+import { type PresenceEventCallbacks, usePresence } from '~/hooks/use-presence';
 import { useUndoRedo } from '~/hooks/use-undo-redo';
 import { getAuth } from '~/lib/auth.server';
 import type { SchemaField } from '~/lib/schema-types';
@@ -434,6 +435,70 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   // Initialize undo/redo keyboard listener
   useUndoRedo();
 
+  // Connect to presence/collaboration system
+  const { sendContentUpdate, subscribeToEvents } = usePresence(
+    isViewingOldVersion ? undefined : loaderData.prompt.id,
+  );
+
+  // Get remote update actions from store
+  const setSystemMessageFromRemote = usePromptEditorStore(
+    (state) => state.setSystemMessageFromRemote,
+  );
+  const setUserMessageFromRemote = usePromptEditorStore(
+    (state) => state.setUserMessageFromRemote,
+  );
+
+  // Track local content version to compare with server
+  const localVersionRef = useRef(0);
+
+  // Subscribe to content sync events from other users
+  // Note: Using useEffect here is acceptable because this is for external state sync (WebSocket)
+  // and not for DOM-related side effects which the CLAUDE.md guidelines warn against
+  useEffect(() => {
+    if (!subscribeToEvents || isViewingOldVersion) return;
+
+    const callbacks: PresenceEventCallbacks = {
+      onContentSync: (field, value, version) => {
+        // Update local version tracking
+        localVersionRef.current = version;
+
+        // Apply remote change without triggering undo history
+        if (field === 'systemMessage') {
+          setSystemMessageFromRemote(value);
+        } else if (field === 'userMessage') {
+          setUserMessageFromRemote(value);
+        }
+        // Note: Do NOT call debouncedSave - only originator saves to D1
+      },
+      onContentState: (state) => {
+        // Handle initial content state when joining a room
+        // Only apply if server has content (version > 0) and it differs from our loader data
+        if (state.version > 0) {
+          localVersionRef.current = state.version;
+
+          const currentSystemMessage =
+            usePromptEditorStore.getState().systemMessage;
+          const currentUserMessage =
+            usePromptEditorStore.getState().userMessage;
+
+          if (state.systemMessage !== currentSystemMessage) {
+            setSystemMessageFromRemote(state.systemMessage);
+          }
+          if (state.userMessage !== currentUserMessage) {
+            setUserMessageFromRemote(state.userMessage);
+          }
+        }
+      },
+    };
+
+    return subscribeToEvents(callbacks);
+  }, [
+    subscribeToEvents,
+    isViewingOldVersion,
+    setSystemMessageFromRemote,
+    setUserMessageFromRemote,
+  ]);
+
   // Track initial values for dirty detection
   const initialSystemRef = useRef(loaderData.systemMessage);
   const initialUserRef = useRef(loaderData.userMessage);
@@ -506,19 +571,23 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const handleSystemChange = useCallback(
     (value: string) => {
       setSystemMessage(value);
+      // Broadcast to other users for real-time collaboration
+      sendContentUpdate?.('systemMessage', value);
       isPendingSystemSaveRef.current = true;
       debouncedSave();
     },
-    [setSystemMessage, debouncedSave],
+    [setSystemMessage, sendContentUpdate, debouncedSave],
   );
 
   const handleUserChange = useCallback(
     (value: string) => {
       setUserMessage(value);
+      // Broadcast to other users for real-time collaboration
+      sendContentUpdate?.('userMessage', value);
       isPendingUserSaveRef.current = true;
       debouncedSave();
     },
-    [setUserMessage, debouncedSave],
+    [setUserMessage, sendContentUpdate, debouncedSave],
   );
 
   const isSystemDirty = systemMessage !== initialSystemRef.current;

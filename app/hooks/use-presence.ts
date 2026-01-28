@@ -9,10 +9,17 @@ export type PresenceUser = {
   isActive: boolean;
 };
 
+export type ContentState = {
+  systemMessage: string;
+  userMessage: string;
+  version: number;
+};
+
 type PresenceState = {
   users: PresenceUser[];
   isConnected: boolean;
   error: string | null;
+  contentState: ContentState;
 };
 
 type ServerMessage =
@@ -20,12 +27,35 @@ type ServerMessage =
   | { type: 'user_joined'; user: PresenceUser }
   | { type: 'user_left'; userId: string }
   | { type: 'user_active'; userId: string; isActive: boolean }
-  | { type: 'pong' };
+  | { type: 'pong' }
+  | {
+      type: 'content_sync';
+      field: 'systemMessage' | 'userMessage';
+      value: string;
+      version: number;
+      userId: string;
+    }
+  | {
+      type: 'content_state';
+      systemMessage: string;
+      userMessage: string;
+      version: number;
+    };
+
+// Content sync callback for collaborative editing
+export type ContentSyncCallback = (
+  field: 'systemMessage' | 'userMessage',
+  value: string,
+  version: number,
+  userId: string,
+) => void;
 
 // Event callback types for presence notifications
 export type PresenceEventCallbacks = {
   onUserJoined?: (user: PresenceUser) => void;
   onInitialPresence?: (users: PresenceUser[]) => void;
+  onContentSync?: ContentSyncCallback;
+  onContentState?: (state: ContentState) => void;
 };
 
 // Module-level state
@@ -50,6 +80,11 @@ const DEFAULT_STATE: PresenceState = {
   users: [],
   isConnected: false,
   error: null,
+  contentState: {
+    systemMessage: '',
+    userMessage: '',
+    version: 0,
+  },
 };
 
 const getState = (promptId: string): PresenceState => {
@@ -76,8 +111,17 @@ const updateState = (
 
 const fireEventCallbacks = (
   promptId: string,
-  event: 'userJoined' | 'initialPresence',
-  payload: PresenceUser | PresenceUser[],
+  event: 'userJoined' | 'initialPresence' | 'contentSync' | 'contentState',
+  payload:
+    | PresenceUser
+    | PresenceUser[]
+    | {
+        field: 'systemMessage' | 'userMessage';
+        value: string;
+        version: number;
+        userId: string;
+      }
+    | ContentState,
 ): void => {
   const callbacks = eventCallbacksByPromptId.get(promptId);
   if (!callbacks) return;
@@ -87,6 +131,21 @@ const fireEventCallbacks = (
       cb.onUserJoined(payload as PresenceUser);
     } else if (event === 'initialPresence' && cb.onInitialPresence) {
       cb.onInitialPresence(payload as PresenceUser[]);
+    } else if (event === 'contentSync' && cb.onContentSync) {
+      const syncPayload = payload as {
+        field: 'systemMessage' | 'userMessage';
+        value: string;
+        version: number;
+        userId: string;
+      };
+      cb.onContentSync(
+        syncPayload.field,
+        syncPayload.value,
+        syncPayload.version,
+        syncPayload.userId,
+      );
+    } else if (event === 'contentState' && cb.onContentState) {
+      cb.onContentState(payload as ContentState);
     }
   }
 };
@@ -130,6 +189,39 @@ const handleMessage = (promptId: string, data: ServerMessage): void => {
 
     case 'pong':
       // Heartbeat response, no state change needed
+      break;
+
+    case 'content_state':
+      updateState(promptId, {
+        contentState: {
+          systemMessage: data.systemMessage,
+          userMessage: data.userMessage,
+          version: data.version,
+        },
+      });
+      fireEventCallbacks(promptId, 'contentState', {
+        systemMessage: data.systemMessage,
+        userMessage: data.userMessage,
+        version: data.version,
+      });
+      break;
+
+    case 'content_sync':
+      // Update local content state
+      updateState(promptId, {
+        contentState: {
+          ...current.contentState,
+          [data.field]: data.value,
+          version: data.version,
+        },
+      });
+      // Fire callback for component to handle
+      fireEventCallbacks(promptId, 'contentSync', {
+        field: data.field,
+        value: data.value,
+        version: data.version,
+        userId: data.userId,
+      });
       break;
   }
 };
@@ -298,6 +390,23 @@ const subscribe = (promptId: string, callback: () => void): (() => void) => {
 
 const getServerSnapshot = (): PresenceState => DEFAULT_STATE;
 
+const sendContentUpdate = (
+  promptId: string,
+  field: 'systemMessage' | 'userMessage',
+  value: string,
+): void => {
+  const socket = socketByPromptId.get(promptId);
+  if (socket?.readyState === WebSocket.OPEN) {
+    socket.send(
+      JSON.stringify({
+        type: 'content_update',
+        field,
+        value,
+      }),
+    );
+  }
+};
+
 const subscribeToEvents = (
   promptId: string,
   callbacks: PresenceEventCallbacks,
@@ -332,9 +441,14 @@ export const usePresence = (promptId: string | undefined) => {
     users: state.users,
     isConnected: state.isConnected,
     error: state.error,
+    contentState: state.contentState,
     subscribeToEvents: promptId
       ? (callbacks: PresenceEventCallbacks) =>
           subscribeToEvents(promptId, callbacks)
+      : undefined,
+    sendContentUpdate: promptId
+      ? (field: 'systemMessage' | 'userMessage', value: string) =>
+          sendContentUpdate(promptId, field, value)
       : undefined,
   };
 };

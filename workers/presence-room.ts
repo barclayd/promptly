@@ -14,19 +14,44 @@ type UserSession = {
   connectionCount: number;
 };
 
+// Content state for collaborative editing
+type ContentState = {
+  systemMessage: string;
+  userMessage: string;
+  version: number;
+};
+
 // Server -> Client messages
 type PresenceMessage =
   | { type: 'presence'; users: PresenceUser[] }
   | { type: 'user_joined'; user: PresenceUser }
   | { type: 'user_left'; userId: string }
   | { type: 'user_active'; userId: string; isActive: boolean }
-  | { type: 'pong' };
+  | { type: 'pong' }
+  | {
+      type: 'content_sync';
+      field: 'systemMessage' | 'userMessage';
+      value: string;
+      version: number;
+      userId: string;
+    }
+  | {
+      type: 'content_state';
+      systemMessage: string;
+      userMessage: string;
+      version: number;
+    };
 
 // Client -> Server messages
 type ClientMessage =
   | { type: 'ping' }
   | { type: 'focus'; isActive: boolean }
-  | { type: 'init' };
+  | { type: 'init' }
+  | {
+      type: 'content_update';
+      field: 'systemMessage' | 'userMessage';
+      value: string;
+    };
 
 type WebSocketAttachment = {
   userId: string;
@@ -38,9 +63,22 @@ type WebSocketAttachment = {
 
 export class PresenceRoom extends DurableObject<Env> {
   private users: Map<string, UserSession> = new Map();
+  private contentState: ContentState = {
+    systemMessage: '',
+    userMessage: '',
+    version: 0,
+  };
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+
+    // Restore content state from storage (for hibernation recovery)
+    this.ctx.blockConcurrencyWhile(async () => {
+      const stored = await this.ctx.storage.get<ContentState>('contentState');
+      if (stored) {
+        this.contentState = stored;
+      }
+    });
 
     try {
       // Restore user sessions from hibernated WebSocket connections
@@ -145,6 +183,16 @@ export class PresenceRoom extends DurableObject<Env> {
           const presenceList = this.getPresenceList();
           ws.send(JSON.stringify({ type: 'presence', users: presenceList }));
 
+          // Send current content state
+          ws.send(
+            JSON.stringify({
+              type: 'content_state',
+              systemMessage: this.contentState.systemMessage,
+              userMessage: this.contentState.userMessage,
+              version: this.contentState.version,
+            }),
+          );
+
           // Broadcast join to all other users
           const session = this.users.get(attachment.userId);
           if (session) {
@@ -173,6 +221,28 @@ export class PresenceRoom extends DurableObject<Env> {
               attachment.userId,
             );
           }
+          break;
+        }
+
+        case 'content_update': {
+          // Increment version and update content state
+          this.contentState.version++;
+          this.contentState[data.field] = data.value;
+
+          // Persist to storage for hibernation recovery
+          this.ctx.storage.put('contentState', this.contentState);
+
+          // Broadcast to all OTHER clients (not the sender)
+          this.broadcast(
+            {
+              type: 'content_sync',
+              field: data.field,
+              value: data.value,
+              version: this.contentState.version,
+              userId: attachment.userId,
+            },
+            attachment.userId,
+          );
           break;
         }
       }

@@ -36,6 +36,8 @@ export type PromptEditorActions = {
   reset: () => void;
   setSystemMessage: (value: string) => void;
   setUserMessage: (value: string) => void;
+  setSystemMessageFromRemote: (value: string) => void;
+  setUserMessageFromRemote: (value: string) => void;
   setSchemaFields: (fields: SchemaField[]) => void;
   addSchemaField: (field: SchemaField) => void;
   updateSchemaField: (id: string, updates: Partial<SchemaField>) => void;
@@ -126,6 +128,20 @@ export const usePromptEditorStore = create<PromptEditorStore>()(
       setSystemMessage: (value) => set({ systemMessage: value }),
 
       setUserMessage: (value) => set({ userMessage: value }),
+
+      setSystemMessageFromRemote: (value) => {
+        // Pause Zundo so remote updates don't add to undo history
+        usePromptEditorStore.temporal.getState().pause();
+        set({ systemMessage: value });
+        usePromptEditorStore.temporal.getState().resume();
+      },
+
+      setUserMessageFromRemote: (value) => {
+        // Pause Zundo so remote updates don't add to undo history
+        usePromptEditorStore.temporal.getState().pause();
+        set({ userMessage: value });
+        usePromptEditorStore.temporal.getState().resume();
+      },
 
       setSchemaFields: (fields) => set({ schemaFields: fields }),
 
