@@ -461,7 +461,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       <Sidebar
         collapsible="none"
         className={cn(
-          isMobile ? 'relative border-t bg-sidebar w-full' : 'border-l',
+          isMobile ? 'relative border-t bg-sidebar w-full overflow-x-hidden' : 'border-l',
         )}
         {...props}
       >

@@ -692,7 +692,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           {!isViewingOldVersion && (
-            <div className="px-4 lg:px-6 flex items-center justify-between">
+            <div className="px-4 lg:px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <PromptEditorMenubar />
               <PublishPromptDialog
                 promptId={loaderData.prompt.id}
