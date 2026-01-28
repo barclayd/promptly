@@ -709,7 +709,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
           )}
           <div className="px-4 lg:px-6 flex flex-col gap-y-4">
             <h1 className="text-3xl">{loaderData.prompt.name}</h1>
-            <div className="text-gray-400/75 text-sm -mt-2">
+            <div className="text-muted-foreground text-sm -mt-2">
               {loaderData.currentVersion
                 ? `v${loaderData.currentVersion}`
                 : 'Draft'}

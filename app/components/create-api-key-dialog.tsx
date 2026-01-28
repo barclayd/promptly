@@ -105,8 +105,8 @@ export const CreateApiKeyDialog = ({ children }: CreateApiKeyDialogProps) => {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader className="space-y-3">
             <DialogTitle className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-full bg-green-100">
-                <IconCheck className="size-5 text-green-600" />
+              <div className="flex size-10 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+                <IconCheck className="size-5 text-green-600 dark:text-green-400" />
               </div>
               API Key Created
             </DialogTitle>
@@ -116,9 +116,9 @@ export const CreateApiKeyDialog = ({ children }: CreateApiKeyDialogProps) => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-5 py-2">
-            <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <IconAlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600" />
-              <p className="text-sm leading-relaxed text-amber-800">
+            <div className="flex items-start gap-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-4">
+              <IconAlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <p className="text-sm leading-relaxed text-amber-800 dark:text-amber-200">
                 This is the only time you'll see this key. Store it securely -
                 it cannot be recovered if lost.
               </p>
@@ -136,7 +136,7 @@ export const CreateApiKeyDialog = ({ children }: CreateApiKeyDialogProps) => {
                   className={`shrink-0 min-w-[100px] transition-all duration-200 ${
                     copied
                       ? 'bg-green-600 hover:bg-green-600 text-white'
-                      : 'hover:border-gray-400'
+                      : 'hover:border-muted-foreground'
                   }`}
                 >
                   {copied ? (
@@ -172,8 +172,8 @@ export const CreateApiKeyDialog = ({ children }: CreateApiKeyDialogProps) => {
         <fetcher.Form method="post" action="/api/settings/create-api-key">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-gray-100">
-                <IconKey className="size-4 text-gray-600" />
+              <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
+                <IconKey className="size-4 text-muted-foreground" />
               </div>
               Create API Key
             </DialogTitle>

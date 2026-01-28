@@ -94,14 +94,14 @@ const Settings = ({ loaderData }: Route.ComponentProps) => {
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="@container/main flex flex-1 flex-col gap-2 bg-gray-100">
+      <div className="@container/main flex flex-1 flex-col gap-2 bg-muted/40 dark:bg-background">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
             {/* Header */}
             <div className="flex items-start justify-between mb-6">
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900">Settings</h1>
-                <p className="text-gray-500 text-sm mt-1">
+                <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
+                <p className="text-muted-foreground text-sm mt-1">
                   Manage your Promptly account
                 </p>
               </div>
@@ -119,7 +119,7 @@ const Settings = ({ loaderData }: Route.ComponentProps) => {
             <div className="space-y-8">
               {hasApiKeys ? (
                 <div className="space-y-3">
-                  <div className="text-sm font-medium text-gray-700">
+                  <div className="text-sm font-medium text-foreground">
                     API Keys
                   </div>
                   <ApiKeysTable apiKeys={apiKeys} />
