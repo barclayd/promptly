@@ -98,16 +98,27 @@ export const BreadcrumbWithDropdown = () => {
             {/* Deep segments - hidden on mobile, show only last one on small screens */}
             {deepSegments.map(({ label, path }, index) => (
               <Fragment key={path}>
-                <BreadcrumbSeparator className={cn(
-                  index < deepSegments.length - 1 ? 'hidden md:block' : 'hidden sm:block'
-                )}>
+                <BreadcrumbSeparator
+                  className={cn(
+                    index < deepSegments.length - 1
+                      ? 'hidden md:block'
+                      : 'hidden sm:block',
+                  )}
+                >
                   <SlashIcon />
                 </BreadcrumbSeparator>
-                <BreadcrumbItem className={cn(
-                  index < deepSegments.length - 1 ? 'hidden md:inline-flex' : 'hidden sm:inline-flex'
-                )}>
+                <BreadcrumbItem
+                  className={cn(
+                    index < deepSegments.length - 1
+                      ? 'hidden md:inline-flex'
+                      : 'hidden sm:inline-flex',
+                  )}
+                >
                   <BreadcrumbLink asChild>
-                    <NavLink to={path} className="max-w-32 truncate sm:max-w-48">
+                    <NavLink
+                      to={path}
+                      className="max-w-32 truncate sm:max-w-48"
+                    >
                       {label}
                     </NavLink>
                   </BreadcrumbLink>

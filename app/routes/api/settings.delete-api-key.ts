@@ -42,7 +42,14 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     if (!deleteResponse.ok) {
       const errorData = await deleteResponse.json();
       return data(
-        { errors: { _form: [(errorData as { message?: string }).message || 'Failed to delete API key'] } },
+        {
+          errors: {
+            _form: [
+              (errorData as { message?: string }).message ||
+                'Failed to delete API key',
+            ],
+          },
+        },
         { status: deleteResponse.status },
       );
     }

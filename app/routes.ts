@@ -15,8 +15,14 @@ export default [
   route('api/generate-input-data', './routes/api/generate-input-data.ts'),
   route('api/team/invite', './routes/api/team.invite.ts'),
   route('api/team/cancel-invite', './routes/api/team.cancel-invite.ts'),
-  route('api/settings/create-api-key', './routes/api/settings.create-api-key.ts'),
-  route('api/settings/delete-api-key', './routes/api/settings.delete-api-key.ts'),
+  route(
+    'api/settings/create-api-key',
+    './routes/api/settings.create-api-key.ts',
+  ),
+  route(
+    'api/settings/delete-api-key',
+    './routes/api/settings.delete-api-key.ts',
+  ),
   route('api/search-prompts', './routes/api/search-prompts.ts'),
   route(
     'team/accept-invitation/:id',

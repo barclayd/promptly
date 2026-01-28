@@ -1,8 +1,8 @@
 'use client';
 
 import { createContext, type ReactNode, useContext } from 'react';
-import { useSearch } from '~/hooks/use-search';
 import { SearchDialog } from '~/components/search-dialog';
+import { useSearch } from '~/hooks/use-search';
 
 type SearchContextType = ReturnType<typeof useSearch>;
 

@@ -27,13 +27,13 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu';
-import { useTheme } from '~/hooks/use-dark-mode';
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from '~/components/ui/sidebar';
+import { useTheme } from '~/hooks/use-dark-mode';
 
 const getUserInitials = (name: string) => {
   const initials = name.split(' ');

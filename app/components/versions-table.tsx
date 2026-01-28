@@ -12,6 +12,12 @@ import { useSearchParams } from 'react-router';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu';
+import {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
@@ -20,12 +26,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '~/components/ui/pagination';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '~/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -222,74 +222,74 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
       <div className="rounded-md border overflow-hidden">
         <div className="overflow-x-auto">
           <Table className="min-w-[520px]">
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="hover:bg-transparent">
-                {headerGroup.headers.map((header) => {
-                  const meta = header.column.columnDef.meta as
-                    | { className?: string }
-                    | undefined;
-                  return (
-                    <TableHead
-                      key={header.id}
-                      className={cn(
-                        'h-8 px-2 first:pl-3 last:pr-2',
-                        meta?.className,
-                      )}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.map((row) => {
-              const versionString = formatVersion(row.original);
-              const isCurrentVersion =
-                versionString === currentVersion ||
-                (versionString === null && currentVersion === null);
-
-              return (
-                <TableRow
-                  key={row.id}
-                  className={cn(
-                    'cursor-pointer transition-colors',
-                    isCurrentVersion
-                      ? 'bg-muted hover:bg-muted'
-                      : 'hover:bg-muted/50',
-                  )}
-                  onClick={() => handleRowClick(row.original)}
-                >
-                  {row.getVisibleCells().map((cell) => {
-                    const meta = cell.column.columnDef.meta as
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                  {headerGroup.headers.map((header) => {
+                    const meta = header.column.columnDef.meta as
                       | { className?: string }
                       | undefined;
                     return (
-                      <TableCell
-                        key={cell.id}
+                      <TableHead
+                        key={header.id}
                         className={cn(
-                          'h-9 px-2 py-1.5 first:pl-3 last:pr-2 overflow-hidden',
+                          'h-8 px-2 first:pl-3 last:pr-2',
                           meta?.className,
                         )}
                       >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                      </TableHead>
                     );
                   })}
                 </TableRow>
-              );
-            })}
-          </TableBody>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.map((row) => {
+                const versionString = formatVersion(row.original);
+                const isCurrentVersion =
+                  versionString === currentVersion ||
+                  (versionString === null && currentVersion === null);
+
+                return (
+                  <TableRow
+                    key={row.id}
+                    className={cn(
+                      'cursor-pointer transition-colors',
+                      isCurrentVersion
+                        ? 'bg-muted hover:bg-muted'
+                        : 'hover:bg-muted/50',
+                    )}
+                    onClick={() => handleRowClick(row.original)}
+                  >
+                    {row.getVisibleCells().map((cell) => {
+                      const meta = cell.column.columnDef.meta as
+                        | { className?: string }
+                        | undefined;
+                      return (
+                        <TableCell
+                          key={cell.id}
+                          className={cn(
+                            'h-9 px-2 py-1.5 first:pl-3 last:pr-2 overflow-hidden',
+                            meta?.className,
+                          )}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
           </Table>
         </div>
       </div>

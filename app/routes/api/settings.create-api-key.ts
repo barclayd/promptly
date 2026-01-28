@@ -71,7 +71,14 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     if (!apiKeyResponse.ok) {
       const errorData = await apiKeyResponse.json();
       return data(
-        { errors: { _form: [(errorData as { message?: string }).message || 'Failed to create API key'] } },
+        {
+          errors: {
+            _form: [
+              (errorData as { message?: string }).message ||
+                'Failed to create API key',
+            ],
+          },
+        },
         { status: apiKeyResponse.status },
       );
     }

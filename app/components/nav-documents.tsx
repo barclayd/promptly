@@ -9,8 +9,6 @@ import {
 } from '@tabler/icons-react';
 import { NavLink, useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import { useRecentsContext } from '~/context/recents-context';
-
 import { Badge } from '~/components/ui/badge';
 import {
   DropdownMenu,
@@ -28,6 +26,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '~/components/ui/sidebar';
+import { useRecentsContext } from '~/context/recents-context';
 
 export interface NavDocumentItem {
   promptId: string;
@@ -55,7 +54,9 @@ export const NavDocuments = ({ items }: { items: NavDocumentItem[] }) => {
 
   const handleDelete = (promptId: string, name: string) => {
     removeRecent(promptId);
-    toast.success(`Removed "${name}" from recents`, { position: 'bottom-center' });
+    toast.success(`Removed "${name}" from recents`, {
+      position: 'bottom-center',
+    });
   };
 
   if (items.length === 0) {
