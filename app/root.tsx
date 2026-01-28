@@ -60,10 +60,16 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                var d = window.matchMedia('(prefers-color-scheme: dark)');
-                function u(e) { document.documentElement.classList.toggle('dark', e.matches); }
-                u(d);
-                d.addEventListener('change', u);
+                var stored = localStorage.getItem('theme');
+                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+                function apply() {
+                  var isDark = stored === 'dark' || (stored !== 'light' && prefersDark.matches);
+                  document.documentElement.classList.toggle('dark', isDark);
+                }
+                apply();
+                prefersDark.addEventListener('change', function() {
+                  if (!stored || stored === 'system') apply();
+                });
               })();
             `,
           }}
