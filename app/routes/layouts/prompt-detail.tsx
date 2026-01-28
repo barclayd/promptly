@@ -94,7 +94,7 @@ export default function PromptDetailLayout() {
       <SidebarAutoHide />
       <SidebarLeft variant="inset" />
       {isMobile ? (
-        <div className="flex flex-1 flex-col min-h-svh">
+        <div className="flex flex-1 flex-col min-h-svh overflow-x-hidden">
           <SidebarInset className="flex-1">
             <SiteHeader />
             <Outlet

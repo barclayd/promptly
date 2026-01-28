@@ -219,8 +219,9 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
 
   return (
     <div className="px-2 py-2">
-      <div className="rounded-md border overflow-hidden overflow-x-auto">
-        <Table className="min-w-[520px]">
+      <div className="rounded-md border overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table className="min-w-[520px]">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">
@@ -289,7 +290,8 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
               );
             })}
           </TableBody>
-        </Table>
+          </Table>
+        </div>
       </div>
       {table.getPageCount() > 1 && (
         <Pagination className="pt-2">
