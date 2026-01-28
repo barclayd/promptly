@@ -1,14 +1,14 @@
+import { FileText, Loader2 } from 'lucide-react';
+import { matchSorter } from 'match-sorter';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { matchSorter } from 'match-sorter';
-import { FileText, Loader2 } from 'lucide-react';
 import {
   CommandDialog,
-  CommandInput,
-  CommandList,
   CommandEmpty,
   CommandGroup,
+  CommandInput,
   CommandItem,
+  CommandList,
   CommandLoading,
 } from '~/components/ui/command';
 
@@ -87,7 +87,7 @@ export const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
     <CommandDialog open={open} onOpenChange={handleOpenChange}>
       <CommandInput
         ref={inputRefCallback}
-        placeholder="Search prompts..."
+        placeholder="Search"
         value={search}
         onValueChange={setSearch}
       />

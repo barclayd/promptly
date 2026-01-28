@@ -119,7 +119,9 @@ export const PendingInvitationsTable = ({
                           {invitation.email.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <span className="text-foreground">{invitation.email}</span>
+                      <span className="text-foreground">
+                        {invitation.email}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell>

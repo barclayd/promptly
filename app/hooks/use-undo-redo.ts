@@ -12,7 +12,8 @@ const setupUndoRedoListener = () => {
   document.addEventListener(
     'beforeinput',
     (e) => {
-      if (e.inputType !== 'historyUndo' && e.inputType !== 'historyRedo') return;
+      if (e.inputType !== 'historyUndo' && e.inputType !== 'historyRedo')
+        return;
 
       const target = e.target as HTMLElement;
       const isManagedUndo = target.dataset.managedUndo !== undefined;
@@ -82,8 +83,16 @@ const getCanRedo = () => {
 export const useUndoRedo = () => {
   setupUndoRedoListener();
 
-  const canUndo = useSyncExternalStore(subscribeToTemporal, getCanUndo, () => false);
-  const canRedo = useSyncExternalStore(subscribeToTemporal, getCanRedo, () => false);
+  const canUndo = useSyncExternalStore(
+    subscribeToTemporal,
+    getCanUndo,
+    () => false,
+  );
+  const canRedo = useSyncExternalStore(
+    subscribeToTemporal,
+    getCanRedo,
+    () => false,
+  );
 
   const undo = () => {
     usePromptEditorStore.temporal.getState().undo();

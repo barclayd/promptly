@@ -127,14 +127,7 @@ type SidebarRightProps = React.ComponentProps<typeof Sidebar> & {
 };
 
 export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
-  (
-    {
-      versions = [],
-      isReadonly = false,
-      ...props
-    },
-    ref,
-  ) => {
+  ({ versions = [], isReadonly = false, ...props }, ref) => {
     // Get state from the store
     const schemaFields = usePromptEditorStore((state) => state.schemaFields);
     const model = usePromptEditorStore((state) => state.model);
@@ -457,7 +450,9 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       <Sidebar
         collapsible="none"
         className={cn(
-          isMobile ? 'relative border-t bg-sidebar w-full overflow-x-hidden' : 'border-l',
+          isMobile
+            ? 'relative border-t bg-sidebar w-full overflow-x-hidden'
+            : 'border-l',
         )}
         {...props}
       >

@@ -50,14 +50,16 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     .bind(org.organizationId)
     .all<PromptResult>();
 
-  const prompts: SearchPromptItem[] = results.results.map((prompt: PromptResult) => ({
-    id: prompt.id,
-    name: prompt.name,
-    description: prompt.description,
-    folderId: prompt.folder_id,
-    folderName: prompt.folder_name,
-    url: `/prompts/${prompt.id}`,
-  }));
+  const prompts: SearchPromptItem[] = results.results.map(
+    (prompt: PromptResult) => ({
+      id: prompt.id,
+      name: prompt.name,
+      description: prompt.description,
+      folderId: prompt.folder_id,
+      folderName: prompt.folder_name,
+      url: `/prompts/${prompt.id}`,
+    }),
+  );
 
   return Response.json({ prompts });
 };

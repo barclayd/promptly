@@ -56,9 +56,10 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const organizationApiKeys = allApiKeys.filter((key) => {
     if (!key.metadata) return false;
     try {
-      const metadata = typeof key.metadata === 'string'
-        ? JSON.parse(key.metadata)
-        : key.metadata;
+      const metadata =
+        typeof key.metadata === 'string'
+          ? JSON.parse(key.metadata)
+          : key.metadata;
       return metadata.organizationId === org.organizationId;
     } catch {
       return false;
@@ -73,11 +74,11 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     prefix: key.prefix,
     createdAt: key.createdAt,
     lastRequest: key.lastRequest,
-    permissions: key.permissions ? (
-      typeof key.permissions === 'string'
+    permissions: key.permissions
+      ? typeof key.permissions === 'string'
         ? JSON.parse(key.permissions)
         : key.permissions
-    ) : null,
+      : null,
   }));
 
   return {
@@ -100,7 +101,9 @@ const Settings = ({ loaderData }: Route.ComponentProps) => {
             {/* Header */}
             <div className="flex items-start justify-between mb-6">
               <div>
-                <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
+                <h1 className="text-2xl font-semibold text-foreground">
+                  Settings
+                </h1>
                 <p className="text-muted-foreground text-sm mt-1">
                   Manage your Promptly account
                 </p>

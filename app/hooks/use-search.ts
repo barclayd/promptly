@@ -1,8 +1,10 @@
 import { useState } from 'react';
 
 let listenerSetup = false;
-let setOpenRef: { current: ((open: boolean) => void) | null } = { current: null };
-let openRef: { current: boolean } = { current: false };
+const setOpenRef: { current: ((open: boolean) => void) | null } = {
+  current: null,
+};
+const openRef: { current: boolean } = { current: false };
 
 const setupKeyboardListener = () => {
   if (typeof window === 'undefined') return;

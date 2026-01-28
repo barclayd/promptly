@@ -116,7 +116,9 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           {visibleFolders.length > 0 && (
             <div className="px-4 lg:px-6">
-              <div className="font-semibold text-muted-foreground mb-4">Folders</div>
+              <div className="font-semibold text-muted-foreground mb-4">
+                Folders
+              </div>
               <div className="flex flex-wrap gap-4">
                 {visibleFolders.map((folder) => (
                   <div key={folder.id} className="flex flex-col">
@@ -128,10 +130,14 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
             </div>
           )}
           <div className="px-4 lg:px-6">
-            <div className="font-semibold text-muted-foreground mb-4">Prompts</div>
+            <div className="font-semibold text-muted-foreground mb-4">
+              Prompts
+            </div>
             <Suspense
               fallback={
-                <div className="text-muted-foreground text-sm">Loading prompts...</div>
+                <div className="text-muted-foreground text-sm">
+                  Loading prompts...
+                </div>
               }
             >
               <Await resolve={loaderData.prompts}>

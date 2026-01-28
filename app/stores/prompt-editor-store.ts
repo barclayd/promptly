@@ -67,7 +67,7 @@ const initialState: PromptEditorState = {
 
 const createThrottle = <T extends (...args: Parameters<T>) => ReturnType<T>>(
   fn: T,
-  wait: number
+  wait: number,
 ): ((...args: Parameters<T>) => void) => {
   let lastCall = 0;
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -88,7 +88,7 @@ const createThrottle = <T extends (...args: Parameters<T>) => ReturnType<T>>(
           lastCall = Date.now();
           fn(...args);
         },
-        wait - (now - lastCall)
+        wait - (now - lastCall),
       );
     }
   };
@@ -135,7 +135,7 @@ export const usePromptEditorStore = create<PromptEditorStore>()(
       updateSchemaField: (id, updates) =>
         set((state) => ({
           schemaFields: state.schemaFields.map((field) =>
-            field.id === id ? { ...field, ...updates } : field
+            field.id === id ? { ...field, ...updates } : field,
           ),
         })),
 
@@ -151,14 +151,16 @@ export const usePromptEditorStore = create<PromptEditorStore>()(
       setInputData: (data, rootName) =>
         set((state) => ({
           inputData: data,
-          inputDataRootName: rootName !== undefined ? rootName : state.inputDataRootName,
+          inputDataRootName:
+            rootName !== undefined ? rootName : state.inputDataRootName,
         })),
 
       setTestModel: (model) => set({ testModel: model }),
 
       setTestTemperature: (temp) => set({ testTemperature: temp }),
 
-      setTestVersionOverride: (version) => set({ testVersionOverride: version }),
+      setTestVersionOverride: (version) =>
+        set({ testVersionOverride: version }),
     }),
     {
       partialize: (state) => ({
@@ -180,6 +182,6 @@ export const usePromptEditorStore = create<PromptEditorStore>()(
         }, 500),
       equality: (pastState, currentState) =>
         JSON.stringify(pastState) === JSON.stringify(currentState),
-    }
-  )
+    },
+  ),
 );

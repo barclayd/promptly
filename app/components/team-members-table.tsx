@@ -80,7 +80,9 @@ export const TeamMembersTable = ({
             <TableHead className="font-semibold text-foreground">
               Member
             </TableHead>
-            <TableHead className="font-semibold text-foreground">Role</TableHead>
+            <TableHead className="font-semibold text-foreground">
+              Role
+            </TableHead>
             <TableHead className="font-semibold text-foreground">
               Joined
             </TableHead>

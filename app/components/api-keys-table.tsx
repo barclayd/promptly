@@ -28,15 +28,17 @@ interface ApiKeysTableProps {
   apiKeys: ApiKey[];
 }
 
-const formatKeyPreview = (prefix: string | null, start: string | null): string => {
+const formatKeyPreview = (
+  prefix: string | null,
+  start: string | null,
+): string => {
   const prefixStr = prefix || 'promptly_';
   const prefixLength = prefixStr.length;
 
   // Extract unique characters after the prefix from the start field
   // Better Auth stores the first N characters of the full key (including prefix)
-  const uniqueChars = start && start.length > prefixLength
-    ? start.slice(prefixLength)
-    : null;
+  const uniqueChars =
+    start && start.length > prefixLength ? start.slice(prefixLength) : null;
 
   // Show unique chars if available, otherwise show asterisks
   const displayChars = uniqueChars || '****';
@@ -53,7 +55,9 @@ const formatDate = (timestamp: number | null): string => {
   });
 };
 
-const permissionsToScopes = (permissions: Record<string, string[]> | null): string[] => {
+const permissionsToScopes = (
+  permissions: Record<string, string[]> | null,
+): string[] => {
   if (!permissions) return [];
   const scopes: string[] = [];
   for (const [resource, actions] of Object.entries(permissions)) {
@@ -72,11 +76,19 @@ export const ApiKeysTable = ({ apiKeys }: ApiKeysTableProps) => {
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/30 hover:bg-muted/30">
-            <TableHead className="font-semibold text-foreground">Name</TableHead>
+            <TableHead className="font-semibold text-foreground">
+              Name
+            </TableHead>
             <TableHead className="font-semibold text-foreground">Key</TableHead>
-            <TableHead className="font-semibold text-foreground">Scopes</TableHead>
-            <TableHead className="font-semibold text-foreground">Created</TableHead>
-            <TableHead className="font-semibold text-foreground">Last Used</TableHead>
+            <TableHead className="font-semibold text-foreground">
+              Scopes
+            </TableHead>
+            <TableHead className="font-semibold text-foreground">
+              Created
+            </TableHead>
+            <TableHead className="font-semibold text-foreground">
+              Last Used
+            </TableHead>
             <TableHead className="font-semibold text-foreground w-16">
               <span className="sr-only">Actions</span>
             </TableHead>
@@ -85,10 +97,15 @@ export const ApiKeysTable = ({ apiKeys }: ApiKeysTableProps) => {
         <TableBody>
           {apiKeys.map((apiKey) => {
             const scopes = permissionsToScopes(apiKey.permissions);
-            const isDeleting = fetcher.state !== 'idle' && fetcher.formData?.get('keyId') === apiKey.id;
+            const isDeleting =
+              fetcher.state !== 'idle' &&
+              fetcher.formData?.get('keyId') === apiKey.id;
 
             return (
-              <TableRow key={apiKey.id} className={isDeleting ? 'opacity-50' : ''}>
+              <TableRow
+                key={apiKey.id}
+                className={isDeleting ? 'opacity-50' : ''}
+              >
                 <TableCell className="py-3">
                   <div className="flex items-center gap-2">
                     <IconKey className="size-4 text-muted-foreground" />
@@ -106,12 +123,18 @@ export const ApiKeysTable = ({ apiKeys }: ApiKeysTableProps) => {
                   <div className="flex flex-wrap gap-1">
                     {scopes.length > 0 ? (
                       scopes.map((scope) => (
-                        <Badge key={scope} variant="secondary" className="text-xs">
+                        <Badge
+                          key={scope}
+                          variant="secondary"
+                          className="text-xs"
+                        >
                           {scopeLabels[scope] || scope}
                         </Badge>
                       ))
                     ) : (
-                      <span className="text-muted-foreground text-sm">No scopes</span>
+                      <span className="text-muted-foreground text-sm">
+                        No scopes
+                      </span>
                     )}
                   </div>
                 </TableCell>
@@ -122,7 +145,10 @@ export const ApiKeysTable = ({ apiKeys }: ApiKeysTableProps) => {
                   {formatDate(apiKey.lastRequest)}
                 </TableCell>
                 <TableCell>
-                  <fetcher.Form method="post" action="/api/settings/delete-api-key">
+                  <fetcher.Form
+                    method="post"
+                    action="/api/settings/delete-api-key"
+                  >
                     <input type="hidden" name="keyId" value={apiKey.id} />
                     <Button
                       type="submit"

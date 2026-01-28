@@ -96,7 +96,7 @@ export default function PromptDetailLayout() {
       {isMobile ? (
         <div className="flex flex-1 flex-col min-h-svh overflow-x-hidden">
           <SidebarInset className="flex-1">
-            <SiteHeader />
+            <SiteHeader promptId={params.promptId} />
             <Outlet
               key={params.promptId}
               context={{
@@ -133,7 +133,7 @@ export default function PromptDetailLayout() {
             className="h-full overflow-hidden"
           >
             <SidebarInset className="h-full flex flex-col">
-              <SiteHeader />
+              <SiteHeader promptId={params.promptId} />
               <div className="flex-1 overflow-y-auto">
                 <Outlet
                   key={params.promptId}

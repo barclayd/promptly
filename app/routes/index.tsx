@@ -63,7 +63,9 @@ export default function Home() {
                 </Button>
               </Item>
             )}
-            <div className="font-semibold text-muted-foreground mb-4">Folders</div>
+            <div className="font-semibold text-muted-foreground mb-4">
+              Folders
+            </div>
             <NavLink to="/prompts">
               <div className="flex flex-col">
                 <Folder />
