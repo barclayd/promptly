@@ -66,7 +66,8 @@ export const BreadcrumbWithDropdown = () => {
   return (
     <Breadcrumb>
       <BreadcrumbList>
-        <BreadcrumbItem>
+        {/* Home link - hidden on mobile */}
+        <BreadcrumbItem className="hidden sm:inline-flex">
           <BreadcrumbLink asChild>
             <NavLink to="/">Home</NavLink>
           </BreadcrumbLink>
@@ -74,7 +75,8 @@ export const BreadcrumbWithDropdown = () => {
 
         {activeSection && (
           <>
-            <BreadcrumbSeparator>
+            {/* Separator after Home - hidden on mobile */}
+            <BreadcrumbSeparator className="hidden sm:block">
               <SlashIcon />
             </BreadcrumbSeparator>
             <BreadcrumbItem>
@@ -93,14 +95,21 @@ export const BreadcrumbWithDropdown = () => {
               </DropdownMenu>
             </BreadcrumbItem>
 
-            {deepSegments.map(({ label, path }) => (
+            {/* Deep segments - hidden on mobile, show only last one on small screens */}
+            {deepSegments.map(({ label, path }, index) => (
               <Fragment key={path}>
-                <BreadcrumbSeparator>
+                <BreadcrumbSeparator className={cn(
+                  index < deepSegments.length - 1 ? 'hidden md:block' : 'hidden sm:block'
+                )}>
                   <SlashIcon />
                 </BreadcrumbSeparator>
-                <BreadcrumbItem>
+                <BreadcrumbItem className={cn(
+                  index < deepSegments.length - 1 ? 'hidden md:inline-flex' : 'hidden sm:inline-flex'
+                )}>
                   <BreadcrumbLink asChild>
-                    <NavLink to={path}>{label}</NavLink>
+                    <NavLink to={path} className="max-w-32 truncate sm:max-w-48">
+                      {label}
+                    </NavLink>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
               </Fragment>
