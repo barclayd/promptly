@@ -73,15 +73,15 @@ export const TeamMembersTable = ({
   });
 
   return (
-    <div className="rounded-xl border border-gray-200/80 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
       <Table>
         <TableHeader>
-          <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
-            <TableHead className="font-semibold text-gray-700">
+          <TableRow className="bg-muted/30 hover:bg-muted/30">
+            <TableHead className="font-semibold text-foreground">
               Member
             </TableHead>
-            <TableHead className="font-semibold text-gray-700">Role</TableHead>
-            <TableHead className="font-semibold text-gray-700">
+            <TableHead className="font-semibold text-foreground">Role</TableHead>
+            <TableHead className="font-semibold text-foreground">
               Joined
             </TableHead>
           </TableRow>
@@ -92,11 +92,11 @@ export const TeamMembersTable = ({
             return (
               <TableRow
                 key={member.id}
-                className={isCurrentUser ? 'bg-gray-50/30' : ''}
+                className={isCurrentUser ? 'bg-muted/20' : ''}
               >
                 <TableCell className="py-3">
                   <div className="flex items-center gap-3">
-                    <Avatar className="size-9 border border-gray-100 shadow-sm">
+                    <Avatar className="size-9 border border-border shadow-sm">
                       {member.user.image ? (
                         <AvatarImage
                           src={member.user.image}
@@ -104,20 +104,20 @@ export const TeamMembersTable = ({
                           className="object-cover"
                         />
                       ) : null}
-                      <AvatarFallback className="bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 text-xs font-medium">
+                      <AvatarFallback className="bg-gradient-to-br from-muted to-accent text-muted-foreground text-xs font-medium">
                         {getInitials(member.user.name)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col min-w-0">
-                      <span className="font-medium text-gray-900 truncate">
+                      <span className="font-medium text-foreground truncate">
                         {member.user.name}
                         {isCurrentUser && (
-                          <span className="text-gray-400 font-normal ml-1.5">
+                          <span className="text-muted-foreground font-normal ml-1.5">
                             (you)
                           </span>
                         )}
                       </span>
-                      <span className="text-sm text-gray-500 truncate">
+                      <span className="text-sm text-muted-foreground truncate">
                         {member.user.email}
                       </span>
                     </div>
@@ -132,7 +132,7 @@ export const TeamMembersTable = ({
                     {roleLabels[member.role] || member.role}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-gray-500">
+                <TableCell className="text-muted-foreground">
                   {new Date(member.createdAt).toLocaleDateString('en-GB', {
                     month: 'short',
                     day: 'numeric',

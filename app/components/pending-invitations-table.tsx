@@ -39,10 +39,10 @@ const CancelInvitationButton = ({ invitationId }: { invitationId: string }) => {
         variant="ghost"
         size="sm"
         disabled={isDeleting}
-        className="h-8 px-2 text-gray-500 hover:text-destructive hover:bg-destructive/10"
+        className="h-8 px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
       >
         {isDeleting ? (
-          <span className="size-3.5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+          <span className="size-3.5 border-2 border-muted border-t-foreground rounded-full animate-spin" />
         ) : (
           <IconX className="size-4" />
         )}
@@ -73,30 +73,30 @@ export const PendingInvitationsTable = ({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-        <IconClock className="size-4 text-gray-400" />
+      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+        <IconClock className="size-4 text-muted-foreground" />
         Pending Invitations
         <Badge variant="secondary" className="ml-1 font-normal">
           {invitations.length}
         </Badge>
       </div>
-      <div className="rounded-xl border border-gray-200/80 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
-              <TableHead className="font-semibold text-gray-700">
+            <TableRow className="bg-muted/30 hover:bg-muted/30">
+              <TableHead className="font-semibold text-foreground">
                 Email
               </TableHead>
-              <TableHead className="font-semibold text-gray-700">
+              <TableHead className="font-semibold text-foreground">
                 Role
               </TableHead>
-              <TableHead className="font-semibold text-gray-700">
+              <TableHead className="font-semibold text-foreground">
                 Sent
               </TableHead>
-              <TableHead className="font-semibold text-gray-700">
+              <TableHead className="font-semibold text-foreground">
                 Expires
               </TableHead>
-              <TableHead className="font-semibold text-gray-700 w-16">
+              <TableHead className="font-semibold text-foreground w-16">
                 <span className="sr-only">Actions</span>
               </TableHead>
             </TableRow>
@@ -119,7 +119,7 @@ export const PendingInvitationsTable = ({
                           {invitation.email.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <span className="text-gray-900">{invitation.email}</span>
+                      <span className="text-foreground">{invitation.email}</span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -128,7 +128,7 @@ export const PendingInvitationsTable = ({
                         invitation.role}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-gray-500">
+                  <TableCell className="text-muted-foreground">
                     {new Date(invitation.createdAt).toLocaleDateString(
                       'en-GB',
                       {
@@ -156,7 +156,7 @@ export const PendingInvitationsTable = ({
                         )}
                       </span>
                     ) : (
-                      <span className="text-gray-500">
+                      <span className="text-muted-foreground">
                         {new Date(invitation.expiresAt).toLocaleDateString(
                           'en-US',
                           {

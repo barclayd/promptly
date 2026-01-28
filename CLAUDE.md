@@ -1,3 +1,14 @@
+# Tech Stack
+- **Framework**: React Router 7 (NOT Next.js) on Cloudflare Workers
+- **Database**: Cloudflare D1 (SQLite) with Drizzle ORM
+- **Auth**: Better Auth with organization/team support
+- **State**: Zustand + Zundo (for undo/redo)
+- **Validation**: Zod v4
+- **UI**: Radix UI primitives with shadcn/ui patterns
+- **Styling**: Tailwind CSS 4
+- **Icons**: `@tabler/icons-react` (prefer over lucide-react for new icons)
+- **Linting**: Biome (`bun run lint:fix`)
+
 # Code Style
 - Always use arrow functions instead of function declarations
 - Use `export const` inline rather than separate export statements
@@ -15,10 +26,67 @@
 - App routes (authenticated pages) go inside the `layout('./routes/layouts/app.tsx', [...])` block
 - Route types are auto-generated at `./+types/{routeName}` after adding to routes.ts
 
+# File Naming Conventions
+- **API routes**: `app/routes/api/[resource].[action].ts` (e.g., `prompts.create.ts`, `team.invite.ts`)
+- **Page routes with params**: `[routeName].$paramName.tsx` (e.g., `invite.$id.tsx`)
+- **Validation schemas**: `app/lib/validations/[feature].ts`
+- **Server-only code**: `*.server.ts` (e.g., `auth.server.ts`)
+- **Client-only code**: `*.client.ts` (e.g., `auth.client.ts`)
+- **Zustand stores**: `app/stores/[name]-store.ts`
+- **Custom hooks**: `app/hooks/use-[name].ts`
+
+# API Routes
+API routes export an `action` function for POST requests:
+```typescript
+import { data, redirect } from 'react-router';
+import type { Route } from './+types/[route-name]';
+
+export const action = async ({ request, context }: Route.ActionArgs) => {
+  // 1. Parse and validate form data with Zod
+  // 2. Get auth session: const auth = getAuth(context); const session = await auth.api.getSession({ headers: request.headers });
+  // 3. Access D1 database: const db = context.cloudflare.env.promptly;
+  // 4. Return data() for errors or redirect() for success
+};
+```
+
+# State Management
+- Use Zustand for complex client state (see `app/stores/prompt-editor-store.ts`)
+- Zustand stores support undo/redo via Zundo temporal middleware
+- For inputs that need managed undo, add `data-managed-undo` attribute
+- Server context (user, org) uses React Router's `createContext` in `app/context.ts`
+- Access org context in loaders/actions: `context.get(orgContext)`
+
+# Form Validation
+- Define Zod schemas in `app/lib/validations/[feature].ts`
+- Export both schema and inferred type: `export type LoginInput = z.infer<typeof loginSchema>`
+- Use `safeParse` in actions and return flattened errors: `z.flattenError(result.error).fieldErrors`
+
+# UI Components
+- UI primitives in `app/components/ui/` follow shadcn/ui patterns
+- Use `cn()` from `~/lib/utils` for conditional class merging
+- Components use `data-slot` attributes for styling hooks
+- Prefer existing UI components over creating new ones
+
 # Agent Preferences
 - Use typescript-developer agent when writing TypeScript code
 - Use frontend-design skill plugin when implementing UI features
 - Always test frontend changes using Chrome Dev Tools MCP
+- Always test UI changes in both light and dark modes (see Theme System below)
+
+# Theme System
+The app supports Light, Dark, and System (follows OS) modes via a theme switcher in the user dropdown menu.
+
+**How it works:**
+- Theme preference stored in `localStorage` under key `theme` (values: `light`, `dark`, `system`)
+- Inline script in `app/root.tsx` applies theme before React hydrates (prevents flash)
+- `useTheme` hook in `app/hooks/use-dark-mode.ts` provides `{ theme, isDark, setTheme }`
+- Uses `useSyncExternalStore` for reactivity (no useEffect)
+
+**Testing UI in both modes:**
+When implementing or modifying UI components, test in both light and dark modes:
+1. Use Chrome DevTools MCP to set theme: `localStorage.setItem('theme', 'light')` or `'dark'`
+2. Reload page and verify UI appearance
+3. Check contrast, readability, and visual consistency in both modes
 
 # Local Testing
 - Test user email: test@promptlycms.com
@@ -38,3 +106,15 @@
 - The local D1 database is stored in `.wrangler/state/v3/d1/` (not `migrations/local.db`)
 - Better Auth uses Kysely with CamelCasePlugin - table names become lowercase (e.g., `apiKey` → `apikey`)
 - Column names use snake_case in the database (e.g., `userId` → `user_id`)
+
+# Common Utilities
+- **ID generation**: Use `nanoid()` from `nanoid` package
+- **Auth helpers**: `getAuth(context)` from `~/lib/auth.server`
+- **Class merging**: `cn()` from `~/lib/utils` (combines clsx + tailwind-merge)
+
+# Common Gotchas
+- This is React Router 7, NOT Next.js - don't use Next.js patterns
+- D1 database uses prepared statements with `.bind()` - don't interpolate SQL
+- Better Auth MCP server is available for auth-related questions
+- Always check `session?.user` before accessing user data
+- Form actions use `FormData`, not JSON bodies

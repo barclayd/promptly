@@ -66,7 +66,7 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
   if (loaderData.folders.length === 0) {
     return (
       <div className="flex flex-1 flex-col">
-        <div className="@container/main flex flex-1 flex-col gap-2 bg-gray-100">
+        <div className="@container/main flex flex-1 flex-col gap-2 bg-muted/40 dark:bg-background">
           <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 min-h-screen justify-center">
             <div className="px-4 lg:px-6">
               <Empty>
@@ -112,11 +112,11 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="@container/main flex flex-1 flex-col gap-2 bg-gray-100">
+      <div className="@container/main flex flex-1 flex-col gap-2 bg-muted/40 dark:bg-background">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           {visibleFolders.length > 0 && (
             <div className="px-4 lg:px-6">
-              <div className="font-semibold text-gray-500/75 mb-4">Folders</div>
+              <div className="font-semibold text-muted-foreground mb-4">Folders</div>
               <div className="flex flex-wrap gap-4">
                 {visibleFolders.map((folder) => (
                   <div key={folder.id} className="flex flex-col">
@@ -128,10 +128,10 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
             </div>
           )}
           <div className="px-4 lg:px-6">
-            <div className="font-semibold text-gray-500/75 mb-4">Prompts</div>
+            <div className="font-semibold text-muted-foreground mb-4">Prompts</div>
             <Suspense
               fallback={
-                <div className="text-gray-400 text-sm">Loading prompts...</div>
+                <div className="text-muted-foreground text-sm">Loading prompts...</div>
               }
             >
               <Await resolve={loaderData.prompts}>
@@ -142,8 +142,8 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
                         <Paper className="items-start">
                           <div className="flex flex-wrap text-pretty flex-col gap-y-2 p-4 w-full h-full">
                             <div className="flex flex-col gap-y-1 mb-8 select-none">
-                              <div className="text-[0.5rem] text-right text-gray-400">
-                                <span className="text-black">
+                              <div className="text-[0.5rem] text-right text-muted-foreground">
+                                <span className="text-foreground">
                                   Last updated:
                                 </span>
                                 <br />
@@ -167,14 +167,14 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
                         type="button"
                         className="group relative isolate min-h-[250px] w-[200px] cursor-pointer"
                       >
-                        <div className="relative z-10 h-[250px] rounded-[2px] border-2 border-dashed border-gray-300 bg-gray-50/50 flex flex-col justify-center items-center gap-3 transition-all duration-300 ease-out hover:border-gray-400 hover:bg-white hover:shadow-lg group-hover:scale-[1.02]">
-                          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center transition-all duration-300 group-hover:bg-gray-200 group-hover:scale-110">
+                        <div className="relative z-10 h-[250px] rounded-[2px] border-2 border-dashed border-border bg-muted/30 dark:bg-card/50 flex flex-col justify-center items-center gap-3 transition-all duration-300 ease-out hover:border-muted-foreground/50 hover:bg-card hover:shadow-lg group-hover:scale-[1.02]">
+                          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center transition-all duration-300 group-hover:bg-accent group-hover:scale-110">
                             <PlusIcon
                               size={24}
-                              className="text-gray-400 transition-colors duration-300 group-hover:text-gray-600"
+                              className="text-muted-foreground transition-colors duration-300 group-hover:text-foreground"
                             />
                           </div>
-                          <span className="text-sm font-medium text-gray-400 transition-colors duration-300 group-hover:text-gray-600">
+                          <span className="text-sm font-medium text-muted-foreground transition-colors duration-300 group-hover:text-foreground">
                             New Prompt
                           </span>
                         </div>

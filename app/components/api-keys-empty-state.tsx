@@ -14,17 +14,17 @@ import { CreateApiKeyDialog } from './create-api-key-dialog';
 
 export const ApiKeysEmptyState = () => {
   return (
-    <Empty className="bg-white/60 backdrop-blur-sm border border-gray-200/60 shadow-sm">
+    <Empty className="bg-card/60 backdrop-blur-sm border border-border shadow-sm">
       <EmptyHeader>
         <EmptyMedia>
           <div className="flex items-center justify-center">
-            <div className="size-14 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-sm">
-              <IconKey className="size-7 text-gray-400" />
+            <div className="size-14 rounded-full bg-gradient-to-br from-muted to-accent flex items-center justify-center shadow-sm">
+              <IconKey className="size-7 text-muted-foreground" />
             </div>
           </div>
         </EmptyMedia>
-        <EmptyTitle className="text-gray-900">No API keys yet</EmptyTitle>
-        <EmptyDescription className="text-gray-500">
+        <EmptyTitle className="text-foreground">No API keys yet</EmptyTitle>
+        <EmptyDescription className="text-muted-foreground">
           Create an API key to access your prompts programmatically
         </EmptyDescription>
       </EmptyHeader>

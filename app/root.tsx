@@ -56,6 +56,24 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       <head title="Promptly">
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var stored = localStorage.getItem('theme');
+                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+                function apply() {
+                  var isDark = stored === 'dark' || (stored !== 'light' && prefersDark.matches);
+                  document.documentElement.classList.toggle('dark', isDark);
+                }
+                apply();
+                prefersDark.addEventListener('change', function() {
+                  if (!stored || stored === 'system') apply();
+                });
+              })();
+            `,
+          }}
+        />
         <Meta />
         <Links />
       </head>

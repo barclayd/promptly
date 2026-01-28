@@ -51,8 +51,8 @@ export const InviteMemberDialog = ({ children }: InviteMemberDialogProps) => {
         <Form method="post" action="/api/team/invite">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-gray-100">
-                <IconMail className="size-4 text-gray-600" />
+              <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
+                <IconMail className="size-4 text-muted-foreground" />
               </div>
               Invite Team Member
             </DialogTitle>

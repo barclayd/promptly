@@ -36,19 +36,19 @@ export default function Home() {
             {hasJoined && (
               <Item
                 variant="outline"
-                className="mb-6 bg-emerald-50/50 border-emerald-200"
+                className="mb-6 bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800"
               >
                 <ItemMedia
                   variant="icon"
-                  className="bg-emerald-100 border-emerald-200"
+                  className="bg-emerald-100 dark:bg-emerald-900/50 border-emerald-200 dark:border-emerald-800"
                 >
-                  <IconCheck className="text-emerald-600" />
+                  <IconCheck className="text-emerald-600 dark:text-emerald-400" />
                 </ItemMedia>
                 <ItemContent>
-                  <ItemTitle className="text-emerald-900">
+                  <ItemTitle className="text-emerald-900 dark:text-emerald-100">
                     Welcome to the team!
                   </ItemTitle>
-                  <ItemDescription className="text-emerald-700">
+                  <ItemDescription className="text-emerald-700 dark:text-emerald-300">
                     You have successfully joined the organization. You can now
                     collaborate with your team members.
                   </ItemDescription>
@@ -57,13 +57,13 @@ export default function Home() {
                   variant="ghost"
                   size="icon-sm"
                   onClick={dismissWelcome}
-                  className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100"
+                  className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
                 >
                   <IconX className="size-4" />
                 </Button>
               </Item>
             )}
-            <div className="font-semibold text-gray-500/75 mb-4">Folders</div>
+            <div className="font-semibold text-muted-foreground mb-4">Folders</div>
             <NavLink to="/prompts">
               <div className="flex flex-col">
                 <Folder />

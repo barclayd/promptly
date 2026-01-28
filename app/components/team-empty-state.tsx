@@ -33,19 +33,19 @@ export const TeamEmptyState = ({
   };
 
   return (
-    <Empty className="bg-white/60 backdrop-blur-sm border border-gray-200/60 shadow-sm">
+    <Empty className="bg-card/60 backdrop-blur-sm border border-border shadow-sm">
       <EmptyHeader>
         <EmptyMedia>
           <div className="flex items-center justify-center -space-x-3">
             {/* Left placeholder avatar */}
-            <Avatar className="size-12 border-2 border-white shadow-sm ring-1 ring-gray-100">
-              <AvatarFallback className="bg-gradient-to-br from-gray-100 to-gray-200 text-gray-400 text-sm grayscale">
+            <Avatar className="size-12 border-2 border-card shadow-sm ring-1 ring-border">
+              <AvatarFallback className="bg-gradient-to-br from-muted to-accent text-muted-foreground text-sm grayscale">
                 <IconUserPlus className="size-5 opacity-40" />
               </AvatarFallback>
             </Avatar>
 
             {/* Center avatar - current user or placeholder */}
-            <Avatar className="size-14 border-2 border-white shadow-md ring-1 ring-gray-100 z-10 relative">
+            <Avatar className="size-14 border-2 border-card shadow-md ring-1 ring-border z-10 relative">
               {currentUserImage ? (
                 <AvatarImage
                   src={currentUserImage}
@@ -53,21 +53,21 @@ export const TeamEmptyState = ({
                   className="object-cover"
                 />
               ) : null}
-              <AvatarFallback className="bg-gradient-to-br from-gray-800 to-gray-900 text-white text-sm font-medium">
+              <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-sm font-medium">
                 {getInitials(currentUserName)}
               </AvatarFallback>
             </Avatar>
 
             {/* Right placeholder avatar */}
-            <Avatar className="size-12 border-2 border-white shadow-sm ring-1 ring-gray-100">
-              <AvatarFallback className="bg-gradient-to-br from-gray-100 to-gray-200 text-gray-400 text-sm grayscale">
+            <Avatar className="size-12 border-2 border-card shadow-sm ring-1 ring-border">
+              <AvatarFallback className="bg-gradient-to-br from-muted to-accent text-muted-foreground text-sm grayscale">
                 <IconUserPlus className="size-5 opacity-40" />
               </AvatarFallback>
             </Avatar>
           </div>
         </EmptyMedia>
-        <EmptyTitle className="text-gray-900">No Team Members</EmptyTitle>
-        <EmptyDescription className="text-gray-500">
+        <EmptyTitle className="text-foreground">No Team Members</EmptyTitle>
+        <EmptyDescription className="text-muted-foreground">
           Invite your team to collaborate on this project
         </EmptyDescription>
       </EmptyHeader>

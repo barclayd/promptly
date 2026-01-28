@@ -68,16 +68,16 @@ export const ApiKeysTable = ({ apiKeys }: ApiKeysTableProps) => {
   const fetcher = useFetcher();
 
   return (
-    <div className="rounded-xl border border-gray-200/80 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
       <Table>
         <TableHeader>
-          <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
-            <TableHead className="font-semibold text-gray-700">Name</TableHead>
-            <TableHead className="font-semibold text-gray-700">Key</TableHead>
-            <TableHead className="font-semibold text-gray-700">Scopes</TableHead>
-            <TableHead className="font-semibold text-gray-700">Created</TableHead>
-            <TableHead className="font-semibold text-gray-700">Last Used</TableHead>
-            <TableHead className="font-semibold text-gray-700 w-16">
+          <TableRow className="bg-muted/30 hover:bg-muted/30">
+            <TableHead className="font-semibold text-foreground">Name</TableHead>
+            <TableHead className="font-semibold text-foreground">Key</TableHead>
+            <TableHead className="font-semibold text-foreground">Scopes</TableHead>
+            <TableHead className="font-semibold text-foreground">Created</TableHead>
+            <TableHead className="font-semibold text-foreground">Last Used</TableHead>
+            <TableHead className="font-semibold text-foreground w-16">
               <span className="sr-only">Actions</span>
             </TableHead>
           </TableRow>
@@ -91,14 +91,14 @@ export const ApiKeysTable = ({ apiKeys }: ApiKeysTableProps) => {
               <TableRow key={apiKey.id} className={isDeleting ? 'opacity-50' : ''}>
                 <TableCell className="py-3">
                   <div className="flex items-center gap-2">
-                    <IconKey className="size-4 text-gray-400" />
-                    <span className="font-medium text-gray-900">
+                    <IconKey className="size-4 text-muted-foreground" />
+                    <span className="font-medium text-foreground">
                       {apiKey.name || 'Unnamed Key'}
                     </span>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <code className="text-sm bg-gray-100 px-2 py-1 rounded text-gray-600 font-mono">
+                  <code className="text-sm bg-muted px-2 py-1 rounded text-muted-foreground font-mono">
                     {formatKeyPreview(apiKey.prefix, apiKey.start)}
                   </code>
                 </TableCell>
@@ -111,14 +111,14 @@ export const ApiKeysTable = ({ apiKeys }: ApiKeysTableProps) => {
                         </Badge>
                       ))
                     ) : (
-                      <span className="text-gray-400 text-sm">No scopes</span>
+                      <span className="text-muted-foreground text-sm">No scopes</span>
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="text-gray-500">
+                <TableCell className="text-muted-foreground">
                   {formatDate(apiKey.createdAt)}
                 </TableCell>
-                <TableCell className="text-gray-500">
+                <TableCell className="text-muted-foreground">
                   {formatDate(apiKey.lastRequest)}
                 </TableCell>
                 <TableCell>
@@ -128,7 +128,7 @@ export const ApiKeysTable = ({ apiKeys }: ApiKeysTableProps) => {
                       type="submit"
                       variant="ghost"
                       size="sm"
-                      className="text-gray-400 hover:text-red-600 hover:bg-red-50"
+                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                       disabled={isDeleting}
                     >
                       <IconTrash className="size-4" />

@@ -172,29 +172,29 @@ const AcceptInvitation = ({ loaderData, actionData }: Route.ComponentProps) => {
   const role = roleLabels[invitation.role || 'member'] || invitation.role;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-muted to-muted/50 dark:from-background dark:to-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <div className="flex items-center gap-2 text-gray-900">
+          <div className="flex items-center gap-2 text-foreground">
             <IconInnerShadowTop className="size-8" />
             <span className="text-xl font-semibold">Promptly</span>
           </div>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
+        <div className="bg-card rounded-2xl shadow-xl shadow-black/5 dark:shadow-black/20 border border-border overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 px-6 py-8 text-center">
+          <div className="bg-gradient-to-br from-primary to-primary/80 px-6 py-8 text-center">
             <div className="inline-flex items-center justify-center size-16 rounded-full bg-white/10 backdrop-blur-sm mb-4">
-              <span className="text-2xl font-bold text-white">
+              <span className="text-2xl font-bold text-primary-foreground">
                 {orgName.charAt(0).toUpperCase()}
               </span>
             </div>
-            <h1 className="text-xl font-semibold text-white mb-1">
+            <h1 className="text-xl font-semibold text-primary-foreground mb-1">
               Join {orgName}
             </h1>
-            <p className="text-gray-300 text-sm">
+            <p className="text-primary-foreground/70 text-sm">
               {inviterName} invited you to join as {role}
             </p>
           </div>
@@ -209,7 +209,7 @@ const AcceptInvitation = ({ loaderData, actionData }: Route.ComponentProps) => {
 
             {!isLoggedIn ? (
               <div className="space-y-4">
-                <p className="text-gray-600 text-sm text-center">
+                <p className="text-muted-foreground text-sm text-center">
                   Please sign in to accept this invitation.
                 </p>
                 <Form method="post">
@@ -221,10 +221,10 @@ const AcceptInvitation = ({ loaderData, actionData }: Route.ComponentProps) => {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="bg-gray-50 rounded-lg p-4 text-sm">
-                  <p className="text-gray-600">
+                <div className="bg-muted rounded-lg p-4 text-sm">
+                  <p className="text-muted-foreground">
                     Signed in as{' '}
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-foreground">
                       {userEmail}
                     </span>
                   </p>
@@ -264,8 +264,8 @@ const AcceptInvitation = ({ loaderData, actionData }: Route.ComponentProps) => {
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
-            <p className="text-xs text-gray-500 text-center">
+          <div className="px-6 py-4 bg-muted border-t border-border">
+            <p className="text-xs text-muted-foreground text-center">
               This invitation expires on{' '}
               {new Date(invitation.expiresAt).toLocaleDateString('en-GB', {
                 dateStyle: 'long',

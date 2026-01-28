@@ -2,9 +2,12 @@
 
 import {
   IconCreditCard,
+  IconDeviceDesktop,
   IconDotsVertical,
   IconLogout,
+  IconMoon,
   IconNotification,
+  IconSun,
   IconUserCircle,
 } from '@tabler/icons-react';
 import { useFetcher } from 'react-router';
@@ -16,9 +19,15 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu';
+import { useTheme } from '~/hooks/use-dark-mode';
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -42,6 +51,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const fetcher = useFetcher();
+  const { theme, isDark, setTheme } = useTheme();
 
   return (
     <SidebarMenu>
@@ -101,6 +111,33 @@ export function NavUser({
                 <IconNotification />
                 Notifications
               </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  {isDark ? <IconSun /> : <IconMoon />}
+                  Toggle Theme
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuRadioGroup
+                    value={theme}
+                    onValueChange={(value) =>
+                      setTheme(value as 'light' | 'dark' | 'system')
+                    }
+                  >
+                    <DropdownMenuRadioItem value="light">
+                      <IconSun className="mr-2 size-4" />
+                      Light
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="dark">
+                      <IconMoon className="mr-2 size-4" />
+                      Dark
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="system">
+                      <IconDeviceDesktop className="mr-2 size-4" />
+                      System
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
