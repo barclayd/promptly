@@ -56,6 +56,18 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       <head title="Promptly">
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var d = window.matchMedia('(prefers-color-scheme: dark)');
+                function u(e) { document.documentElement.classList.toggle('dark', e.matches); }
+                u(d);
+                d.addEventListener('change', u);
+              })();
+            `,
+          }}
+        />
         <Meta />
         <Links />
       </head>

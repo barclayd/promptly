@@ -8,7 +8,6 @@ import {
   forwardRef,
   useCallback,
   useImperativeHandle,
-  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -49,6 +48,7 @@ import {
   SidebarSeparator,
 } from '~/components/ui/sidebar';
 import { type Version, VersionsTable } from '~/components/versions-table';
+import { useIsDarkMode } from '~/hooks/use-dark-mode';
 import { useIsMobile } from '~/hooks/use-mobile';
 import { removeFieldsFromInputData } from '~/lib/input-data-utils';
 import type { SchemaField } from '~/lib/schema-types';
@@ -89,22 +89,22 @@ const sidebarDarkTheme: Theme = {
     backgroundColor: 'transparent',
     fontFamily: 'inherit',
   },
-  property: 'oklch(0.704 0.04 256.788)', // muted-foreground dark
-  bracket: 'oklch(0.551 0.027 264.364)', // ring dark
-  string: 'oklch(0.929 0.013 255.508)', // primary dark
-  number: 'oklch(0.769 0.188 70.08)', // chart-3 dark
-  boolean: 'oklch(0.696 0.17 162.48)', // chart-2 dark
-  null: 'oklch(0.704 0.04 256.788)', // muted-foreground dark
-  iconEdit: 'oklch(0.488 0.243 264.376)', // sidebar-primary dark
-  iconDelete: 'oklch(0.704 0.191 22.216)', // destructive dark
-  iconAdd: 'oklch(0.696 0.17 162.48)', // chart-2 dark
-  iconCopy: 'oklch(0.704 0.04 256.788)',
-  iconOk: 'oklch(0.696 0.17 162.48)',
-  iconCancel: 'oklch(0.704 0.191 22.216)',
+  property: 'lab(66.128% 0 0)', // muted-foreground (zinc)
+  bracket: 'lab(48.496% 0 0)', // ring (zinc)
+  string: 'lab(98.26% 0 0)', // foreground (zinc)
+  number: 'lab(70% 45 65)', // chart-3 (warm orange)
+  boolean: 'lab(65% -35 30)', // chart-2 (teal)
+  null: 'lab(66.128% 0 0)', // muted-foreground (zinc)
+  iconEdit: 'lab(36.9089% 35.0961 -85.6872)', // sidebar-primary (blue)
+  iconDelete: 'lab(63.7053% 60.745 31.3109)', // destructive (red)
+  iconAdd: 'lab(65% -35 30)', // chart-2 (teal)
+  iconCopy: 'lab(66.128% 0 0)',
+  iconOk: 'lab(65% -35 30)',
+  iconCancel: 'lab(63.7053% 60.745 31.3109)',
   input: {
-    backgroundColor: 'oklch(0.279 0.041 260.031)', // muted dark
-    color: 'oklch(0.984 0.003 247.858)', // foreground dark
-    border: '1px solid oklch(1 0 0 / 15%)', // input dark
+    backgroundColor: 'lab(15.204% 0 0)', // muted (zinc)
+    color: 'lab(98.26% 0 0)', // foreground (zinc)
+    border: '1px solid lab(100% 0 0 / 15%)', // input (zinc)
     borderRadius: '0.375rem',
     padding: '0.25rem 0.5rem',
     fontSize: '0.75rem',
@@ -450,12 +450,8 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       setTemperature,
     ]);
 
-    const jsonEditorTheme = useMemo(() => {
-      const isDarkMode =
-        typeof document !== 'undefined' &&
-        document.documentElement.classList.contains('dark');
-      return isDarkMode ? sidebarDarkTheme : sidebarLightTheme;
-    }, []);
+    const isDarkMode = useIsDarkMode();
+    const jsonEditorTheme = isDarkMode ? sidebarDarkTheme : sidebarLightTheme;
 
     return (
       <Sidebar
