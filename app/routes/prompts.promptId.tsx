@@ -10,6 +10,7 @@ import {
   useSearchParams,
 } from 'react-router';
 import { useDebouncedCallback } from 'use-debounce';
+import { PromptEditorMenubar } from '~/components/prompt-editor-menubar';
 import { PromptReview } from '~/components/prompt-review';
 import { PublishPromptDialog } from '~/components/publish-prompt-dialog';
 import { Badge } from '~/components/ui/badge';
@@ -690,22 +691,23 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
       )}
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+          {!isViewingOldVersion && (
+            <div className="px-4 lg:px-6 flex items-center justify-between">
+              <PromptEditorMenubar />
+              <PublishPromptDialog
+                promptId={loaderData.prompt.id}
+                suggestedVersion={suggestedVersion}
+                lastPublishedVersion={loaderData.lastPublishedVersion}
+                isSchemaChanged={!schemasEqual}
+                disabled={!canPublish}
+              >
+                <Button className="cursor-pointer" disabled={!canPublish}>
+                  Publish <RssIcon />
+                </Button>
+              </PublishPromptDialog>
+            </div>
+          )}
           <div className="px-4 lg:px-6 flex flex-col gap-y-4">
-            {!isViewingOldVersion && (
-              <div className="flex gap-x-3 justify-end">
-                <PublishPromptDialog
-                  promptId={loaderData.prompt.id}
-                  suggestedVersion={suggestedVersion}
-                  lastPublishedVersion={loaderData.lastPublishedVersion}
-                  isSchemaChanged={!schemasEqual}
-                  disabled={!canPublish}
-                >
-                  <Button className="cursor-pointer" disabled={!canPublish}>
-                    Publish <RssIcon />
-                  </Button>
-                </PublishPromptDialog>
-              </div>
-            )}
             <h1 className="text-3xl">{loaderData.prompt.name}</h1>
             <div className="text-gray-400/75 text-sm -mt-2">
               {loaderData.currentVersion
