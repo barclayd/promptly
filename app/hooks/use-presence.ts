@@ -30,6 +30,14 @@ const reconnectTimeoutByPromptId = new Map<
   string,
   ReturnType<typeof setTimeout>
 >();
+const retryCountByPromptId = new Map<string, number>();
+
+// Exponential backoff: 3s, 6s, 12s, 24s, max 60s
+const getRetryDelay = (retryCount: number): number => {
+  const baseDelay = 3000;
+  const maxDelay = 60000;
+  return Math.min(baseDelay * Math.pow(2, retryCount), maxDelay);
+};
 
 const DEFAULT_STATE: PresenceState = {
   users: [],
@@ -115,6 +123,12 @@ const connect = (promptId: string): void => {
 
   socket.onopen = () => {
     updateState(promptId, { isConnected: true, error: null });
+    // Reset retry count on successful connection
+    retryCountByPromptId.delete(promptId);
+
+    // Send init message to request current presence list
+    // This follows the Cloudflare best practice of client-initiated data exchange
+    socket.send(JSON.stringify({ type: 'init' }));
 
     // Start heartbeat
     const pingInterval = setInterval(() => {
@@ -164,13 +178,17 @@ const connect = (promptId: string): void => {
     socketByPromptId.delete(promptId);
     updateState(promptId, { isConnected: false });
 
-    // Reconnect if there are still subscribers
+    // Reconnect if there are still subscribers (with exponential backoff)
     const subscribers = subscribersByPromptId.get(promptId);
     if (subscribers && subscribers.size > 0) {
+      const retryCount = retryCountByPromptId.get(promptId) ?? 0;
+      const delay = getRetryDelay(retryCount);
+      retryCountByPromptId.set(promptId, retryCount + 1);
+
       const timeout = setTimeout(() => {
         reconnectTimeoutByPromptId.delete(promptId);
         connect(promptId);
-      }, 3000);
+      }, delay);
       reconnectTimeoutByPromptId.set(promptId, timeout);
     }
   };
@@ -180,20 +198,46 @@ const connect = (promptId: string): void => {
   };
 };
 
+// Debounce disconnect to handle React Strict Mode double mount/unmount
+const disconnectTimeoutByPromptId = new Map<
+  string,
+  ReturnType<typeof setTimeout>
+>();
+
 const disconnect = (promptId: string): void => {
-  const socket = socketByPromptId.get(promptId);
-  if (socket) {
-    socket.close();
-    socketByPromptId.delete(promptId);
+  // Clear any pending disconnect
+  const existingDisconnect = disconnectTimeoutByPromptId.get(promptId);
+  if (existingDisconnect) {
+    clearTimeout(existingDisconnect);
   }
 
-  const timeout = reconnectTimeoutByPromptId.get(promptId);
-  if (timeout) {
-    clearTimeout(timeout);
-    reconnectTimeoutByPromptId.delete(promptId);
-  }
+  // Debounce the actual disconnect by 100ms to handle React Strict Mode
+  const timeout = setTimeout(() => {
+    disconnectTimeoutByPromptId.delete(promptId);
 
-  stateByPromptId.delete(promptId);
+    // Check again if there are subscribers (component may have remounted)
+    const subscribers = subscribersByPromptId.get(promptId);
+    if (subscribers && subscribers.size > 0) {
+      return; // Don't disconnect, component remounted
+    }
+
+    const socket = socketByPromptId.get(promptId);
+    if (socket) {
+      socket.close();
+      socketByPromptId.delete(promptId);
+    }
+
+    const reconnectTimeout = reconnectTimeoutByPromptId.get(promptId);
+    if (reconnectTimeout) {
+      clearTimeout(reconnectTimeout);
+      reconnectTimeoutByPromptId.delete(promptId);
+    }
+
+    retryCountByPromptId.delete(promptId);
+    stateByPromptId.delete(promptId);
+  }, 100);
+
+  disconnectTimeoutByPromptId.set(promptId, timeout);
 };
 
 const subscribe = (promptId: string, callback: () => void): (() => void) => {

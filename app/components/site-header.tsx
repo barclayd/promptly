@@ -22,6 +22,8 @@ export const SiteHeader = ({ promptId }: SiteHeaderProps) => {
   const { users, isConnected } = usePresence(promptId);
 
   const currentUserId = rootData?.user?.id;
+  const otherUsers = users.filter((u) => u.id !== currentUserId);
+  const hasPresence = isConnected && currentUserId && otherUsers.length > 0;
 
   return (
     <header className="bg-background sticky top-0 z-50 flex w-full items-center border-b">
@@ -36,14 +38,15 @@ export const SiteHeader = ({ promptId }: SiteHeaderProps) => {
         </Button>
         <Separator orientation="vertical" className="mr-2 h-4" />
         <BreadcrumbWithDropdown />
-        {isConnected && currentUserId && users.length > 1 && (
-          <PresenceAvatars
-            users={users}
-            currentUserId={currentUserId}
-            className="ml-2"
-          />
-        )}
-        <SearchForm className="ml-auto" />
+        <div className="ml-auto flex items-center gap-3">
+          {hasPresence && (
+            <PresenceAvatars
+              users={users}
+              currentUserId={currentUserId}
+            />
+          )}
+          <SearchForm compact={hasPresence} />
+        </div>
       </div>
     </header>
   );

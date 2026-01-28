@@ -23,7 +23,10 @@ type PresenceMessage =
   | { type: 'pong' };
 
 // Client -> Server messages
-type ClientMessage = { type: 'ping' } | { type: 'focus'; isActive: boolean };
+type ClientMessage =
+  | { type: 'ping' }
+  | { type: 'focus'; isActive: boolean }
+  | { type: 'init' };
 
 type WebSocketAttachment = {
   userId: string;
@@ -39,36 +42,45 @@ export class PresenceRoom extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
 
-    // Restore user sessions from hibernated WebSocket connections
-    for (const socket of this.ctx.getWebSockets()) {
-      const attachment =
-        socket.deserializeAttachment() as WebSocketAttachment | null;
-      if (attachment?.userId) {
-        const existingSession = this.users.get(attachment.userId);
-        if (existingSession) {
-          existingSession.connectionCount++;
-        } else {
-          // Restore session from attachment data
-          this.users.set(attachment.userId, {
-            user: {
-              id: attachment.userId,
-              name: attachment.userName,
-              email: attachment.userEmail,
-              image: attachment.userImage,
-              joinedAt: attachment.joinedAt,
-              isActive: true,
-            },
-            connectionCount: 1,
-          });
+    try {
+      // Restore user sessions from hibernated WebSocket connections
+      // Following official Cloudflare example pattern
+      const sockets = this.ctx.getWebSockets();
+      for (const ws of sockets) {
+        try {
+          const attachment =
+            ws.deserializeAttachment() as WebSocketAttachment | null;
+          if (attachment?.userId) {
+            const existingSession = this.users.get(attachment.userId);
+            if (existingSession) {
+              existingSession.connectionCount++;
+            } else {
+              // Restore session from attachment data
+              this.users.set(attachment.userId, {
+                user: {
+                  id: attachment.userId,
+                  name: attachment.userName,
+                  email: attachment.userEmail,
+                  image: attachment.userImage,
+                  joinedAt: attachment.joinedAt,
+                  isActive: true,
+                },
+                connectionCount: 1,
+              });
+            }
+          }
+        } catch (e) {
+          console.error('[PresenceRoom] Error restoring socket:', e);
         }
       }
+    } catch (e) {
+      console.error('[PresenceRoom] Error in constructor:', e);
     }
   }
 
   async fetch(request: Request): Promise<Response> {
+    // Extract user data from URL query params (set by the worker)
     const url = new URL(request.url);
-
-    // Extract user data from query params (set by the worker)
     const userId = url.searchParams.get('userId');
     const userName = url.searchParams.get('userName');
     const userEmail = url.searchParams.get('userEmail');
@@ -79,8 +91,9 @@ export class PresenceRoom extends DurableObject<Env> {
     }
 
     // Create WebSocket pair
-    const pair = new WebSocketPair();
-    const [client, server] = [pair[0], pair[1]];
+    const webSocketPair = new WebSocketPair();
+    const client = webSocketPair[0];
+    const server = webSocketPair[1];
 
     // Accept the WebSocket with hibernation support
     this.ctx.acceptWebSocket(server);
@@ -96,13 +109,12 @@ export class PresenceRoom extends DurableObject<Env> {
     };
     server.serializeAttachment(attachment);
 
-    // Track this connection
+    // Set up user session immediately (following official example)
+    // Don't send anything yet - client will send 'init' message to get presence list
     const existingSession = this.users.get(userId);
     if (existingSession) {
-      // User already has connections, increment count
       existingSession.connectionCount++;
     } else {
-      // New user, create session and broadcast join
       const user: PresenceUser = {
         id: userId,
         name: userName,
@@ -111,16 +123,8 @@ export class PresenceRoom extends DurableObject<Env> {
         joinedAt,
         isActive: true,
       };
-
       this.users.set(userId, { user, connectionCount: 1 });
-
-      // Broadcast join to all other users
-      this.broadcast({ type: 'user_joined', user }, userId);
     }
-
-    // Send current user list to the new connection
-    const presenceList = this.getPresenceList();
-    server.send(JSON.stringify({ type: 'presence', users: presenceList }));
 
     return new Response(null, {
       status: 101,
@@ -136,6 +140,22 @@ export class PresenceRoom extends DurableObject<Env> {
       const attachment = ws.deserializeAttachment() as WebSocketAttachment;
 
       switch (data.type) {
+        case 'init': {
+          // Client is ready - send current presence list and broadcast join
+          const presenceList = this.getPresenceList();
+          ws.send(JSON.stringify({ type: 'presence', users: presenceList }));
+
+          // Broadcast join to all other users
+          const session = this.users.get(attachment.userId);
+          if (session) {
+            this.broadcast(
+              { type: 'user_joined', user: session.user },
+              attachment.userId,
+            );
+          }
+          break;
+        }
+
         case 'ping':
           ws.send(JSON.stringify({ type: 'pong' }));
           break;
