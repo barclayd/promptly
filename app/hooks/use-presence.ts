@@ -22,10 +22,17 @@ type ServerMessage =
   | { type: 'user_active'; userId: string; isActive: boolean }
   | { type: 'pong' };
 
+// Event callback types for presence notifications
+export type PresenceEventCallbacks = {
+  onUserJoined?: (user: PresenceUser) => void;
+  onInitialPresence?: (users: PresenceUser[]) => void;
+};
+
 // Module-level state
 const stateByPromptId = new Map<string, PresenceState>();
 const socketByPromptId = new Map<string, WebSocket>();
 const subscribersByPromptId = new Map<string, Set<() => void>>();
+const eventCallbacksByPromptId = new Map<string, Set<PresenceEventCallbacks>>();
 const reconnectTimeoutByPromptId = new Map<
   string,
   ReturnType<typeof setTimeout>
@@ -36,7 +43,7 @@ const retryCountByPromptId = new Map<string, number>();
 const getRetryDelay = (retryCount: number): number => {
   const baseDelay = 3000;
   const maxDelay = 60000;
-  return Math.min(baseDelay * Math.pow(2, retryCount), maxDelay);
+  return Math.min(baseDelay * 2 ** retryCount, maxDelay);
 };
 
 const DEFAULT_STATE: PresenceState = {
@@ -67,12 +74,33 @@ const updateState = (
   setState(promptId, { ...current, ...updates });
 };
 
+const fireEventCallbacks = (
+  promptId: string,
+  event: 'userJoined' | 'initialPresence',
+  payload: PresenceUser | PresenceUser[],
+): void => {
+  const callbacks = eventCallbacksByPromptId.get(promptId);
+  if (!callbacks) return;
+
+  for (const cb of callbacks) {
+    if (event === 'userJoined' && cb.onUserJoined) {
+      cb.onUserJoined(payload as PresenceUser);
+    } else if (event === 'initialPresence' && cb.onInitialPresence) {
+      cb.onInitialPresence(payload as PresenceUser[]);
+    }
+  }
+};
+
 const handleMessage = (promptId: string, data: ServerMessage): void => {
   const current = getState(promptId);
 
   switch (data.type) {
     case 'presence':
       updateState(promptId, { users: data.users });
+      // Fire initial presence callback if there are users
+      if (data.users.length > 0) {
+        fireEventCallbacks(promptId, 'initialPresence', data.users);
+      }
       break;
 
     case 'user_joined':
@@ -82,6 +110,8 @@ const handleMessage = (promptId: string, data: ServerMessage): void => {
           data.user,
         ],
       });
+      // Fire user joined callback
+      fireEventCallbacks(promptId, 'userJoined', data.user);
       break;
 
     case 'user_left':
@@ -268,6 +298,26 @@ const subscribe = (promptId: string, callback: () => void): (() => void) => {
 
 const getServerSnapshot = (): PresenceState => DEFAULT_STATE;
 
+const subscribeToEvents = (
+  promptId: string,
+  callbacks: PresenceEventCallbacks,
+): (() => void) => {
+  let callbackSet = eventCallbacksByPromptId.get(promptId);
+  if (!callbackSet) {
+    callbackSet = new Set();
+    eventCallbacksByPromptId.set(promptId, callbackSet);
+  }
+
+  callbackSet.add(callbacks);
+
+  return () => {
+    callbackSet?.delete(callbacks);
+    if (callbackSet?.size === 0) {
+      eventCallbacksByPromptId.delete(promptId);
+    }
+  };
+};
+
 export const usePresence = (promptId: string | undefined) => {
   const state = useSyncExternalStore(
     (callback) => {
@@ -282,5 +332,9 @@ export const usePresence = (promptId: string | undefined) => {
     users: state.users,
     isConnected: state.isConnected,
     error: state.error,
+    subscribeToEvents: promptId
+      ? (callbacks: PresenceEventCallbacks) =>
+          subscribeToEvents(promptId, callbacks)
+      : undefined,
   };
 };
