@@ -19,6 +19,22 @@
 - Use typescript-developer agent when writing TypeScript code
 - Use frontend-design skill plugin when implementing UI features
 - Always test frontend changes using Chrome Dev Tools MCP
+- Always test UI changes in both light and dark modes (see Theme System below)
+
+# Theme System
+The app supports Light, Dark, and System (follows OS) modes via a theme switcher in the user dropdown menu.
+
+**How it works:**
+- Theme preference stored in `localStorage` under key `theme` (values: `light`, `dark`, `system`)
+- Inline script in `app/root.tsx` applies theme before React hydrates (prevents flash)
+- `useTheme` hook in `app/hooks/use-dark-mode.ts` provides `{ theme, isDark, setTheme }`
+- Uses `useSyncExternalStore` for reactivity (no useEffect)
+
+**Testing UI in both modes:**
+When implementing or modifying UI components, test in both light and dark modes:
+1. Use Chrome DevTools MCP to set theme: `localStorage.setItem('theme', 'light')` or `'dark'`
+2. Reload page and verify UI appearance
+3. Check contrast, readability, and visual consistency in both modes
 
 # Local Testing
 - Test user email: test@promptlycms.com
