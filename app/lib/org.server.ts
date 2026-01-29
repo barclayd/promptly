@@ -1,5 +1,4 @@
-import type { RouterContextProvider } from 'react-router';
-import { getAuth } from '~/lib/auth.server';
+import type { AuthInstance } from '~/context';
 
 type Organization = {
   id: string;
@@ -7,12 +6,10 @@ type Organization = {
   slug: string;
 };
 
-export const getActiveOrganization = async (
-  context: RouterContextProvider,
+export const getActiveOrganizationWithAuth = async (
+  auth: AuthInstance,
   headers: Headers,
 ): Promise<Organization | null> => {
-  const auth = getAuth(context);
-
   const activeOrgResponse = await auth.api.getFullOrganization({
     headers,
     asResponse: true,

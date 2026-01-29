@@ -1,6 +1,6 @@
 import type { RouterContextProvider } from 'react-router';
 import { redirect } from 'react-router';
-import { userContext } from '~/context';
+import { authContext, sessionContext, userContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
 
 const publicRoutes = [
@@ -26,14 +26,19 @@ export const authMiddleware = async ({
   request: Request;
   context: RouterContextProvider;
 }) => {
+  // Create auth instance ONCE and cache in context
+  const auth = getAuth(context);
+  context.set(authContext, auth);
+
+  // Fetch session ONCE and cache in context
+  const session = await auth.api.getSession({ headers: request.headers });
+  context.set(sessionContext, session);
+
   const url = new URL(request.url);
 
   if (isPublicRoute(url.pathname)) {
     return;
   }
-
-  const auth = getAuth(context);
-  const session = await auth.api.getSession({ headers: request.headers });
 
   if (!session?.user) {
     throw redirect('/login');

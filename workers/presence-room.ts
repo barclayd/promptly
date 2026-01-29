@@ -14,6 +14,14 @@ type UserSession = {
   connectionCount: number;
 };
 
+// Cursor position state for each user
+type CursorPosition = {
+  userId: string;
+  field: 'systemMessage' | 'userMessage';
+  position: number;
+  timestamp: number;
+};
+
 // Content state for collaborative editing
 type ContentState = {
   systemMessage: string;
@@ -40,6 +48,24 @@ type PresenceMessage =
       systemMessage: string;
       userMessage: string;
       version: number;
+    }
+  | {
+      type: 'cursor_sync';
+      userId: string;
+      userName: string;
+      field: 'systemMessage' | 'userMessage';
+      position: number;
+      isActive: boolean;
+    }
+  | {
+      type: 'cursor_state';
+      cursors: Array<{
+        userId: string;
+        userName: string;
+        field: 'systemMessage' | 'userMessage';
+        position: number;
+        isActive: boolean;
+      }>;
     };
 
 // Client -> Server messages
@@ -51,6 +77,11 @@ type ClientMessage =
       type: 'content_update';
       field: 'systemMessage' | 'userMessage';
       value: string;
+    }
+  | {
+      type: 'cursor_update';
+      field: 'systemMessage' | 'userMessage';
+      position: number;
     };
 
 type WebSocketAttachment = {
@@ -63,6 +94,7 @@ type WebSocketAttachment = {
 
 export class PresenceRoom extends DurableObject<Env> {
   private users: Map<string, UserSession> = new Map();
+  private cursorPositions: Map<string, CursorPosition> = new Map();
   private contentState: ContentState = {
     systemMessage: '',
     userMessage: '',
@@ -193,6 +225,14 @@ export class PresenceRoom extends DurableObject<Env> {
             }),
           );
 
+          // Send current cursor positions (excluding own cursor)
+          const cursorList = this.getCursorList(attachment.userId);
+          if (cursorList.length > 0) {
+            ws.send(
+              JSON.stringify({ type: 'cursor_state', cursors: cursorList }),
+            );
+          }
+
           // Broadcast join to all other users
           const session = this.users.get(attachment.userId);
           if (session) {
@@ -220,6 +260,22 @@ export class PresenceRoom extends DurableObject<Env> {
               },
               attachment.userId,
             );
+
+            // Also broadcast cursor update with new isActive state
+            const cursor = this.cursorPositions.get(attachment.userId);
+            if (cursor) {
+              this.broadcast(
+                {
+                  type: 'cursor_sync',
+                  userId: attachment.userId,
+                  userName: attachment.userName,
+                  field: cursor.field,
+                  position: cursor.position,
+                  isActive: data.isActive,
+                },
+                attachment.userId,
+              );
+            }
           }
           break;
         }
@@ -240,6 +296,34 @@ export class PresenceRoom extends DurableObject<Env> {
               value: data.value,
               version: this.contentState.version,
               userId: attachment.userId,
+            },
+            attachment.userId,
+          );
+          break;
+        }
+
+        case 'cursor_update': {
+          // Update cursor position for this user
+          this.cursorPositions.set(attachment.userId, {
+            userId: attachment.userId,
+            field: data.field,
+            position: data.position,
+            timestamp: Date.now(),
+          });
+
+          // Get user's active state
+          const userSession = this.users.get(attachment.userId);
+          const isActive = userSession?.user.isActive ?? true;
+
+          // Broadcast cursor position to all OTHER clients
+          this.broadcast(
+            {
+              type: 'cursor_sync',
+              userId: attachment.userId,
+              userName: attachment.userName,
+              field: data.field,
+              position: data.position,
+              isActive,
             },
             attachment.userId,
           );
@@ -271,6 +355,7 @@ export class PresenceRoom extends DurableObject<Env> {
     // Only remove user and broadcast leave when all their connections are closed
     if (session.connectionCount <= 0) {
       this.users.delete(attachment.userId);
+      this.cursorPositions.delete(attachment.userId);
       this.broadcast({ type: 'user_left', userId: attachment.userId });
     }
   }
@@ -295,5 +380,38 @@ export class PresenceRoom extends DurableObject<Env> {
 
   private getPresenceList(): PresenceUser[] {
     return Array.from(this.users.values()).map((session) => session.user);
+  }
+
+  private getCursorList(excludeUserId?: string): Array<{
+    userId: string;
+    userName: string;
+    field: 'systemMessage' | 'userMessage';
+    position: number;
+    isActive: boolean;
+  }> {
+    const cursors: Array<{
+      userId: string;
+      userName: string;
+      field: 'systemMessage' | 'userMessage';
+      position: number;
+      isActive: boolean;
+    }> = [];
+
+    for (const [userId, cursor] of this.cursorPositions) {
+      if (excludeUserId && userId === excludeUserId) continue;
+
+      const session = this.users.get(userId);
+      if (session) {
+        cursors.push({
+          userId: cursor.userId,
+          userName: session.user.name,
+          field: cursor.field,
+          position: cursor.position,
+          isActive: session.user.isActive,
+        });
+      }
+    }
+
+    return cursors;
   }
 }

@@ -1,8 +1,7 @@
 import type { RouterContextProvider } from 'react-router';
 import { redirect } from 'react-router';
-import { orgContext } from '~/context';
-import { getAuth } from '~/lib/auth.server';
-import { getActiveOrganization } from '~/lib/org.server';
+import { authContext, orgContext, sessionContext } from '~/context';
+import { getActiveOrganizationWithAuth } from '~/lib/org.server';
 
 const publicRoutes = [
   '/login',
@@ -34,7 +33,9 @@ export const orgMiddleware = async ({
     return;
   }
 
-  const org = await getActiveOrganization(context, request.headers);
+  // Use cached auth instance from authMiddleware
+  const auth = context.get(authContext);
+  const org = await getActiveOrganizationWithAuth(auth, request.headers);
 
   if (org) {
     context.set(orgContext, {
@@ -45,11 +46,8 @@ export const orgMiddleware = async ({
     return;
   }
 
-  // No active org - check if user is authenticated
-  const auth = getAuth(context);
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
+  // Use cached session from authMiddleware
+  const session = context.get(sessionContext);
 
   if (session?.user) {
     // Authenticated but no org - redirect to onboarding

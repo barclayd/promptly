@@ -15,11 +15,20 @@ export type ContentState = {
   version: number;
 };
 
+export type CursorPosition = {
+  userId: string;
+  userName: string;
+  field: 'systemMessage' | 'userMessage';
+  position: number;
+  isActive: boolean;
+};
+
 type PresenceState = {
   users: PresenceUser[];
   isConnected: boolean;
   error: string | null;
   contentState: ContentState;
+  cursors: Map<string, CursorPosition>;
 };
 
 type ServerMessage =
@@ -40,6 +49,24 @@ type ServerMessage =
       systemMessage: string;
       userMessage: string;
       version: number;
+    }
+  | {
+      type: 'cursor_sync';
+      userId: string;
+      userName: string;
+      field: 'systemMessage' | 'userMessage';
+      position: number;
+      isActive: boolean;
+    }
+  | {
+      type: 'cursor_state';
+      cursors: Array<{
+        userId: string;
+        userName: string;
+        field: 'systemMessage' | 'userMessage';
+        position: number;
+        isActive: boolean;
+      }>;
     };
 
 // Content sync callback for collaborative editing
@@ -50,12 +77,17 @@ export type ContentSyncCallback = (
   userId: string,
 ) => void;
 
+// Cursor sync callback for cursor visualization
+export type CursorSyncCallback = (cursor: CursorPosition) => void;
+
 // Event callback types for presence notifications
 export type PresenceEventCallbacks = {
   onUserJoined?: (user: PresenceUser) => void;
   onInitialPresence?: (users: PresenceUser[]) => void;
   onContentSync?: ContentSyncCallback;
   onContentState?: (state: ContentState) => void;
+  onCursorSync?: CursorSyncCallback;
+  onCursorState?: (cursors: CursorPosition[]) => void;
 };
 
 // Module-level state
@@ -85,6 +117,7 @@ const DEFAULT_STATE: PresenceState = {
     userMessage: '',
     version: 0,
   },
+  cursors: new Map(),
 };
 
 const getState = (promptId: string): PresenceState => {
@@ -111,7 +144,13 @@ const updateState = (
 
 const fireEventCallbacks = (
   promptId: string,
-  event: 'userJoined' | 'initialPresence' | 'contentSync' | 'contentState',
+  event:
+    | 'userJoined'
+    | 'initialPresence'
+    | 'contentSync'
+    | 'contentState'
+    | 'cursorSync'
+    | 'cursorState',
   payload:
     | PresenceUser
     | PresenceUser[]
@@ -121,7 +160,9 @@ const fireEventCallbacks = (
         version: number;
         userId: string;
       }
-    | ContentState,
+    | ContentState
+    | CursorPosition
+    | CursorPosition[],
 ): void => {
   const callbacks = eventCallbacksByPromptId.get(promptId);
   if (!callbacks) return;
@@ -146,6 +187,10 @@ const fireEventCallbacks = (
       );
     } else if (event === 'contentState' && cb.onContentState) {
       cb.onContentState(payload as ContentState);
+    } else if (event === 'cursorSync' && cb.onCursorSync) {
+      cb.onCursorSync(payload as CursorPosition);
+    } else if (event === 'cursorState' && cb.onCursorState) {
+      cb.onCursorState(payload as CursorPosition[]);
     }
   }
 };
@@ -173,11 +218,15 @@ const handleMessage = (promptId: string, data: ServerMessage): void => {
       fireEventCallbacks(promptId, 'userJoined', data.user);
       break;
 
-    case 'user_left':
+    case 'user_left': {
+      const newCursors = new Map(current.cursors);
+      newCursors.delete(data.userId);
       updateState(promptId, {
         users: current.users.filter((u) => u.id !== data.userId),
+        cursors: newCursors,
       });
       break;
+    }
 
     case 'user_active':
       updateState(promptId, {
@@ -223,6 +272,41 @@ const handleMessage = (promptId: string, data: ServerMessage): void => {
         userId: data.userId,
       });
       break;
+
+    case 'cursor_sync': {
+      const cursorData: CursorPosition = {
+        userId: data.userId,
+        userName: data.userName,
+        field: data.field,
+        position: data.position,
+        isActive: data.isActive,
+      };
+      const newCursors = new Map(current.cursors);
+      newCursors.set(data.userId, cursorData);
+      updateState(promptId, { cursors: newCursors });
+      fireEventCallbacks(promptId, 'cursorSync', cursorData);
+      break;
+    }
+
+    case 'cursor_state': {
+      const cursorsMap = new Map<string, CursorPosition>();
+      for (const cursor of data.cursors) {
+        cursorsMap.set(cursor.userId, {
+          userId: cursor.userId,
+          userName: cursor.userName,
+          field: cursor.field,
+          position: cursor.position,
+          isActive: cursor.isActive,
+        });
+      }
+      updateState(promptId, { cursors: cursorsMap });
+      fireEventCallbacks(
+        promptId,
+        'cursorState',
+        data.cursors as CursorPosition[],
+      );
+      break;
+    }
   }
 };
 
@@ -407,6 +491,23 @@ const sendContentUpdate = (
   }
 };
 
+const sendCursorUpdate = (
+  promptId: string,
+  field: 'systemMessage' | 'userMessage',
+  position: number,
+): void => {
+  const socket = socketByPromptId.get(promptId);
+  if (socket?.readyState === WebSocket.OPEN) {
+    socket.send(
+      JSON.stringify({
+        type: 'cursor_update',
+        field,
+        position,
+      }),
+    );
+  }
+};
+
 const subscribeToEvents = (
   promptId: string,
   callbacks: PresenceEventCallbacks,
@@ -442,6 +543,7 @@ export const usePresence = (promptId: string | undefined) => {
     isConnected: state.isConnected,
     error: state.error,
     contentState: state.contentState,
+    cursors: state.cursors,
     subscribeToEvents: promptId
       ? (callbacks: PresenceEventCallbacks) =>
           subscribeToEvents(promptId, callbacks)
@@ -449,6 +551,10 @@ export const usePresence = (promptId: string | undefined) => {
     sendContentUpdate: promptId
       ? (field: 'systemMessage' | 'userMessage', value: string) =>
           sendContentUpdate(promptId, field, value)
+      : undefined,
+    sendCursorUpdate: promptId
+      ? (field: 'systemMessage' | 'userMessage', position: number) =>
+          sendCursorUpdate(promptId, field, position)
       : undefined,
   };
 };

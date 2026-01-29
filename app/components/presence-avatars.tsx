@@ -49,7 +49,7 @@ export const PresenceAvatars = ({
       {visibleUsers.map((user) => (
         <Tooltip key={user.id}>
           <TooltipTrigger asChild>
-            <Avatar className="size-7 ring-2 ring-background cursor-default">
+            <Avatar className="size-7 ring-2 ring-background cursor-default overflow-visible">
               {user.image && <AvatarImage src={user.image} alt={user.name} />}
               <AvatarFallback className="text-xs">
                 {getInitials(user.name)}

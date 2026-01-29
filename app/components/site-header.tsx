@@ -46,6 +46,9 @@ export const SiteHeader = ({ promptId }: SiteHeaderProps) => {
           if (user.id !== currentUserId) {
             toast(`${user.name} joined`, {
               description: 'Now viewing this prompt',
+              classNames: {
+                description: '!text-muted-foreground',
+              },
             });
           }
         },
@@ -56,6 +59,9 @@ export const SiteHeader = ({ promptId }: SiteHeaderProps) => {
             const verb = others.length === 1 ? 'is' : 'are';
             toast(`${names} ${verb} viewing`, {
               description: 'Currently on this prompt',
+              classNames: {
+                description: '!text-muted-foreground',
+              },
             });
           }
         },
