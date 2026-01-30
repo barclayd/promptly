@@ -312,8 +312,7 @@ export const CostCalculatorPopover = ({
   ]);
 
   // Check if we have any stored token data
-  const hasAnyStoredTokens =
-    hasStoredInputTokens || lastOutputTokens !== null;
+  const hasAnyStoredTokens = hasStoredInputTokens || lastOutputTokens !== null;
 
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>

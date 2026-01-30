@@ -563,17 +563,27 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const initialSystemRef = useRef(loaderData.systemMessage);
   const initialUserRef = useRef(loaderData.userMessage);
 
-  // Track the last initialized prompt ID to detect navigation changes
-  const lastInitializedRef = useRef<string | null>(null);
+  // Track the last initialized prompt ID and version to detect navigation changes
+  const lastInitializedRef = useRef<{
+    promptId: string;
+    version: string | null;
+  } | null>(null);
 
   // Initialize store synchronously before first render if needed
   // This pattern avoids the "setState during render" warning by using getState/setState
+  const currentKey = `${loaderData.prompt.id}:${loaderData.currentVersion}`;
+  const lastKey = lastInitializedRef.current
+    ? `${lastInitializedRef.current.promptId}:${lastInitializedRef.current.version}`
+    : null;
   const needsInit =
-    lastInitializedRef.current !== loaderData.prompt.id ||
+    lastKey !== currentKey ||
     usePromptEditorStore.getState()._promptId !== loaderData.prompt.id;
 
   if (needsInit) {
-    lastInitializedRef.current = loaderData.prompt.id;
+    lastInitializedRef.current = {
+      promptId: loaderData.prompt.id,
+      version: loaderData.currentVersion,
+    };
     initialSystemRef.current = loaderData.systemMessage;
     initialUserRef.current = loaderData.userMessage;
 
