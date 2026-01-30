@@ -53,7 +53,6 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "drizzle-orm": "^0.45.1",
-    "js-tiktoken": "^1.0.21",
     "json-edit-react": "^1.29.0",
     "kysely-d1": "^0.4.0",
     "lucide-react": "^0.563.0",
@@ -69,7 +68,6 @@
     "resend": "^6.9.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
-    "tiktoken": "^1.0.22",
     "use-debounce": "^10.1.0",
     "vaul": "^1.1.2",
     "zod": "^4.3.6",
@@ -93,8 +91,6 @@
     "typescript": "5.9.3",
     "vite": "7.3.1",
     "vite-plugin-devtools-json": "1.0.0",
-    "vite-plugin-top-level-await": "^1.6.0",
-    "vite-plugin-wasm": "^3.5.0",
     "vite-tsconfig-paths": "6.0.5",
     "wrangler": "^4.61.0"
   }

@@ -146,9 +146,12 @@ Edit `app/lib/model-pricing.ts` and update the `MODEL_PRICING` object. Prices ar
 Price sources: [llm-prices.com](https://www.llm-prices.com/)
 
 ## Token Counting
-- **OpenAI**: Uses `tiktoken/lite` with WASM (accurate)
-- **Anthropic/Google**: Character-based estimate (~4 chars/token)
-- Token counter uses dynamic imports for SSR safety on Cloudflare Workers
+Token counting uses character-based estimation as a fallback before tests are run.
+Real accurate values come from the AI SDK response after running a test.
+
+- **OpenAI**: ~4 characters per token (official OpenAI documentation)
+- **Anthropic**: ~3.5 characters per token (Anthropic recommendation)
+- **Google**: ~4 characters per token (Google AI documentation)
 
 ## Currency Conversion
 - Uses Frankfurter API (free, no API key): `https://api.frankfurter.dev/v1/latest?base=USD`
@@ -157,6 +160,5 @@ Price sources: [llm-prices.com](https://www.llm-prices.com/)
 
 ## Technical Notes
 - Uses `useSyncExternalStore` for localStorage rate subscription (with object caching to prevent re-renders)
-- Vite plugins required: `vite-plugin-wasm`, `vite-plugin-top-level-await`
 - Model selector auto-syncs with sidebar selection from `usePromptEditorStore`
 - "Use cached input pricing" checkbox defaults ON for System Prompt, OFF for User Prompt
