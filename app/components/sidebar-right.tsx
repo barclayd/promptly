@@ -52,7 +52,6 @@ import { useIsDarkMode } from '~/hooks/use-dark-mode';
 import { useIsMobile } from '~/hooks/use-mobile';
 import { removeFieldsFromInputData } from '~/lib/input-data-utils';
 import type { SchemaField } from '~/lib/schema-types';
-import { countTokens } from '~/lib/token-counter';
 import { cn } from '~/lib/utils';
 import { usePromptEditorStore } from '~/stores/prompt-editor-store';
 
@@ -383,11 +382,25 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
 
         setIsComplete(true);
 
-        // Estimate output tokens from the response and update the store
-        // This provides an immediate UI update while the server stores the actual value
-        const effectiveModel = testModel || model || 'gpt-4o';
-        const estimatedOutputTokens = countTokens(fullText, effectiveModel);
-        setLastOutputTokens(estimatedOutputTokens);
+        // Fetch the accurate output token count from the server
+        // The server stores this via waitUntil() so it should be available now
+        try {
+          const usageParams = new URLSearchParams({ promptId });
+          if (testVersionToUse) {
+            usageParams.set('version', testVersionToUse);
+          }
+          const usageRes = await fetch(
+            `/api/prompts/usage?${usageParams.toString()}`,
+          );
+          if (usageRes.ok) {
+            const usageData = await usageRes.json();
+            if (usageData.outputTokens !== null) {
+              setLastOutputTokens(usageData.outputTokens);
+            }
+          }
+        } catch {
+          // Ignore usage fetch errors - not critical
+        }
       } catch (err) {
         setStreamError(
           err instanceof Error ? err.message : 'An error occurred',
@@ -404,7 +417,6 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       inputDataRootName,
       testVersionToUse,
       showUnusedFieldsToast,
-      model,
       setLastOutputTokens,
     ]);
 

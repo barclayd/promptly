@@ -10,6 +10,7 @@ export default [
   route('api/prompts/get', './routes/api/prompts.get.ts'),
   route('api/prompts/create', './routes/api/prompts.create.ts'),
   route('api/prompts/run', './routes/api/prompts.run.ts'),
+  route('api/prompts/usage', './routes/api/prompts.usage.ts'),
   route('api/prompts/publish', './routes/api/prompts.publish.ts'),
   route('api/prompt-info', './routes/api/prompt-info.ts'),
   route('api/generate-input-data', './routes/api/generate-input-data.ts'),
