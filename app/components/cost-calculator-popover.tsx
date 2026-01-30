@@ -146,6 +146,12 @@ export const CostCalculatorPopover = ({
   const lastOutputTokens = usePromptEditorStore(
     (state) => state.lastOutputTokens,
   );
+  const lastSystemInputTokens = usePromptEditorStore(
+    (state) => state.lastSystemInputTokens,
+  );
+  const lastUserInputTokens = usePromptEditorStore(
+    (state) => state.lastUserInputTokens,
+  );
   const isSystemPrompt = title === 'System Prompt';
 
   // State
@@ -207,26 +213,40 @@ export const CostCalculatorPopover = ({
   const effectiveModel = selectedModel ?? storeModel ?? 'gpt-4o';
   const pricing = getModelPricing(effectiveModel);
 
-  // Calculate estimated tokens from text
+  // Get stored input tokens for this prompt type
+  const storedInputTokens = isSystemPrompt
+    ? lastSystemInputTokens
+    : lastUserInputTokens;
+
+  // Calculate estimated tokens from text (fallback when no stored value)
   const estimatedInputTokens = useMemo(() => {
     if (!value) return 0;
     return countTokens(value, effectiveModel);
   }, [value, effectiveModel]);
 
+  // Default input tokens: use stored value if available, otherwise estimate
+  const defaultInputTokens = storedInputTokens ?? estimatedInputTokens;
+  const hasStoredInputTokens = storedInputTokens !== null;
+
   // Calculate tokens for the other prompt
+  const storedOtherInputTokens = isSystemPrompt
+    ? lastUserInputTokens
+    : lastSystemInputTokens;
   const otherPromptValue = isSystemPrompt ? userMessage : systemMessage;
-  const otherPromptTokens = useMemo(() => {
+  const otherPromptTokensEstimate = useMemo(() => {
     if (!otherPromptValue) return 0;
     return countTokens(otherPromptValue, effectiveModel);
   }, [otherPromptValue, effectiveModel]);
+  const otherPromptTokens = storedOtherInputTokens ?? otherPromptTokensEstimate;
 
-  const isEstimate = isTokenCountEstimate(effectiveModel);
+  const isEstimate =
+    isTokenCountEstimate(effectiveModel) && !hasStoredInputTokens;
 
   // Parse numeric inputs
   const inputTokensNum =
     inputTokensOverride !== ''
       ? Number.parseInt(inputTokensOverride, 10) || 0
-      : estimatedInputTokens;
+      : defaultInputTokens;
   const outputTokensNum = Number.parseInt(outputTokens, 10) || 0;
   const countNum = Number.parseInt(generationCount, 10) || 1;
 
@@ -362,9 +382,13 @@ export const CostCalculatorPopover = ({
             <div className="grid gap-1.5">
               <Label htmlFor="calc-input-tokens" className="text-xs">
                 Input tokens{' '}
-                {isEstimate && (
+                {hasStoredInputTokens ? (
+                  <span className="text-muted-foreground">
+                    (from last test)
+                  </span>
+                ) : isEstimate ? (
                   <span className="text-muted-foreground">(estimate)</span>
-                )}
+                ) : null}
               </Label>
               <Input
                 id="calc-input-tokens"
@@ -373,12 +397,12 @@ export const CostCalculatorPopover = ({
                 value={
                   inputTokensOverride !== ''
                     ? inputTokensOverride
-                    : estimatedInputTokens
+                    : defaultInputTokens
                 }
                 onChange={(e) => setInputTokensOverride(e.target.value)}
                 onFocus={(e) => {
                   if (inputTokensOverride === '') {
-                    setInputTokensOverride(String(estimatedInputTokens));
+                    setInputTokensOverride(String(defaultInputTokens));
                   }
                   e.target.select();
                 }}

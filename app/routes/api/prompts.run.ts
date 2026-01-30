@@ -118,6 +118,11 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     console.warn('Prompt interpolation warning:', prepared.error);
   }
 
+  // Calculate character lengths for proportional token distribution
+  const systemLength = prepared.systemMessage.length;
+  const userLength = prepared.userMessage.length;
+  const totalLength = systemLength + userLength;
+
   const versionId = promptVersion.id;
 
   const result = streamText({
@@ -127,15 +132,36 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     temperature,
   });
 
-  // After the response is sent, update the database with the output tokens
+  // After the response is sent, update the database with token counts
   context.cloudflare.ctx.waitUntil(
     result.usage.then(async (usage) => {
-      if (usage?.outputTokens && versionId) {
+      if (versionId && usage) {
+        const { inputTokens, outputTokens } = usage;
+
+        // Distribute input tokens proportionally by character length
+        let systemInputTokens: number | null = null;
+        let userInputTokens: number | null = null;
+
+        if (inputTokens && totalLength > 0) {
+          const systemRatio = systemLength / totalLength;
+          systemInputTokens = Math.round(inputTokens * systemRatio);
+          userInputTokens = inputTokens - systemInputTokens; // Ensure they sum exactly
+        }
+
         await db
           .prepare(
-            'UPDATE prompt_version SET last_output_tokens = ? WHERE id = ?',
+            `UPDATE prompt_version
+             SET last_output_tokens = ?,
+                 last_system_input_tokens = ?,
+                 last_user_input_tokens = ?
+             WHERE id = ?`,
           )
-          .bind(usage.outputTokens, versionId)
+          .bind(
+            outputTokens ?? null,
+            systemInputTokens,
+            userInputTokens,
+            versionId,
+          )
           .run();
       }
     }),

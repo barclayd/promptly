@@ -163,6 +163,12 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
     const setLastOutputTokens = usePromptEditorStore(
       (state) => state.setLastOutputTokens,
     );
+    const setLastSystemInputTokens = usePromptEditorStore(
+      (state) => state.setLastSystemInputTokens,
+    );
+    const setLastUserInputTokens = usePromptEditorStore(
+      (state) => state.setLastUserInputTokens,
+    );
 
     const [isGeneratingInputData, setIsGeneratingInputData] = useState(false);
 
@@ -382,7 +388,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
 
         setIsComplete(true);
 
-        // Fetch the accurate output token count from the server
+        // Fetch the accurate token counts from the server
         // The server stores this via waitUntil() so it should be available now
         try {
           const usageParams = new URLSearchParams({ promptId });
@@ -396,6 +402,12 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
             const usageData = await usageRes.json();
             if (usageData.outputTokens !== null) {
               setLastOutputTokens(usageData.outputTokens);
+            }
+            if (usageData.systemInputTokens !== null) {
+              setLastSystemInputTokens(usageData.systemInputTokens);
+            }
+            if (usageData.userInputTokens !== null) {
+              setLastUserInputTokens(usageData.userInputTokens);
             }
           }
         } catch {
@@ -418,6 +430,8 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       testVersionToUse,
       showUnusedFieldsToast,
       setLastOutputTokens,
+      setLastSystemInputTokens,
+      setLastUserInputTokens,
     ]);
 
     // Trigger test from external source (e.g., PromptReview)

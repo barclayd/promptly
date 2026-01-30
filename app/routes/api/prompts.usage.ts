@@ -39,15 +39,21 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     return data({ error: 'Prompt not found' }, { status: 404 });
   }
 
-  let result: { last_output_tokens: number | null } | null = null;
+  type TokenResult = {
+    last_output_tokens: number | null;
+    last_system_input_tokens: number | null;
+    last_user_input_tokens: number | null;
+  };
+
+  let result: TokenResult | null = null;
 
   if (versionNumber === 'draft') {
     result = await db
       .prepare(
-        'SELECT last_output_tokens FROM prompt_version WHERE prompt_id = ? AND published_at IS NULL ORDER BY created_at DESC LIMIT 1',
+        'SELECT last_output_tokens, last_system_input_tokens, last_user_input_tokens FROM prompt_version WHERE prompt_id = ? AND published_at IS NULL ORDER BY created_at DESC LIMIT 1',
       )
       .bind(promptId)
-      .first<{ last_output_tokens: number | null }>();
+      .first<TokenResult>();
   } else if (versionNumber) {
     const match = versionNumber.match(/^(\d+)\.(\d+)\.(\d+)$/);
     if (match) {
@@ -57,22 +63,24 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 
       result = await db
         .prepare(
-          'SELECT last_output_tokens FROM prompt_version WHERE prompt_id = ? AND major = ? AND minor = ? AND patch = ?',
+          'SELECT last_output_tokens, last_system_input_tokens, last_user_input_tokens FROM prompt_version WHERE prompt_id = ? AND major = ? AND minor = ? AND patch = ?',
         )
         .bind(promptId, major, minor, patch)
-        .first<{ last_output_tokens: number | null }>();
+        .first<TokenResult>();
     }
   } else {
     // Get latest version (draft or published)
     result = await db
       .prepare(
-        'SELECT last_output_tokens FROM prompt_version WHERE prompt_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
+        'SELECT last_output_tokens, last_system_input_tokens, last_user_input_tokens FROM prompt_version WHERE prompt_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
       )
       .bind(promptId)
-      .first<{ last_output_tokens: number | null }>();
+      .first<TokenResult>();
   }
 
   return data({
     outputTokens: result?.last_output_tokens ?? null,
+    systemInputTokens: result?.last_system_input_tokens ?? null,
+    userInputTokens: result?.last_user_input_tokens ?? null,
   });
 };
