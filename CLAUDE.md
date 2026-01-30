@@ -162,3 +162,39 @@ Real accurate values come from the AI SDK response after running a test.
 - Uses `useSyncExternalStore` for localStorage rate subscription (with object caching to prevent re-renders)
 - Model selector auto-syncs with sidebar selection from `usePromptEditorStore`
 - "Use cached input pricing" checkbox defaults ON for System Prompt, OFF for User Prompt
+
+# E2E Testing
+
+End-to-end tests use Playwright with Chromium only.
+
+## Running Tests
+- `bun run test:e2e` - Run all e2e tests (headless)
+- `bun run test:e2e:ui` - Open Playwright UI for interactive testing
+- `bun run test:e2e:headed` - Run tests with visible browser
+
+**Note**: Dev server must be running (`bun run dev`) before running tests.
+
+## Directory Structure
+```
+e2e/
+├── tests/           # Test files (*.spec.ts)
+├── fixtures/
+│   └── base.ts      # Auth fixture with login helper
+└── helpers/
+    └── test-data.ts # Test credentials & constants
+```
+
+## Writing Tests
+- Import `test` and `expect` from `../fixtures/base`
+- Use `authenticatedPage` fixture for tests requiring login
+- Test data constants are in `e2e/helpers/test-data.ts`
+
+Example:
+```typescript
+import { test, expect } from '../fixtures/base';
+
+test('example test', async ({ authenticatedPage }) => {
+  // authenticatedPage is already logged in
+  await expect(authenticatedPage).toHaveURL(/dashboard/);
+});
+```
