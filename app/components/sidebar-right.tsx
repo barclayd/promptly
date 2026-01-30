@@ -160,6 +160,15 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
     const setTestVersionOverride = usePromptEditorStore(
       (state) => state.setTestVersionOverride,
     );
+    const setLastOutputTokens = usePromptEditorStore(
+      (state) => state.setLastOutputTokens,
+    );
+    const setLastSystemInputTokens = usePromptEditorStore(
+      (state) => state.setLastSystemInputTokens,
+    );
+    const setLastUserInputTokens = usePromptEditorStore(
+      (state) => state.setLastUserInputTokens,
+    );
 
     const [isGeneratingInputData, setIsGeneratingInputData] = useState(false);
 
@@ -366,16 +375,44 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        let fullText = '';
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
           const chunk = decoder.decode(value, { stream: true });
-          setStreamText((prev) => prev + chunk);
+          fullText += chunk;
+          setStreamText(fullText);
         }
 
         setIsComplete(true);
+
+        // Fetch the accurate token counts from the server
+        // The server stores this via waitUntil() so it should be available now
+        try {
+          const usageParams = new URLSearchParams({ promptId });
+          if (testVersionToUse) {
+            usageParams.set('version', testVersionToUse);
+          }
+          const usageRes = await fetch(
+            `/api/prompts/usage?${usageParams.toString()}`,
+          );
+          if (usageRes.ok) {
+            const usageData = await usageRes.json();
+            if (usageData.outputTokens !== null) {
+              setLastOutputTokens(usageData.outputTokens);
+            }
+            if (usageData.systemInputTokens !== null) {
+              setLastSystemInputTokens(usageData.systemInputTokens);
+            }
+            if (usageData.userInputTokens !== null) {
+              setLastUserInputTokens(usageData.userInputTokens);
+            }
+          }
+        } catch {
+          // Ignore usage fetch errors - not critical
+        }
       } catch (err) {
         setStreamError(
           err instanceof Error ? err.message : 'An error occurred',
@@ -392,6 +429,9 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       inputDataRootName,
       testVersionToUse,
       showUnusedFieldsToast,
+      setLastOutputTokens,
+      setLastSystemInputTokens,
+      setLastUserInputTokens,
     ]);
 
     // Trigger test from external source (e.g., PromptReview)

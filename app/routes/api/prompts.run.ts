@@ -53,6 +53,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   }
 
   let promptVersion: {
+    id: string;
     system_message: string | null;
     user_message: string | null;
   } | null = null;
@@ -61,10 +62,11 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     // Fetch the latest draft version (unpublished)
     promptVersion = await db
       .prepare(
-        'SELECT system_message, user_message FROM prompt_version WHERE prompt_id = ? AND published_at IS NULL ORDER BY created_at DESC LIMIT 1',
+        'SELECT id, system_message, user_message FROM prompt_version WHERE prompt_id = ? AND published_at IS NULL ORDER BY created_at DESC LIMIT 1',
       )
       .bind(promptId)
       .first<{
+        id: string;
         system_message: string | null;
         user_message: string | null;
       }>();
@@ -78,10 +80,11 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
       promptVersion = await db
         .prepare(
-          'SELECT system_message, user_message FROM prompt_version WHERE prompt_id = ? AND major = ? AND minor = ? AND patch = ?',
+          'SELECT id, system_message, user_message FROM prompt_version WHERE prompt_id = ? AND major = ? AND minor = ? AND patch = ?',
         )
         .bind(promptId, major, minor, patch)
         .first<{
+          id: string;
           system_message: string | null;
           user_message: string | null;
         }>();
@@ -90,10 +93,11 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     // Return most recent published version (exclude drafts where major/minor/patch are NULL)
     promptVersion = await db
       .prepare(
-        'SELECT system_message, user_message FROM prompt_version WHERE prompt_id = ? AND published_at IS NOT NULL ORDER BY major DESC, minor DESC, patch DESC LIMIT 1',
+        'SELECT id, system_message, user_message FROM prompt_version WHERE prompt_id = ? AND published_at IS NOT NULL ORDER BY major DESC, minor DESC, patch DESC LIMIT 1',
       )
       .bind(promptId)
       .first<{
+        id: string;
         system_message: string | null;
         user_message: string | null;
       }>();
@@ -114,12 +118,54 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     console.warn('Prompt interpolation warning:', prepared.error);
   }
 
+  // Calculate character lengths for proportional token distribution
+  const systemLength = prepared.systemMessage.length;
+  const userLength = prepared.userMessage.length;
+  const totalLength = systemLength + userLength;
+
+  const versionId = promptVersion.id;
+
   const result = streamText({
     model: anthropic('claude-haiku-4-5'),
     system: prepared.systemMessage,
     prompt: prepared.userMessage,
     temperature,
   });
+
+  // After the response is sent, update the database with token counts
+  context.cloudflare.ctx.waitUntil(
+    result.usage.then(async (usage) => {
+      if (versionId && usage) {
+        const { inputTokens, outputTokens } = usage;
+
+        // Distribute input tokens proportionally by character length
+        let systemInputTokens: number | null = null;
+        let userInputTokens: number | null = null;
+
+        if (inputTokens && totalLength > 0) {
+          const systemRatio = systemLength / totalLength;
+          systemInputTokens = Math.round(inputTokens * systemRatio);
+          userInputTokens = inputTokens - systemInputTokens; // Ensure they sum exactly
+        }
+
+        await db
+          .prepare(
+            `UPDATE prompt_version
+             SET last_output_tokens = ?,
+                 last_system_input_tokens = ?,
+                 last_user_input_tokens = ?
+             WHERE id = ?`,
+          )
+          .bind(
+            outputTokens ?? null,
+            systemInputTokens,
+            userInputTokens,
+            versionId,
+          )
+          .run();
+      }
+    }),
+  );
 
   const response = result.toTextStreamResponse();
   if (prepared.unusedFields.length > 0) {

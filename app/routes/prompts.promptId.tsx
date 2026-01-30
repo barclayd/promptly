@@ -137,6 +137,9 @@ export const loader = async ({
     major: number | null;
     minor: number | null;
     patch: number | null;
+    last_output_tokens: number | null;
+    last_system_input_tokens: number | null;
+    last_user_input_tokens: number | null;
   } | null = null;
 
   if (
@@ -148,7 +151,7 @@ export const loader = async ({
     requestedVersion = versionParam;
     targetVersion = await db
       .prepare(
-        'SELECT system_message, user_message, config, major, minor, patch FROM prompt_version WHERE prompt_id = ? AND major = ? AND minor = ? AND patch = ?',
+        'SELECT system_message, user_message, config, major, minor, patch, last_output_tokens, last_system_input_tokens, last_user_input_tokens FROM prompt_version WHERE prompt_id = ? AND major = ? AND minor = ? AND patch = ?',
       )
       .bind(promptId, requestedMajor, requestedMinor, requestedPatch)
       .first<{
@@ -158,6 +161,9 @@ export const loader = async ({
         major: number | null;
         minor: number | null;
         patch: number | null;
+        last_output_tokens: number | null;
+        last_system_input_tokens: number | null;
+        last_user_input_tokens: number | null;
       }>();
 
     if (!targetVersion) {
@@ -175,7 +181,7 @@ export const loader = async ({
   if (!targetVersion) {
     targetVersion = await db
       .prepare(
-        'SELECT system_message, user_message, config, major, minor, patch FROM prompt_version WHERE prompt_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
+        'SELECT system_message, user_message, config, major, minor, patch, last_output_tokens, last_system_input_tokens, last_user_input_tokens FROM prompt_version WHERE prompt_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
       )
       .bind(promptId)
       .first<{
@@ -185,6 +191,9 @@ export const loader = async ({
         major: number | null;
         minor: number | null;
         patch: number | null;
+        last_output_tokens: number | null;
+        last_system_input_tokens: number | null;
+        last_user_input_tokens: number | null;
       }>();
   }
 
@@ -267,6 +276,9 @@ export const loader = async ({
     temperature,
     inputData,
     inputDataRootName,
+    lastOutputTokens: targetVersion?.last_output_tokens ?? null,
+    lastSystemInputTokens: targetVersion?.last_system_input_tokens ?? null,
+    lastUserInputTokens: targetVersion?.last_user_input_tokens ?? null,
     lastPublishedVersion: lastPublishedVersionString,
     lastPublishedSchema,
     lastPublishedSystemMessage,
@@ -551,17 +563,27 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const initialSystemRef = useRef(loaderData.systemMessage);
   const initialUserRef = useRef(loaderData.userMessage);
 
-  // Track the last initialized prompt ID to detect navigation changes
-  const lastInitializedRef = useRef<string | null>(null);
+  // Track the last initialized prompt ID and version to detect navigation changes
+  const lastInitializedRef = useRef<{
+    promptId: string;
+    version: string | null;
+  } | null>(null);
 
   // Initialize store synchronously before first render if needed
   // This pattern avoids the "setState during render" warning by using getState/setState
+  const currentKey = `${loaderData.prompt.id}:${loaderData.currentVersion}`;
+  const lastKey = lastInitializedRef.current
+    ? `${lastInitializedRef.current.promptId}:${lastInitializedRef.current.version}`
+    : null;
   const needsInit =
-    lastInitializedRef.current !== loaderData.prompt.id ||
+    lastKey !== currentKey ||
     usePromptEditorStore.getState()._promptId !== loaderData.prompt.id;
 
   if (needsInit) {
-    lastInitializedRef.current = loaderData.prompt.id;
+    lastInitializedRef.current = {
+      promptId: loaderData.prompt.id,
+      version: loaderData.currentVersion,
+    };
     initialSystemRef.current = loaderData.systemMessage;
     initialUserRef.current = loaderData.userMessage;
 
@@ -577,6 +599,9 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
       testModel: loaderData.model,
       testTemperature: loaderData.temperature,
       testVersionOverride: null,
+      lastOutputTokens: loaderData.lastOutputTokens,
+      lastSystemInputTokens: loaderData.lastSystemInputTokens,
+      lastUserInputTokens: loaderData.lastUserInputTokens,
       promptId: loaderData.prompt.id,
     });
   }

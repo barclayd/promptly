@@ -2,6 +2,7 @@ import { IconCopy, IconCornerDownLeft } from '@tabler/icons-react';
 import { Check, CheckCircle2, InfoIcon, Loader2, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { CostCalculatorPopover } from '~/components/cost-calculator-popover';
 import {
   InputGroup,
   InputGroupAddon,
@@ -236,6 +237,7 @@ export const PromptReview = ({
               )}
             </TooltipContent>
           </Tooltip>
+          <CostCalculatorPopover title={title} value={value ?? ''} />
           <InputGroupButton
             variant="ghost"
             size="icon-xs"
