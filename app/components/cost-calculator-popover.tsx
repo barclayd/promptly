@@ -1,3 +1,4 @@
+import { IconFlask } from '@tabler/icons-react';
 import {
   BadgeEuro,
   CircleDollarSign,
@@ -17,9 +18,7 @@ import {
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select';
@@ -31,11 +30,7 @@ import {
   SUPPORTED_CURRENCIES,
   type SupportedCurrency,
 } from '~/lib/currency';
-import {
-  calculateTokenCost,
-  getModelPricing,
-  getModelsByProvider,
-} from '~/lib/model-pricing';
+import { calculateTokenCost, getModelPricing } from '~/lib/model-pricing';
 import { countTokens, isTokenCountEstimate } from '~/lib/token-counter';
 import { usePromptEditorStore } from '~/stores/prompt-editor-store';
 
@@ -156,7 +151,6 @@ export const CostCalculatorPopover = ({
 
   // State
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [inputTokensOverride, setInputTokensOverride] = useState<string>('');
   const [useCached, setUseCached] = useState(isSystemPrompt);
   const [outputTokens, setOutputTokens] = useState<string>(
@@ -188,8 +182,6 @@ export const CostCalculatorPopover = ({
     async (open: boolean) => {
       setIsOpen(open);
       if (open) {
-        // Reset model to store model when opening
-        setSelectedModel(storeModel);
         // Reset cached checkbox based on prompt type
         setUseCached(isSystemPrompt);
         // Reset output tokens to latest value from store (may have changed after a test run)
@@ -206,11 +198,11 @@ export const CostCalculatorPopover = ({
         }
       }
     },
-    [storeModel, isSystemPrompt, exchangeRates, lastOutputTokens],
+    [isSystemPrompt, exchangeRates, lastOutputTokens],
   );
 
-  // Use selected model or fall back to store model
-  const effectiveModel = selectedModel ?? storeModel ?? 'gpt-4o';
+  // Use the model from the prompt store
+  const effectiveModel = storeModel ?? 'gpt-4o';
   const pricing = getModelPricing(effectiveModel);
 
   // Get stored input tokens for this prompt type
@@ -319,9 +311,9 @@ export const CostCalculatorPopover = ({
     otherPromptTokens,
   ]);
 
-  const openaiModels = getModelsByProvider('openai');
-  const anthropicModels = getModelsByProvider('anthropic');
-  const googleModels = getModelsByProvider('google');
+  // Check if we have any stored token data
+  const hasAnyStoredTokens =
+    hasStoredInputTokens || lastOutputTokens !== null;
 
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
@@ -332,52 +324,27 @@ export const CostCalculatorPopover = ({
       </PopoverTrigger>
       <PopoverContent className="w-80" side="bottom" align="end">
         <div className="grid gap-4">
-          <div className="space-y-1">
-            <h4 className="font-medium leading-none">Cost Calculator</h4>
-            <p className="text-muted-foreground text-xs">
-              Estimate API costs based on your current prompt
-            </p>
+          <div className="space-y-2">
+            <div className="space-y-1">
+              <h4 className="font-medium leading-none">Cost Calculator</h4>
+              <p className="text-muted-foreground text-xs">
+                Estimate API costs based on your current prompt
+              </p>
+            </div>
+
+            {/* Hint to run test when no stored token data */}
+            {!hasAnyStoredTokens && (
+              <div className="flex items-start gap-2.5 rounded-md bg-muted/50 border border-dashed border-muted-foreground/20 px-3 py-2.5">
+                <IconFlask className="size-4 text-muted-foreground shrink-0 mt-0.5" />
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Run a test to get accurate token counts based on your actual
+                  prompt with substituted variables.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="grid gap-3">
-            {/* Model Selector */}
-            <div className="grid gap-1.5">
-              <Label htmlFor="calc-model" className="text-xs">
-                Model
-              </Label>
-              <Select value={effectiveModel} onValueChange={setSelectedModel}>
-                <SelectTrigger id="calc-model" size="sm">
-                  <SelectValue placeholder="Select a model" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>OpenAI</SelectLabel>
-                    {openaiModels.map((model) => (
-                      <SelectItem key={model.id} value={model.id}>
-                        {model.displayName}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                  <SelectGroup>
-                    <SelectLabel>Anthropic</SelectLabel>
-                    {anthropicModels.map((model) => (
-                      <SelectItem key={model.id} value={model.id}>
-                        {model.displayName}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                  <SelectGroup>
-                    <SelectLabel>Google Gemini</SelectLabel>
-                    {googleModels.map((model) => (
-                      <SelectItem key={model.id} value={model.id}>
-                        {model.displayName}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* Input Tokens */}
             <div className="grid gap-1.5">
               <Label htmlFor="calc-input-tokens" className="text-xs">
