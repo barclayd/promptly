@@ -1,6 +1,6 @@
 import { ArrowLeft, GitBranch, RssIcon } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   data,
   useFetcher,
@@ -13,11 +13,17 @@ import { useDebouncedCallback } from 'use-debounce';
 import { PromptEditorMenubar } from '~/components/prompt-editor-menubar';
 import { PromptReview } from '~/components/prompt-review';
 import { PublishPromptDialog } from '~/components/publish-prompt-dialog';
+import { RemoteCursorsOverlay } from '~/components/remote-cursors-overlay';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import type { Version } from '~/components/versions-table';
 import { orgContext } from '~/context';
+import {
+  type CursorPosition,
+  type PresenceEventCallbacks,
+  usePresence,
+} from '~/hooks/use-presence';
 import { useUndoRedo } from '~/hooks/use-undo-redo';
 import { getAuth } from '~/lib/auth.server';
 import type { SchemaField } from '~/lib/schema-types';
@@ -434,6 +440,113 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   // Initialize undo/redo keyboard listener
   useUndoRedo();
 
+  // Connect to presence/collaboration system
+  const { sendContentUpdate, subscribeToEvents, sendCursorUpdate, cursors } =
+    usePresence(isViewingOldVersion ? undefined : loaderData.prompt.id);
+
+  // Track cursor state for each textarea
+  const [remoteCursors, setRemoteCursors] = useState<CursorPosition[]>([]);
+  const systemTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const userTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Get remote update actions from store
+  const setSystemMessageFromRemote = usePromptEditorStore(
+    (state) => state.setSystemMessageFromRemote,
+  );
+  const setUserMessageFromRemote = usePromptEditorStore(
+    (state) => state.setUserMessageFromRemote,
+  );
+
+  // Track local content version to compare with server
+  const localVersionRef = useRef(0);
+
+  // Track our last known cursor position to re-broadcast when new users join
+  const lastCursorRef = useRef<{
+    field: 'systemMessage' | 'userMessage';
+    position: number;
+  } | null>(null);
+
+  // Subscribe to content sync events from other users
+  // Note: Using useEffect here is acceptable because this is for external state sync (WebSocket)
+  // and not for DOM-related side effects which the CLAUDE.md guidelines warn against
+  useEffect(() => {
+    if (!subscribeToEvents || isViewingOldVersion) return;
+
+    const callbacks: PresenceEventCallbacks = {
+      onContentSync: (field, value, version) => {
+        // Update local version tracking
+        localVersionRef.current = version;
+
+        // Apply remote change without triggering undo history
+        if (field === 'systemMessage') {
+          setSystemMessageFromRemote(value);
+        } else if (field === 'userMessage') {
+          setUserMessageFromRemote(value);
+        }
+        // Note: Do NOT call debouncedSave - only originator saves to D1
+      },
+      onContentState: (state) => {
+        // Handle initial content state when joining a room
+        // Only apply if server has content (version > 0) and it differs from our loader data
+        if (state.version > 0) {
+          localVersionRef.current = state.version;
+
+          const currentSystemMessage =
+            usePromptEditorStore.getState().systemMessage;
+          const currentUserMessage =
+            usePromptEditorStore.getState().userMessage;
+
+          if (state.systemMessage !== currentSystemMessage) {
+            setSystemMessageFromRemote(state.systemMessage);
+          }
+          if (state.userMessage !== currentUserMessage) {
+            setUserMessageFromRemote(state.userMessage);
+          }
+        }
+      },
+      onCursorSync: (cursor) => {
+        // Update cursor state when receiving cursor sync from another user
+        setRemoteCursors((prev) => {
+          const filtered = prev.filter((c) => c.userId !== cursor.userId);
+          return [...filtered, cursor];
+        });
+      },
+      onCursorState: (cursors) => {
+        // Set initial cursor positions when joining a room
+        setRemoteCursors(cursors);
+      },
+      onUserJoined: () => {
+        // When a new user joins, re-broadcast our cursor position so they can see us
+        // This handles the case where cursor state was lost due to DO hibernation
+        if (lastCursorRef.current && sendCursorUpdate) {
+          const { field, position } = lastCursorRef.current;
+          const textarea =
+            field === 'systemMessage'
+              ? systemTextareaRef.current
+              : userTextareaRef.current;
+          const width = textarea?.clientWidth ?? 0;
+          sendCursorUpdate(field, position, width);
+        }
+      },
+    };
+
+    return subscribeToEvents(callbacks);
+  }, [
+    subscribeToEvents,
+    isViewingOldVersion,
+    setSystemMessageFromRemote,
+    setUserMessageFromRemote,
+    sendCursorUpdate,
+  ]);
+
+  // Update remote cursors when user leaves (remove their cursor)
+  useEffect(() => {
+    if (!cursors) return;
+    // Convert Map to array for state
+    const cursorArray = Array.from(cursors.values());
+    setRemoteCursors(cursorArray);
+  }, [cursors]);
+
   // Track initial values for dirty detection
   const initialSystemRef = useRef(loaderData.systemMessage);
   const initialUserRef = useRef(loaderData.userMessage);
@@ -506,19 +619,53 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const handleSystemChange = useCallback(
     (value: string) => {
       setSystemMessage(value);
+      // Broadcast to other users for real-time collaboration
+      sendContentUpdate?.('systemMessage', value);
       isPendingSystemSaveRef.current = true;
       debouncedSave();
     },
-    [setSystemMessage, debouncedSave],
+    [setSystemMessage, sendContentUpdate, debouncedSave],
   );
 
   const handleUserChange = useCallback(
     (value: string) => {
       setUserMessage(value);
+      // Broadcast to other users for real-time collaboration
+      sendContentUpdate?.('userMessage', value);
       isPendingUserSaveRef.current = true;
       debouncedSave();
     },
-    [setUserMessage, debouncedSave],
+    [setUserMessage, sendContentUpdate, debouncedSave],
+  );
+
+  // Debounced cursor position updates (50ms to prevent flooding)
+  const debouncedSystemCursorUpdate = useDebouncedCallback(
+    (position: number) => {
+      const width = systemTextareaRef.current?.clientWidth ?? 0;
+      sendCursorUpdate?.('systemMessage', position, width);
+    },
+    50,
+  );
+
+  const debouncedUserCursorUpdate = useDebouncedCallback((position: number) => {
+    const width = userTextareaRef.current?.clientWidth ?? 0;
+    sendCursorUpdate?.('userMessage', position, width);
+  }, 50);
+
+  const handleSystemSelectionChange = useCallback(
+    (position: number) => {
+      lastCursorRef.current = { field: 'systemMessage', position };
+      debouncedSystemCursorUpdate(position);
+    },
+    [debouncedSystemCursorUpdate],
+  );
+
+  const handleUserSelectionChange = useCallback(
+    (position: number) => {
+      lastCursorRef.current = { field: 'userMessage', position };
+      debouncedUserCursorUpdate(position);
+    },
+    [debouncedUserCursorUpdate],
   );
 
   const isSystemDirty = systemMessage !== initialSystemRef.current;
@@ -728,6 +875,21 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               lastSavedAt={lastSystemSavedAtRef.current}
               onTest={triggerTest}
               isTestRunning={getIsTestRunning()}
+              textareaRef={(el) => {
+                systemTextareaRef.current = el;
+              }}
+              onSelectionChange={
+                isViewingOldVersion ? undefined : handleSystemSelectionChange
+              }
+              cursorOverlay={
+                !isViewingOldVersion && (
+                  <RemoteCursorsOverlay
+                    cursors={remoteCursors}
+                    textareaRef={systemTextareaRef.current}
+                    field="systemMessage"
+                  />
+                )
+              }
             />
             <PromptReview
               title="User Prompt"
@@ -739,6 +901,21 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               lastSavedAt={lastUserSavedAtRef.current}
               onTest={triggerTest}
               isTestRunning={getIsTestRunning()}
+              textareaRef={(el) => {
+                userTextareaRef.current = el;
+              }}
+              onSelectionChange={
+                isViewingOldVersion ? undefined : handleUserSelectionChange
+              }
+              cursorOverlay={
+                !isViewingOldVersion && (
+                  <RemoteCursorsOverlay
+                    cursors={remoteCursors}
+                    textareaRef={userTextareaRef.current}
+                    field="userMessage"
+                  />
+                )
+              }
             />
           </div>
         </div>

@@ -125,6 +125,9 @@ export const PromptReview = ({
   lastSavedAt,
   onTest,
   isTestRunning,
+  cursorOverlay,
+  textareaRef,
+  onSelectionChange,
 }: {
   title: string;
   value?: string;
@@ -135,6 +138,9 @@ export const PromptReview = ({
   lastSavedAt?: number | null;
   onTest?: () => void;
   isTestRunning?: boolean;
+  cursorOverlay?: React.ReactNode;
+  textareaRef?: (el: HTMLTextAreaElement | null) => void;
+  onSelectionChange?: (position: number) => void;
 }) => {
   const isCurrentlySaving = isPendingSave || isSaving;
   const [copied, setCopied] = useState(false);
@@ -169,6 +175,9 @@ export const PromptReview = ({
           onKeyDown={handleKeyDown}
           highlightVariables
           data-managed-undo
+          cursorOverlay={cursorOverlay}
+          textareaRef={textareaRef}
+          onSelectionChange={onSelectionChange}
         />
         <InputGroupAddon align="block-end" className="border-t">
           <InputGroupText className="min-w-0">

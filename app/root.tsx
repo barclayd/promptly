@@ -7,9 +7,9 @@ import {
   ScrollRestoration,
 } from 'react-router';
 import { Toaster } from '~/components/ui/sonner';
+import { sessionContext } from '~/context';
 import { RecentsProvider } from '~/context/recents-context';
 import { SearchProvider } from '~/context/search-context';
-import { getAuth } from '~/lib/auth.server';
 import { parseCookie } from '~/lib/cookies';
 import { authMiddleware } from '~/middleware/auth';
 import { orgMiddleware } from '~/middleware/org';
@@ -28,8 +28,8 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const cookieHeader = request.headers.get('Cookie') || '';
   const layoutCookie = parseCookie(cookieHeader, LAYOUT_COOKIE_NAME);
 
-  const auth = getAuth(context);
-  const session = await auth.api.getSession({ headers: request.headers });
+  // Use cached session from authMiddleware (already fetched once)
+  const session = context.get(sessionContext);
 
   return {
     serverLayoutCookie: layoutCookie ?? null,

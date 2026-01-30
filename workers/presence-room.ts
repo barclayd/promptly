@@ -14,16 +14,79 @@ type UserSession = {
   connectionCount: number;
 };
 
+// Cursor position state for each user
+type CursorPosition = {
+  userId: string;
+  field: 'systemMessage' | 'userMessage';
+  position: number;
+  textareaWidth: number;
+  timestamp: number;
+};
+
+// Content state for collaborative editing
+type ContentState = {
+  systemMessage: string;
+  userMessage: string;
+  version: number;
+};
+
 // Server -> Client messages
 type PresenceMessage =
   | { type: 'presence'; users: PresenceUser[] }
   | { type: 'user_joined'; user: PresenceUser }
   | { type: 'user_left'; userId: string }
   | { type: 'user_active'; userId: string; isActive: boolean }
-  | { type: 'pong' };
+  | { type: 'pong' }
+  | {
+      type: 'content_sync';
+      field: 'systemMessage' | 'userMessage';
+      value: string;
+      version: number;
+      userId: string;
+    }
+  | {
+      type: 'content_state';
+      systemMessage: string;
+      userMessage: string;
+      version: number;
+    }
+  | {
+      type: 'cursor_sync';
+      userId: string;
+      userName: string;
+      field: 'systemMessage' | 'userMessage';
+      position: number;
+      textareaWidth: number;
+      isActive: boolean;
+    }
+  | {
+      type: 'cursor_state';
+      cursors: Array<{
+        userId: string;
+        userName: string;
+        field: 'systemMessage' | 'userMessage';
+        position: number;
+        textareaWidth: number;
+        isActive: boolean;
+      }>;
+    };
 
 // Client -> Server messages
-type ClientMessage = { type: 'ping' } | { type: 'focus'; isActive: boolean };
+type ClientMessage =
+  | { type: 'ping' }
+  | { type: 'focus'; isActive: boolean }
+  | { type: 'init' }
+  | {
+      type: 'content_update';
+      field: 'systemMessage' | 'userMessage';
+      value: string;
+    }
+  | {
+      type: 'cursor_update';
+      field: 'systemMessage' | 'userMessage';
+      position: number;
+      textareaWidth: number;
+    };
 
 type WebSocketAttachment = {
   userId: string;
@@ -35,40 +98,63 @@ type WebSocketAttachment = {
 
 export class PresenceRoom extends DurableObject<Env> {
   private users: Map<string, UserSession> = new Map();
+  private cursorPositions: Map<string, CursorPosition> = new Map();
+  private contentState: ContentState = {
+    systemMessage: '',
+    userMessage: '',
+    version: 0,
+  };
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
 
-    // Restore user sessions from hibernated WebSocket connections
-    for (const socket of this.ctx.getWebSockets()) {
-      const attachment =
-        socket.deserializeAttachment() as WebSocketAttachment | null;
-      if (attachment?.userId) {
-        const existingSession = this.users.get(attachment.userId);
-        if (existingSession) {
-          existingSession.connectionCount++;
-        } else {
-          // Restore session from attachment data
-          this.users.set(attachment.userId, {
-            user: {
-              id: attachment.userId,
-              name: attachment.userName,
-              email: attachment.userEmail,
-              image: attachment.userImage,
-              joinedAt: attachment.joinedAt,
-              isActive: true,
-            },
-            connectionCount: 1,
-          });
+    // Restore content state from storage (for hibernation recovery)
+    this.ctx.blockConcurrencyWhile(async () => {
+      const stored = await this.ctx.storage.get<ContentState>('contentState');
+      if (stored) {
+        this.contentState = stored;
+      }
+    });
+
+    try {
+      // Restore user sessions from hibernated WebSocket connections
+      // Following official Cloudflare example pattern
+      const sockets = this.ctx.getWebSockets();
+      for (const ws of sockets) {
+        try {
+          const attachment =
+            ws.deserializeAttachment() as WebSocketAttachment | null;
+          if (attachment?.userId) {
+            const existingSession = this.users.get(attachment.userId);
+            if (existingSession) {
+              existingSession.connectionCount++;
+            } else {
+              // Restore session from attachment data
+              this.users.set(attachment.userId, {
+                user: {
+                  id: attachment.userId,
+                  name: attachment.userName,
+                  email: attachment.userEmail,
+                  image: attachment.userImage,
+                  joinedAt: attachment.joinedAt,
+                  isActive: true,
+                },
+                connectionCount: 1,
+              });
+            }
+          }
+        } catch (e) {
+          console.error('[PresenceRoom] Error restoring socket:', e);
         }
       }
+    } catch (e) {
+      console.error('[PresenceRoom] Error in constructor:', e);
     }
   }
 
   async fetch(request: Request): Promise<Response> {
+    // Extract user data from URL query params (set by the worker)
     const url = new URL(request.url);
-
-    // Extract user data from query params (set by the worker)
     const userId = url.searchParams.get('userId');
     const userName = url.searchParams.get('userName');
     const userEmail = url.searchParams.get('userEmail');
@@ -79,8 +165,9 @@ export class PresenceRoom extends DurableObject<Env> {
     }
 
     // Create WebSocket pair
-    const pair = new WebSocketPair();
-    const [client, server] = [pair[0], pair[1]];
+    const webSocketPair = new WebSocketPair();
+    const client = webSocketPair[0];
+    const server = webSocketPair[1];
 
     // Accept the WebSocket with hibernation support
     this.ctx.acceptWebSocket(server);
@@ -96,13 +183,12 @@ export class PresenceRoom extends DurableObject<Env> {
     };
     server.serializeAttachment(attachment);
 
-    // Track this connection
+    // Set up user session immediately (following official example)
+    // Don't send anything yet - client will send 'init' message to get presence list
     const existingSession = this.users.get(userId);
     if (existingSession) {
-      // User already has connections, increment count
       existingSession.connectionCount++;
     } else {
-      // New user, create session and broadcast join
       const user: PresenceUser = {
         id: userId,
         name: userName,
@@ -111,16 +197,8 @@ export class PresenceRoom extends DurableObject<Env> {
         joinedAt,
         isActive: true,
       };
-
       this.users.set(userId, { user, connectionCount: 1 });
-
-      // Broadcast join to all other users
-      this.broadcast({ type: 'user_joined', user }, userId);
     }
-
-    // Send current user list to the new connection
-    const presenceList = this.getPresenceList();
-    server.send(JSON.stringify({ type: 'presence', users: presenceList }));
 
     return new Response(null, {
       status: 101,
@@ -136,6 +214,40 @@ export class PresenceRoom extends DurableObject<Env> {
       const attachment = ws.deserializeAttachment() as WebSocketAttachment;
 
       switch (data.type) {
+        case 'init': {
+          // Client is ready - send current presence list and broadcast join
+          const presenceList = this.getPresenceList();
+          ws.send(JSON.stringify({ type: 'presence', users: presenceList }));
+
+          // Send current content state
+          ws.send(
+            JSON.stringify({
+              type: 'content_state',
+              systemMessage: this.contentState.systemMessage,
+              userMessage: this.contentState.userMessage,
+              version: this.contentState.version,
+            }),
+          );
+
+          // Send current cursor positions (excluding own cursor)
+          const cursorList = this.getCursorList(attachment.userId);
+          if (cursorList.length > 0) {
+            ws.send(
+              JSON.stringify({ type: 'cursor_state', cursors: cursorList }),
+            );
+          }
+
+          // Broadcast join to all other users
+          const session = this.users.get(attachment.userId);
+          if (session) {
+            this.broadcast(
+              { type: 'user_joined', user: session.user },
+              attachment.userId,
+            );
+          }
+          break;
+        }
+
         case 'ping':
           ws.send(JSON.stringify({ type: 'pong' }));
           break;
@@ -152,7 +264,76 @@ export class PresenceRoom extends DurableObject<Env> {
               },
               attachment.userId,
             );
+
+            // Also broadcast cursor update with new isActive state
+            const cursor = this.cursorPositions.get(attachment.userId);
+            if (cursor) {
+              this.broadcast(
+                {
+                  type: 'cursor_sync',
+                  userId: attachment.userId,
+                  userName: attachment.userName,
+                  field: cursor.field,
+                  position: cursor.position,
+                  textareaWidth: cursor.textareaWidth,
+                  isActive: data.isActive,
+                },
+                attachment.userId,
+              );
+            }
           }
+          break;
+        }
+
+        case 'content_update': {
+          // Increment version and update content state
+          this.contentState.version++;
+          this.contentState[data.field] = data.value;
+
+          // Persist to storage for hibernation recovery
+          this.ctx.storage.put('contentState', this.contentState);
+
+          // Broadcast to all OTHER clients (not the sender)
+          this.broadcast(
+            {
+              type: 'content_sync',
+              field: data.field,
+              value: data.value,
+              version: this.contentState.version,
+              userId: attachment.userId,
+            },
+            attachment.userId,
+          );
+          break;
+        }
+
+        case 'cursor_update': {
+          // Update cursor position for this user
+          this.cursorPositions.set(attachment.userId, {
+            userId: attachment.userId,
+            field: data.field,
+            position: data.position,
+            textareaWidth: data.textareaWidth,
+            timestamp: Date.now(),
+          });
+
+          // Get user's active state
+          const userSession = this.users.get(attachment.userId);
+          const isActive = userSession?.user.isActive ?? true;
+
+          // Broadcast cursor position to all OTHER clients
+          this.broadcast(
+            {
+              type: 'cursor_sync',
+              userId: attachment.userId,
+              userName: attachment.userName,
+              field: data.field,
+              position: data.position,
+              textareaWidth: data.textareaWidth,
+              isActive,
+            },
+            attachment.userId,
+          );
           break;
         }
       }
@@ -181,6 +362,7 @@ export class PresenceRoom extends DurableObject<Env> {
     // Only remove user and broadcast leave when all their connections are closed
     if (session.connectionCount <= 0) {
       this.users.delete(attachment.userId);
+      this.cursorPositions.delete(attachment.userId);
       this.broadcast({ type: 'user_left', userId: attachment.userId });
     }
   }
@@ -205,5 +387,41 @@ export class PresenceRoom extends DurableObject<Env> {
 
   private getPresenceList(): PresenceUser[] {
     return Array.from(this.users.values()).map((session) => session.user);
+  }
+
+  private getCursorList(excludeUserId?: string): Array<{
+    userId: string;
+    userName: string;
+    field: 'systemMessage' | 'userMessage';
+    position: number;
+    textareaWidth: number;
+    isActive: boolean;
+  }> {
+    const cursors: Array<{
+      userId: string;
+      userName: string;
+      field: 'systemMessage' | 'userMessage';
+      position: number;
+      textareaWidth: number;
+      isActive: boolean;
+    }> = [];
+
+    for (const [userId, cursor] of this.cursorPositions) {
+      if (excludeUserId && userId === excludeUserId) continue;
+
+      const session = this.users.get(userId);
+      if (session) {
+        cursors.push({
+          userId: cursor.userId,
+          userName: session.user.name,
+          field: cursor.field,
+          position: cursor.position,
+          textareaWidth: cursor.textareaWidth,
+          isActive: session.user.isActive,
+        });
+      }
+    }
+
+    return cursors;
   }
 }

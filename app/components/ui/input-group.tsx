@@ -144,11 +144,21 @@ function InputGroupInput({
   );
 }
 
+type InputGroupTextareaProps = React.ComponentProps<'textarea'> & {
+  highlightVariables?: boolean;
+  cursorOverlay?: React.ReactNode;
+  textareaRef?: (el: HTMLTextAreaElement | null) => void;
+  onSelectionChange?: (position: number) => void;
+};
+
 function InputGroupTextarea({
   className,
   highlightVariables,
+  cursorOverlay,
+  textareaRef: externalTextareaRef,
+  onSelectionChange,
   ...props
-}: React.ComponentProps<'textarea'> & { highlightVariables?: boolean }) {
+}: InputGroupTextareaProps) {
   const textareaClassName = cn(
     'flex-1 resize-none rounded-none border-0 bg-transparent py-3 shadow-none focus-visible:ring-0 dark:bg-transparent max-h-[80vh] overflow-y-auto',
     className,
@@ -166,6 +176,13 @@ function InputGroupTextarea({
     textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
   };
 
+  // Handle selection change events (cursor position, clicks, arrow keys)
+  const handleSelect = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+    if (onSelectionChange) {
+      onSelectionChange(e.currentTarget.selectionStart);
+    }
+  };
+
   if (!highlightVariables) {
     return (
       <Textarea
@@ -173,18 +190,21 @@ function InputGroupTextarea({
         className={textareaClassName}
         ref={(el) => {
           if (el) autoResize(el);
+          externalTextareaRef?.(el);
         }}
         {...props}
         onInput={(e) => {
           autoResize(e.currentTarget);
           props.onInput?.(e);
         }}
+        onSelect={handleSelect}
+        onClick={handleSelect}
+        onKeyUp={handleSelect}
       />
     );
   }
 
   let overlayRef: HTMLDivElement | null = null;
-  let textareaRef: HTMLTextAreaElement | null = null;
 
   const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
     if (overlayRef) {
@@ -204,12 +224,13 @@ function InputGroupTextarea({
       >
         <HighlightedPromptText text={String(props.value ?? '')} />
       </div>
+      {cursorOverlay}
       <Textarea
         data-slot="input-group-control"
         className={cn(textareaClassName, 'text-transparent caret-foreground')}
         ref={(el) => {
-          textareaRef = el;
           if (el) autoResize(el);
+          externalTextareaRef?.(el);
         }}
         {...props}
         onScroll={handleScroll}
@@ -217,6 +238,9 @@ function InputGroupTextarea({
           autoResize(e.currentTarget);
           props.onInput?.(e);
         }}
+        onSelect={handleSelect}
+        onClick={handleSelect}
+        onKeyUp={handleSelect}
       />
     </div>
   );

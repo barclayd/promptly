@@ -12,6 +12,7 @@ import {
   TooltipTrigger,
 } from '~/components/ui/tooltip';
 import type { PresenceUser } from '~/hooks/use-presence';
+import { getUserColor } from '~/lib/user-colors';
 import { cn } from '~/lib/utils';
 
 type PresenceAvatarsProps = {
@@ -46,25 +47,46 @@ export const PresenceAvatars = ({
 
   return (
     <AvatarGroup className={cn('items-center', className)}>
-      {visibleUsers.map((user) => (
-        <Tooltip key={user.id}>
-          <TooltipTrigger asChild>
-            <Avatar className="size-7 ring-2 ring-background cursor-default">
-              {user.image && <AvatarImage src={user.image} alt={user.name} />}
-              <AvatarFallback className="text-xs">
-                {getInitials(user.name)}
-              </AvatarFallback>
-              {user.isActive && <AvatarBadge className="bg-green-500" />}
-            </Avatar>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <span>{user.name}</span>
-            {user.isActive && (
-              <span className="text-muted-foreground ml-1">(viewing)</span>
-            )}
-          </TooltipContent>
-        </Tooltip>
-      ))}
+      {visibleUsers.map((user) => {
+        const userColor = getUserColor(user.id);
+        return (
+          <Tooltip key={user.id}>
+            <TooltipTrigger asChild>
+              <div
+                className="rounded-full p-0.5 cursor-default"
+                style={{
+                  background: userColor,
+                  boxShadow: `0 0 10px ${userColor}70`,
+                }}
+              >
+                <Avatar className="size-7 overflow-visible">
+                  {user.image && (
+                    <AvatarImage src={user.image} alt={user.name} />
+                  )}
+                  <AvatarFallback className="text-xs">
+                    {getInitials(user.name)}
+                  </AvatarFallback>
+                  {user.isActive && <AvatarBadge className="bg-green-500" />}
+                </Avatar>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <div className="flex items-center gap-2">
+                <span
+                  className="size-2 rounded-full"
+                  style={{ backgroundColor: userColor }}
+                />
+                <span>{user.name}</span>
+              </div>
+              {user.isActive && (
+                <span className="text-muted-foreground text-xs">
+                  Currently viewing
+                </span>
+              )}
+            </TooltipContent>
+          </Tooltip>
+        );
+      })}
       {overflowCount > 0 && (
         <Tooltip>
           <TooltipTrigger asChild>

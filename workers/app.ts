@@ -69,16 +69,16 @@ const handlePresenceWebSocket = async (
   const roomId = env.PRESENCE_ROOM.idFromName(promptId);
   const room = env.PRESENCE_ROOM.get(roomId);
 
-  // Forward to the Durable Object with user data as query params
+  // Pass user info via URL query params (more reliable for WebSocket upgrade than headers)
   const doUrl = new URL(request.url);
   doUrl.searchParams.set('userId', session.user.id);
   doUrl.searchParams.set('userName', session.user.name);
   doUrl.searchParams.set('userEmail', session.user.email);
   doUrl.searchParams.set('userImage', session.user.image || '');
 
-  const doRequest = new Request(doUrl.toString(), {
-    headers: request.headers,
-  });
+  // Forward the original request with user info in URL
+  // CRITICAL: Pass the original request to preserve WebSocket upgrade properties
+  const doRequest = new Request(doUrl.toString(), request);
 
   return room.fetch(doRequest);
 };
