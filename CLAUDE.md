@@ -118,3 +118,45 @@ When implementing or modifying UI components, test in both light and dark modes:
 - Better Auth MCP server is available for auth-related questions
 - Always check `session?.user` before accessing user data
 - Form actions use `FormData`, not JSON bodies
+
+# Cost Calculator Feature
+
+The cost calculator popover (`app/components/cost-calculator-popover.tsx`) estimates LLM API costs based on model, token counts, and user preferences.
+
+## Files
+- `app/lib/model-pricing.ts` - Model pricing data (input/cached/output prices per 1M tokens)
+- `app/lib/currency.ts` - Currency conversion using Frankfurter API
+- `app/lib/token-counter.ts` - Token counting (tiktoken for OpenAI, estimates for others)
+- `app/components/cost-calculator-popover.tsx` - Main popover component
+
+## Updating Model Prices
+Edit `app/lib/model-pricing.ts` and update the `MODEL_PRICING` object. Prices are in USD per 1M tokens:
+
+```typescript
+'model-id': {
+  id: 'model-id',
+  displayName: 'Model Name',
+  provider: 'openai' | 'anthropic' | 'google',
+  inputPrice: 2.50,        // $/1M input tokens
+  cachedInputPrice: 1.25,  // $/1M cached input tokens
+  outputPrice: 10.00,      // $/1M output tokens
+},
+```
+
+Price sources: [llm-prices.com](https://www.llm-prices.com/)
+
+## Token Counting
+- **OpenAI**: Uses `tiktoken/lite` with WASM (accurate)
+- **Anthropic/Google**: Character-based estimate (~4 chars/token)
+- Token counter uses dynamic imports for SSR safety on Cloudflare Workers
+
+## Currency Conversion
+- Uses Frankfurter API (free, no API key): `https://api.frankfurter.dev/v1/latest?base=USD`
+- Rates cached in localStorage for 24 hours
+- Detects user's locale currency via `Intl.NumberFormat`
+
+## Technical Notes
+- Uses `useSyncExternalStore` for localStorage rate subscription (with object caching to prevent re-renders)
+- Vite plugins required: `vite-plugin-wasm`, `vite-plugin-top-level-await`
+- Model selector auto-syncs with sidebar selection from `usePromptEditorStore`
+- "Use cached input pricing" checkbox defaults ON for System Prompt, OFF for User Prompt

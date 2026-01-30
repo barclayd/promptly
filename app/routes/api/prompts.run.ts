@@ -53,6 +53,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   }
 
   let promptVersion: {
+    id: string;
     system_message: string | null;
     user_message: string | null;
   } | null = null;
@@ -61,10 +62,11 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     // Fetch the latest draft version (unpublished)
     promptVersion = await db
       .prepare(
-        'SELECT system_message, user_message FROM prompt_version WHERE prompt_id = ? AND published_at IS NULL ORDER BY created_at DESC LIMIT 1',
+        'SELECT id, system_message, user_message FROM prompt_version WHERE prompt_id = ? AND published_at IS NULL ORDER BY created_at DESC LIMIT 1',
       )
       .bind(promptId)
       .first<{
+        id: string;
         system_message: string | null;
         user_message: string | null;
       }>();
@@ -78,10 +80,11 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
       promptVersion = await db
         .prepare(
-          'SELECT system_message, user_message FROM prompt_version WHERE prompt_id = ? AND major = ? AND minor = ? AND patch = ?',
+          'SELECT id, system_message, user_message FROM prompt_version WHERE prompt_id = ? AND major = ? AND minor = ? AND patch = ?',
         )
         .bind(promptId, major, minor, patch)
         .first<{
+          id: string;
           system_message: string | null;
           user_message: string | null;
         }>();
@@ -90,10 +93,11 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     // Return most recent published version (exclude drafts where major/minor/patch are NULL)
     promptVersion = await db
       .prepare(
-        'SELECT system_message, user_message FROM prompt_version WHERE prompt_id = ? AND published_at IS NOT NULL ORDER BY major DESC, minor DESC, patch DESC LIMIT 1',
+        'SELECT id, system_message, user_message FROM prompt_version WHERE prompt_id = ? AND published_at IS NOT NULL ORDER BY major DESC, minor DESC, patch DESC LIMIT 1',
       )
       .bind(promptId)
       .first<{
+        id: string;
         system_message: string | null;
         user_message: string | null;
       }>();
@@ -114,12 +118,28 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     console.warn('Prompt interpolation warning:', prepared.error);
   }
 
+  const versionId = promptVersion.id;
+
   const result = streamText({
     model: anthropic('claude-haiku-4-5'),
     system: prepared.systemMessage,
     prompt: prepared.userMessage,
     temperature,
   });
+
+  // After the response is sent, update the database with the output tokens
+  context.cloudflare.ctx.waitUntil(
+    result.usage.then(async (usage) => {
+      if (usage?.outputTokens && versionId) {
+        await db
+          .prepare(
+            'UPDATE prompt_version SET last_output_tokens = ? WHERE id = ?',
+          )
+          .bind(usage.outputTokens, versionId)
+          .run();
+      }
+    }),
+  );
 
   const response = result.toTextStreamResponse();
   if (prepared.unusedFields.length > 0) {

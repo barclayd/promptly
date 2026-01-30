@@ -137,6 +137,7 @@ export const loader = async ({
     major: number | null;
     minor: number | null;
     patch: number | null;
+    last_output_tokens: number | null;
   } | null = null;
 
   if (
@@ -148,7 +149,7 @@ export const loader = async ({
     requestedVersion = versionParam;
     targetVersion = await db
       .prepare(
-        'SELECT system_message, user_message, config, major, minor, patch FROM prompt_version WHERE prompt_id = ? AND major = ? AND minor = ? AND patch = ?',
+        'SELECT system_message, user_message, config, major, minor, patch, last_output_tokens FROM prompt_version WHERE prompt_id = ? AND major = ? AND minor = ? AND patch = ?',
       )
       .bind(promptId, requestedMajor, requestedMinor, requestedPatch)
       .first<{
@@ -158,6 +159,7 @@ export const loader = async ({
         major: number | null;
         minor: number | null;
         patch: number | null;
+        last_output_tokens: number | null;
       }>();
 
     if (!targetVersion) {
@@ -175,7 +177,7 @@ export const loader = async ({
   if (!targetVersion) {
     targetVersion = await db
       .prepare(
-        'SELECT system_message, user_message, config, major, minor, patch FROM prompt_version WHERE prompt_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
+        'SELECT system_message, user_message, config, major, minor, patch, last_output_tokens FROM prompt_version WHERE prompt_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
       )
       .bind(promptId)
       .first<{
@@ -185,6 +187,7 @@ export const loader = async ({
         major: number | null;
         minor: number | null;
         patch: number | null;
+        last_output_tokens: number | null;
       }>();
   }
 
@@ -267,6 +270,7 @@ export const loader = async ({
     temperature,
     inputData,
     inputDataRootName,
+    lastOutputTokens: targetVersion?.last_output_tokens ?? null,
     lastPublishedVersion: lastPublishedVersionString,
     lastPublishedSchema,
     lastPublishedSystemMessage,
@@ -577,6 +581,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
       testModel: loaderData.model,
       testTemperature: loaderData.temperature,
       testVersionOverride: null,
+      lastOutputTokens: loaderData.lastOutputTokens,
       promptId: loaderData.prompt.id,
     });
   }

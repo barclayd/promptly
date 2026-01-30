@@ -13,6 +13,7 @@ export type PromptEditorState = {
   testModel: string | null;
   testTemperature: number | null;
   testVersionOverride: string | null;
+  lastOutputTokens: number | null;
   _promptId: string | null;
   _initialized: boolean;
 };
@@ -28,6 +29,7 @@ type InitializeData = {
   testModel: string | null;
   testTemperature: number | null;
   testVersionOverride: string | null;
+  lastOutputTokens: number | null;
   promptId: string | null;
 };
 
@@ -48,6 +50,7 @@ export type PromptEditorActions = {
   setTestModel: (model: string | null) => void;
   setTestTemperature: (temp: number | null) => void;
   setTestVersionOverride: (version: string | null) => void;
+  setLastOutputTokens: (tokens: number | null) => void;
 };
 
 type PromptEditorStore = PromptEditorState & PromptEditorActions;
@@ -63,6 +66,7 @@ const initialState: PromptEditorState = {
   testModel: null,
   testTemperature: null,
   testVersionOverride: null,
+  lastOutputTokens: null,
   _promptId: null,
   _initialized: false,
 };
@@ -113,6 +117,7 @@ export const usePromptEditorStore = create<PromptEditorStore>()(
           testModel: data.testModel,
           testTemperature: data.testTemperature,
           testVersionOverride: data.testVersionOverride,
+          lastOutputTokens: data.lastOutputTokens,
           _promptId: data.promptId,
           _initialized: true,
         });
@@ -177,6 +182,8 @@ export const usePromptEditorStore = create<PromptEditorStore>()(
 
       setTestVersionOverride: (version) =>
         set({ testVersionOverride: version }),
+
+      setLastOutputTokens: (tokens) => set({ lastOutputTokens: tokens }),
     }),
     {
       partialize: (state) => ({
@@ -190,6 +197,7 @@ export const usePromptEditorStore = create<PromptEditorStore>()(
         testModel: state.testModel,
         testTemperature: state.testTemperature,
         testVersionOverride: state.testVersionOverride,
+        lastOutputTokens: state.lastOutputTokens,
       }),
       limit: 100,
       handleSet: (handleSet) =>

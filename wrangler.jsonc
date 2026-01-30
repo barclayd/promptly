@@ -4,6 +4,12 @@
   "compatibility_date": "2025-10-08",
   "compatibility_flags": ["nodejs_compat_v2"],
   "main": "./workers/app.ts",
+  "rules": [
+    {
+      "globs": ["**/*.wasm"],
+      "type": "CompiledWasm"
+    }
+  ],
   "observability": {
     "enabled": true
   },

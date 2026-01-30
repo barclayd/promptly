@@ -52,6 +52,7 @@ import { useIsDarkMode } from '~/hooks/use-dark-mode';
 import { useIsMobile } from '~/hooks/use-mobile';
 import { removeFieldsFromInputData } from '~/lib/input-data-utils';
 import type { SchemaField } from '~/lib/schema-types';
+import { countTokens } from '~/lib/token-counter';
 import { cn } from '~/lib/utils';
 import { usePromptEditorStore } from '~/stores/prompt-editor-store';
 
@@ -159,6 +160,9 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
     );
     const setTestVersionOverride = usePromptEditorStore(
       (state) => state.setTestVersionOverride,
+    );
+    const setLastOutputTokens = usePromptEditorStore(
+      (state) => state.setLastOutputTokens,
     );
 
     const [isGeneratingInputData, setIsGeneratingInputData] = useState(false);
@@ -366,16 +370,24 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        let fullText = '';
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
           const chunk = decoder.decode(value, { stream: true });
-          setStreamText((prev) => prev + chunk);
+          fullText += chunk;
+          setStreamText(fullText);
         }
 
         setIsComplete(true);
+
+        // Estimate output tokens from the response and update the store
+        // This provides an immediate UI update while the server stores the actual value
+        const effectiveModel = testModel || model || 'gpt-4o';
+        const estimatedOutputTokens = countTokens(fullText, effectiveModel);
+        setLastOutputTokens(estimatedOutputTokens);
       } catch (err) {
         setStreamError(
           err instanceof Error ? err.message : 'An error occurred',
@@ -392,6 +404,8 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       inputDataRootName,
       testVersionToUse,
       showUnusedFieldsToast,
+      model,
+      setLastOutputTokens,
     ]);
 
     // Trigger test from external source (e.g., PromptReview)
