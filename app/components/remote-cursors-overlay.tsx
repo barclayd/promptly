@@ -26,6 +26,11 @@ const calculateCursorPosition = (
   // Get computed styles from the textarea
   const styles = window.getComputedStyle(textarea);
 
+  // Use the LOCAL textarea width to calculate where the character position
+  // would appear on THIS user's screen. This ensures the remote cursor appears
+  // at the correct character position regardless of different viewport widths.
+  const mirrorWidth = textarea.clientWidth;
+
   // Create a mirror div that matches the textarea styling
   const mirror = document.createElement('div');
   mirror.style.cssText = `
@@ -34,7 +39,7 @@ const calculateCursorPosition = (
     white-space: pre-wrap;
     word-wrap: break-word;
     overflow-wrap: break-word;
-    width: ${textarea.clientWidth}px;
+    width: ${mirrorWidth}px;
     font-family: ${styles.fontFamily};
     font-size: ${styles.fontSize};
     font-weight: ${styles.fontWeight};

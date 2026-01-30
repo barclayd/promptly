@@ -460,6 +460,12 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   // Track local content version to compare with server
   const localVersionRef = useRef(0);
 
+  // Track our last known cursor position to re-broadcast when new users join
+  const lastCursorRef = useRef<{
+    field: 'systemMessage' | 'userMessage';
+    position: number;
+  } | null>(null);
+
   // Subscribe to content sync events from other users
   // Note: Using useEffect here is acceptable because this is for external state sync (WebSocket)
   // and not for DOM-related side effects which the CLAUDE.md guidelines warn against
@@ -509,6 +515,19 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
         // Set initial cursor positions when joining a room
         setRemoteCursors(cursors);
       },
+      onUserJoined: () => {
+        // When a new user joins, re-broadcast our cursor position so they can see us
+        // This handles the case where cursor state was lost due to DO hibernation
+        if (lastCursorRef.current && sendCursorUpdate) {
+          const { field, position } = lastCursorRef.current;
+          const textarea =
+            field === 'systemMessage'
+              ? systemTextareaRef.current
+              : userTextareaRef.current;
+          const width = textarea?.clientWidth ?? 0;
+          sendCursorUpdate(field, position, width);
+        }
+      },
     };
 
     return subscribeToEvents(callbacks);
@@ -517,6 +536,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
     isViewingOldVersion,
     setSystemMessageFromRemote,
     setUserMessageFromRemote,
+    sendCursorUpdate,
   ]);
 
   // Update remote cursors when user leaves (remove their cursor)
@@ -621,17 +641,20 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   // Debounced cursor position updates (50ms to prevent flooding)
   const debouncedSystemCursorUpdate = useDebouncedCallback(
     (position: number) => {
-      sendCursorUpdate?.('systemMessage', position);
+      const width = systemTextareaRef.current?.clientWidth ?? 0;
+      sendCursorUpdate?.('systemMessage', position, width);
     },
     50,
   );
 
   const debouncedUserCursorUpdate = useDebouncedCallback((position: number) => {
-    sendCursorUpdate?.('userMessage', position);
+    const width = userTextareaRef.current?.clientWidth ?? 0;
+    sendCursorUpdate?.('userMessage', position, width);
   }, 50);
 
   const handleSystemSelectionChange = useCallback(
     (position: number) => {
+      lastCursorRef.current = { field: 'systemMessage', position };
       debouncedSystemCursorUpdate(position);
     },
     [debouncedSystemCursorUpdate],
@@ -639,6 +662,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
 
   const handleUserSelectionChange = useCallback(
     (position: number) => {
+      lastCursorRef.current = { field: 'userMessage', position };
       debouncedUserCursorUpdate(position);
     },
     [debouncedUserCursorUpdate],

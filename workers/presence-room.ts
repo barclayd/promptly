@@ -19,6 +19,7 @@ type CursorPosition = {
   userId: string;
   field: 'systemMessage' | 'userMessage';
   position: number;
+  textareaWidth: number;
   timestamp: number;
 };
 
@@ -55,6 +56,7 @@ type PresenceMessage =
       userName: string;
       field: 'systemMessage' | 'userMessage';
       position: number;
+      textareaWidth: number;
       isActive: boolean;
     }
   | {
@@ -64,6 +66,7 @@ type PresenceMessage =
         userName: string;
         field: 'systemMessage' | 'userMessage';
         position: number;
+        textareaWidth: number;
         isActive: boolean;
       }>;
     };
@@ -82,6 +85,7 @@ type ClientMessage =
       type: 'cursor_update';
       field: 'systemMessage' | 'userMessage';
       position: number;
+      textareaWidth: number;
     };
 
 type WebSocketAttachment = {
@@ -271,6 +275,7 @@ export class PresenceRoom extends DurableObject<Env> {
                   userName: attachment.userName,
                   field: cursor.field,
                   position: cursor.position,
+                  textareaWidth: cursor.textareaWidth,
                   isActive: data.isActive,
                 },
                 attachment.userId,
@@ -308,6 +313,7 @@ export class PresenceRoom extends DurableObject<Env> {
             userId: attachment.userId,
             field: data.field,
             position: data.position,
+            textareaWidth: data.textareaWidth,
             timestamp: Date.now(),
           });
 
@@ -323,6 +329,7 @@ export class PresenceRoom extends DurableObject<Env> {
               userName: attachment.userName,
               field: data.field,
               position: data.position,
+              textareaWidth: data.textareaWidth,
               isActive,
             },
             attachment.userId,
@@ -387,6 +394,7 @@ export class PresenceRoom extends DurableObject<Env> {
     userName: string;
     field: 'systemMessage' | 'userMessage';
     position: number;
+    textareaWidth: number;
     isActive: boolean;
   }> {
     const cursors: Array<{
@@ -394,6 +402,7 @@ export class PresenceRoom extends DurableObject<Env> {
       userName: string;
       field: 'systemMessage' | 'userMessage';
       position: number;
+      textareaWidth: number;
       isActive: boolean;
     }> = [];
 
@@ -407,6 +416,7 @@ export class PresenceRoom extends DurableObject<Env> {
           userName: session.user.name,
           field: cursor.field,
           position: cursor.position,
+          textareaWidth: cursor.textareaWidth,
           isActive: session.user.isActive,
         });
       }

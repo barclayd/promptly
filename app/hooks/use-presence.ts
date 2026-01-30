@@ -20,6 +20,7 @@ export type CursorPosition = {
   userName: string;
   field: 'systemMessage' | 'userMessage';
   position: number;
+  textareaWidth: number;
   isActive: boolean;
 };
 
@@ -56,6 +57,7 @@ type ServerMessage =
       userName: string;
       field: 'systemMessage' | 'userMessage';
       position: number;
+      textareaWidth: number;
       isActive: boolean;
     }
   | {
@@ -65,6 +67,7 @@ type ServerMessage =
         userName: string;
         field: 'systemMessage' | 'userMessage';
         position: number;
+        textareaWidth: number;
         isActive: boolean;
       }>;
     };
@@ -279,6 +282,7 @@ const handleMessage = (promptId: string, data: ServerMessage): void => {
         userName: data.userName,
         field: data.field,
         position: data.position,
+        textareaWidth: data.textareaWidth,
         isActive: data.isActive,
       };
       const newCursors = new Map(current.cursors);
@@ -296,6 +300,7 @@ const handleMessage = (promptId: string, data: ServerMessage): void => {
           userName: cursor.userName,
           field: cursor.field,
           position: cursor.position,
+          textareaWidth: cursor.textareaWidth,
           isActive: cursor.isActive,
         });
       }
@@ -495,6 +500,7 @@ const sendCursorUpdate = (
   promptId: string,
   field: 'systemMessage' | 'userMessage',
   position: number,
+  textareaWidth: number,
 ): void => {
   const socket = socketByPromptId.get(promptId);
   if (socket?.readyState === WebSocket.OPEN) {
@@ -503,6 +509,7 @@ const sendCursorUpdate = (
         type: 'cursor_update',
         field,
         position,
+        textareaWidth,
       }),
     );
   }
@@ -553,8 +560,11 @@ export const usePresence = (promptId: string | undefined) => {
           sendContentUpdate(promptId, field, value)
       : undefined,
     sendCursorUpdate: promptId
-      ? (field: 'systemMessage' | 'userMessage', position: number) =>
-          sendCursorUpdate(promptId, field, position)
+      ? (
+          field: 'systemMessage' | 'userMessage',
+          position: number,
+          textareaWidth: number,
+        ) => sendCursorUpdate(promptId, field, position, textareaWidth)
       : undefined,
   };
 };
