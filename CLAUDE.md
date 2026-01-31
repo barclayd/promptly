@@ -188,10 +188,16 @@ e2e/
 - Import `test` and `expect` from `../fixtures/base`
 - Use `authenticatedPage` fixture for tests requiring login
 - Test data constants are in `e2e/helpers/test-data.ts`
+- **Avoid `describe` blocks** - each test should be self-contained and independent
+- **No shared state** - don't rely on `beforeEach` or mutable variables across tests
+- See: https://kentcdodds.com/blog/avoid-nesting-when-youre-testing
 
 Example:
 ```typescript
 import { test, expect } from '../fixtures/base';
+
+// Each test is self-contained and independent.
+// We avoid describe blocks to reduce cognitive load and nesting.
 
 test('example test', async ({ authenticatedPage }) => {
   // authenticatedPage is already logged in
