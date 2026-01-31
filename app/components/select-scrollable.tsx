@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from '~/components/ui/select';
 
-interface SelectScrollableProps {
+type SelectScrollableProps = {
   value?: string;
   onChange?: (value: string) => void;
   disabled?: boolean;

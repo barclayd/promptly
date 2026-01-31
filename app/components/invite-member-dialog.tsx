@@ -33,7 +33,7 @@ type ActionData = {
   };
 };
 
-interface InviteMemberDialogProps {
+type InviteMemberDialogProps = {
   children: React.ReactNode;
 }
 

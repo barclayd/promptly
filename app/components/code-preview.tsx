@@ -2,7 +2,7 @@ import { CodeBlock } from '~/components/ui/code-block';
 import { generateZodSchema } from '~/lib/generate-schema';
 import type { SchemaField } from '~/lib/schema-types';
 
-interface CodePreviewProps {
+type CodePreviewProps = {
   fields: SchemaField[];
 }
 

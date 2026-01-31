@@ -1,4 +1,4 @@
-interface ValidationOption {
+type ValidationOption = {
   value: string;
   label: string;
 }

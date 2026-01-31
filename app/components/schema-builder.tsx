@@ -4,7 +4,7 @@ import { Button } from '~/components/ui/button';
 import type { SchemaField } from '~/lib/schema-types';
 import { FieldBuilder } from './schema-builder/field-builder';
 
-interface SchemaBuilderProps {
+type SchemaBuilderProps = {
   fields: SchemaField[];
   onChange?: (fields: SchemaField[]) => void;
   onGenerateTestData?: () => void;

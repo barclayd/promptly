@@ -24,7 +24,7 @@ type ApiKey = {
   permissions: Record<string, string[]> | null;
 };
 
-interface ApiKeysTableProps {
+type ApiKeysTableProps = {
   apiKeys: ApiKey[];
 }
 

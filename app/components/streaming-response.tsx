@@ -11,7 +11,7 @@ import {
 } from '~/components/ui/item';
 import { cn } from '~/lib/utils';
 
-interface StreamingResponseProps {
+type StreamingResponseProps = {
   text: string;
   isStreaming: boolean;
   isComplete: boolean;

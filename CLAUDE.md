@@ -12,6 +12,9 @@
 # Code Style
 - Always use arrow functions instead of function declarations
 - Use `export const` inline rather than separate export statements
+- **Prefer `type` over `interface`** - Use `type` for Props, state objects, and most type definitions. Only use `interface` when you need declaration merging or extending
+- **Always use block braces for if statements** - Never write `if (x) doSomething();` - always use `if (x) { doSomething(); }`
+- **AHA Programming** - Avoid Hasty Abstractions. Prefer duplication over the wrong abstraction. Wait for patterns to emerge before extracting common code. See: https://kentcdodds.com/blog/aha-programming
 
 # React Patterns
 - Avoid `useEffect` wherever possible - it causes unintended bugs

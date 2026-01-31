@@ -1,9 +1,9 @@
-interface InputDataState {
+type InputDataState = {
   inputData: unknown;
   inputDataRootName: string | null;
 }
 
-interface RemoveFieldsResult {
+type RemoveFieldsResult = {
   inputData: unknown;
   inputDataRootName: string | null;
 }

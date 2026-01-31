@@ -162,8 +162,8 @@ export const CostCalculatorPopover = ({
   );
   const [isLoadingRates, setIsLoadingRates] = useState(false);
 
-  // Get locale-based currency icon
-  const CurrencyIcon = useMemo(() => getCurrencyIcon(), []);
+  // Get locale-based currency icon (navigator.language is static)
+  const CurrencyIcon = getCurrencyIcon();
 
   // Subscribe to exchange rates in localStorage
   const cachedRates = useSyncExternalStore(

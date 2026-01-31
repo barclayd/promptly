@@ -28,7 +28,7 @@ import {
 } from '~/components/ui/sidebar';
 import { useRecentsContext } from '~/context/recents-context';
 
-export interface NavDocumentItem {
+export type NavDocumentItem = {
   promptId: string;
   name: string;
   url: string;

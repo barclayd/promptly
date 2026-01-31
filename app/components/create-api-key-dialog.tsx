@@ -41,7 +41,7 @@ type ActionData = {
   };
 };
 
-interface CreateApiKeyDialogProps {
+type CreateApiKeyDialogProps = {
   children: React.ReactNode;
 }
 

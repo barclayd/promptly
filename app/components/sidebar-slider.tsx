@@ -7,7 +7,7 @@ import {
 } from '~/components/ui/hover-card';
 import { Slider } from '~/components/ui/slider';
 
-interface SidebarSliderProps {
+type SidebarSliderProps = {
   value?: number;
   onChange?: (value: number) => void;
   disabled?: boolean;

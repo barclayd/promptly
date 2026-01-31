@@ -26,7 +26,7 @@ type Member = {
   };
 };
 
-interface TeamMembersTableProps {
+type TeamMembersTableProps = {
   members: Member[];
   currentUserId?: string;
 }

@@ -44,7 +44,7 @@ type InvitationContext = {
   role: string;
 };
 
-interface SignUpFormProps extends React.ComponentProps<'div'> {
+type SignUpFormProps = React.ComponentProps<'div'> & {
   fetcher: FetcherWithComponents<ActionData>;
   invitation?: InvitationContext;
 }

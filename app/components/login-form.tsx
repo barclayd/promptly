@@ -21,7 +21,7 @@ type ActionData = {
   };
 };
 
-interface LoginFormProps extends React.ComponentProps<'div'> {
+type LoginFormProps = React.ComponentProps<'div'> & {
   fetcher: FetcherWithComponents<ActionData>;
 }
 

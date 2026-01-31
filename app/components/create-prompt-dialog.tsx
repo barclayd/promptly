@@ -23,7 +23,7 @@ type ActionData = {
   };
 };
 
-interface CreatePromptDialogProps {
+type CreatePromptDialogProps = {
   children: React.ReactNode;
 }
 

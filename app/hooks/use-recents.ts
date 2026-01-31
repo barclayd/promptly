@@ -5,7 +5,7 @@ import { useSyncExternalStore } from 'react';
 const STORAGE_KEY = 'promptly-recents';
 const MAX_RECENTS = 10;
 
-export interface RecentPrompt {
+export type RecentPrompt = {
   promptId: string;
   promptName: string;
   folderId: string;

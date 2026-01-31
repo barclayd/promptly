@@ -76,7 +76,7 @@ export const getNestedValue = (
   return current;
 };
 
-interface InterpolationResult {
+type InterpolationResult = {
   text: string;
   usedKeys: Set<string>;
 }
@@ -114,14 +114,14 @@ export const appendUnusedData = (
 };
 
 // Prepare prompts (result type pattern)
-interface PreparePromptsOptions {
+type PreparePromptsOptions = {
   systemMessage: string;
   userMessage: string;
   inputDataJson: string | null;
   inputDataRootName: string | null;
 }
 
-interface PreparePromptsResult {
+type PreparePromptsResult = {
   systemMessage: string;
   userMessage: string;
   unusedFields: string[];

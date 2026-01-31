@@ -13,7 +13,7 @@ import {
 } from '~/components/ui/empty';
 import { InviteMemberDialog } from './invite-member-dialog';
 
-interface TeamEmptyStateProps {
+type TeamEmptyStateProps = {
   currentUserImage?: string | null;
   currentUserName?: string;
 }

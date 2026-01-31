@@ -23,7 +23,7 @@ type Invitation = {
   createdAt: Date | string | number;
 };
 
-interface PendingInvitationsTableProps {
+type PendingInvitationsTableProps = {
   invitations: Invitation[];
 }
 
