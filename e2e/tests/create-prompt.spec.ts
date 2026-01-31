@@ -55,7 +55,9 @@ test('can create a new prompt via prompts page card', async ({
 
   // Wait for the Suspense/Await to resolve - either prompts load or "New Prompt" card appears
   // Use getByRole('button') with .first() to handle any potential duplicates during loading
-  const newPromptCard = authenticatedPage.getByRole('button', { name: 'New Prompt' }).first();
+  const newPromptCard = authenticatedPage
+    .getByRole('button', { name: 'New Prompt' })
+    .first();
   await newPromptCard.waitFor({ state: 'visible', timeout: 10000 });
 
   // Click the card to open the create dialog

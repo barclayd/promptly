@@ -47,6 +47,7 @@ export const ArrayConfig = ({ field, onChange }: ArrayConfigProps) => {
           <Label>Tuple Types</Label>
           {(field.params.tupleTypes || ['string']).map((type, index) => (
             <Select
+              // biome-ignore lint/suspicious/noArrayIndexKey: Tuple types are ordered by position
               key={index}
               value={type}
               onValueChange={(value) => {

@@ -49,6 +49,7 @@ const createCookieStorage = (serverCookie: string | null): LayoutStorage => ({
   },
   setItem: (key: string, value: string) => {
     if (typeof document !== 'undefined') {
+      // biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API has limited browser support
       document.cookie = `${key}=${value}; path=/; max-age=31536000`;
     }
   },

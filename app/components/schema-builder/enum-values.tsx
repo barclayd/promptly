@@ -28,6 +28,7 @@ export const EnumValues = ({ values, onChange }: EnumValuesProps) => {
     <div className="space-y-2">
       <Label>Enum Values</Label>
       {values.map((value, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: Enum values can be duplicates, index is needed
         <div key={index} className="flex gap-2">
           <Input
             value={value}
