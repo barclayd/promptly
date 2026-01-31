@@ -5,7 +5,9 @@ import { ROUTES, TIMEOUTS } from '../helpers/test-data';
 // We avoid describe blocks to reduce cognitive load and nesting.
 // See: https://kentcdodds.com/blog/avoid-nesting-when-youre-testing
 
-test('can navigate to a prompt and run a test', async ({ authenticatedPage }) => {
+test('can navigate to a prompt and run a test', async ({
+  authenticatedPage,
+}) => {
   // Navigate to prompts page
   await authenticatedPage.goto(ROUTES.prompts);
   await expect(authenticatedPage).toHaveURL(ROUTES.prompts);

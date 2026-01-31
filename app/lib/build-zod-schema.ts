@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import type { SchemaField, ValidationRule } from './schema-types';
 
+// Mutable shape type for building schemas
+type MutableZodRawShape = { [k: string]: z.ZodTypeAny };
+
 export const buildZodSchema = (
   fields: SchemaField[],
 ): z.ZodObject<z.ZodRawShape> => {
@@ -8,7 +11,7 @@ export const buildZodSchema = (
     return z.object({});
   }
 
-  const shape: z.ZodRawShape = {};
+  const shape: MutableZodRawShape = {};
 
   for (const field of fields) {
     shape[field.name] = buildFieldSchema(field);
@@ -161,12 +164,12 @@ const getSimpleType = (typeName: string): z.ZodTypeAny => {
 
 const buildDiscriminatedUnion = (
   config: NonNullable<SchemaField['params']['discriminatedUnion']>,
-): z.ZodDiscriminatedUnion<string, z.ZodDiscriminatedUnionOption<string>[]> => {
+): z.ZodTypeAny => {
   const { discriminator, cases } = config;
-  const caseSchemas: z.ZodDiscriminatedUnionOption<string>[] = [];
+  const caseSchemas: z.ZodObject<z.ZodRawShape>[] = [];
 
   for (const [_key, caseConfig] of Object.entries(cases)) {
-    const shape: z.ZodRawShape = {
+    const shape: MutableZodRawShape = {
       [discriminator]: z.literal(caseConfig.value),
     };
 
@@ -180,8 +183,8 @@ const buildDiscriminatedUnion = (
   return z.discriminatedUnion(
     discriminator,
     caseSchemas as [
-      z.ZodDiscriminatedUnionOption<string>,
-      ...z.ZodDiscriminatedUnionOption<string>[],
+      z.ZodObject<z.ZodRawShape>,
+      ...z.ZodObject<z.ZodRawShape>[],
     ],
   );
 };
@@ -311,13 +314,22 @@ const applyValidations = (
         break;
       case 'ip':
         if (result instanceof z.ZodString) {
-          const ipOptions: { version?: 'v4' | 'v6'; message?: string } = {};
-          if (field.params.stringOptions?.ip?.version) {
-            ipOptions.version = field.params.stringOptions.ip.version;
-          }
-          if (validation.message) ipOptions.message = validation.message;
-          result = result.ip(
-            Object.keys(ipOptions).length > 0 ? ipOptions : undefined,
+          const version = field.params.stringOptions?.ip?.version;
+          const message = validation.message || 'Invalid IP address';
+          result = result.refine(
+            (val) => {
+              const ipv4Regex = /^(?:\d{1,3}\.){3}\d{1,3}$/;
+              const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+              if (version === 'v4') {
+                return ipv4Regex.test(val);
+              }
+              if (version === 'v6') {
+                return ipv6Regex.test(val);
+              }
+              // Default: accept both v4 and v6
+              return ipv4Regex.test(val) || ipv6Regex.test(val);
+            },
+            { message },
           );
         }
         break;

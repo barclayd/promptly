@@ -25,7 +25,7 @@ type Invitation = {
 
 type PendingInvitationsTableProps = {
   invitations: Invitation[];
-}
+};
 
 const CancelInvitationButton = ({ invitationId }: { invitationId: string }) => {
   const fetcher = useFetcher();

@@ -9,7 +9,7 @@ import { Button } from '~/components/ui/button';
 type CodeBlockProps = {
   code: string;
   language?: string;
-}
+};
 
 export const CodeBlock = ({
   code,

@@ -1,7 +1,7 @@
 type ValidationOption = {
   value: string;
   label: string;
-}
+};
 
 export const getValidationOptions = (type: string): ValidationOption[] => {
   const commonValidations: ValidationOption[] = [

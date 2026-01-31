@@ -23,7 +23,7 @@ type ActionData = {
 
 type LoginFormProps = React.ComponentProps<'div'> & {
   fetcher: FetcherWithComponents<ActionData>;
-}
+};
 
 export const LoginForm = ({ className, fetcher, ...props }: LoginFormProps) => {
   const errors = fetcher.data?.errors;

@@ -29,8 +29,8 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   const formData = await request.formData();
   const promptId = formData.get('promptId') as string;
   const versionNumber = formData.get('version') as string | null;
-  const model =
-    (formData.get('model') as string) || 'anthropic/claude-haiku-4.5';
+  // Model selection - currently ignored as we only support Claude
+  formData.get('model');
   const temperature = Number.parseFloat(
     (formData.get('temperature') as string) || '0.5',
   );
@@ -134,7 +134,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
   // After the response is sent, update the database with token counts
   context.cloudflare.ctx.waitUntil(
-    result.usage.then(async (usage) => {
+    Promise.resolve(result.usage).then(async (usage) => {
       if (versionId && usage) {
         const { inputTokens, outputTokens } = usage;
 

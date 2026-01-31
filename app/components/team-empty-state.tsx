@@ -16,7 +16,7 @@ import { InviteMemberDialog } from './invite-member-dialog';
 type TeamEmptyStateProps = {
   currentUserImage?: string | null;
   currentUserName?: string;
-}
+};
 
 export const TeamEmptyState = ({
   currentUserImage,

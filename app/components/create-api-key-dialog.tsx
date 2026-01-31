@@ -43,7 +43,7 @@ type ActionData = {
 
 type CreateApiKeyDialogProps = {
   children: React.ReactNode;
-}
+};
 
 export const CreateApiKeyDialog = ({ children }: CreateApiKeyDialogProps) => {
   const fetcher = useFetcher<ActionData>();
@@ -66,7 +66,7 @@ export const CreateApiKeyDialog = ({ children }: CreateApiKeyDialogProps) => {
     lastFetcherDataRef.current = fetcher.data;
   }
 
-  if (hasNewApiKey) {
+  if (hasNewApiKey && fetcher.data?.apiKey?.key) {
     setStoredKey(fetcher.data.apiKey.key);
   }
 

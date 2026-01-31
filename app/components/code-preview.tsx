@@ -4,7 +4,7 @@ import type { SchemaField } from '~/lib/schema-types';
 
 type CodePreviewProps = {
   fields: SchemaField[];
-}
+};
 
 export const CodePreview = ({ fields }: CodePreviewProps) => {
   const generatedCode = generateZodSchema(fields);

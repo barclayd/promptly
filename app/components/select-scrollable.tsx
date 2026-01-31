@@ -12,7 +12,7 @@ type SelectScrollableProps = {
   value?: string;
   onChange?: (value: string) => void;
   disabled?: boolean;
-}
+};
 
 export const SelectScrollable = ({
   value,

@@ -591,7 +591,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
     usePromptEditorStore.getState().initialize({
       systemMessage: loaderData.systemMessage,
       userMessage: loaderData.userMessage,
-      schemaFields: (loaderData.schema ?? []) as SchemaField[],
+      schemaFields: (loaderData.schema ?? []) as unknown as SchemaField[],
       model: loaderData.model,
       temperature: loaderData.temperature,
       inputData: loaderData.inputData,

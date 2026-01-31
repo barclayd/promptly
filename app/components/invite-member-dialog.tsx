@@ -35,7 +35,7 @@ type ActionData = {
 
 type InviteMemberDialogProps = {
   children: React.ReactNode;
-}
+};
 
 export const InviteMemberDialog = ({ children }: InviteMemberDialogProps) => {
   const actionData = useActionData<ActionData>();

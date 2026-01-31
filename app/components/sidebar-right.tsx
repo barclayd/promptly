@@ -1,6 +1,6 @@
 'use client';
 
-import { JsonEditor, type Theme } from 'json-edit-react';
+import { JsonEditor, type ThemeInput } from 'json-edit-react';
 import { ChevronRight } from 'lucide-react';
 import type * as React from 'react';
 import {
@@ -57,7 +57,7 @@ import { usePromptEditorStore } from '~/stores/prompt-editor-store';
 
 const DEFAULT_INPUT_DATA: unknown = {};
 
-const sidebarLightTheme: Theme = {
+const sidebarLightTheme: ThemeInput = {
   container: {
     backgroundColor: 'transparent',
     fontFamily: 'inherit',
@@ -84,7 +84,7 @@ const sidebarLightTheme: Theme = {
   },
 };
 
-const sidebarDarkTheme: Theme = {
+const sidebarDarkTheme: ThemeInput = {
   container: {
     backgroundColor: 'transparent',
     fontFamily: 'inherit',
@@ -220,7 +220,10 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         });
 
         if (response.ok) {
-          const result = await response.json();
+          const result = (await response.json()) as {
+            inputData?: unknown;
+            rootName?: string | null;
+          };
           if (result.inputData !== undefined) {
             setInputData(result.inputData, result.rootName ?? null);
             debouncedSaveConfig();
@@ -352,7 +355,9 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         });
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
+          const errorData = (await response.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(errorData.error || `HTTP ${response.status}`);
         }
 
@@ -399,7 +404,11 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
             `/api/prompts/usage?${usageParams.toString()}`,
           );
           if (usageRes.ok) {
-            const usageData = await usageRes.json();
+            const usageData = (await usageRes.json()) as {
+              outputTokens: number | null;
+              systemInputTokens: number | null;
+              userInputTokens: number | null;
+            };
             if (usageData.outputTokens !== null) {
               setLastOutputTokens(usageData.outputTokens);
             }

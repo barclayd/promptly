@@ -1,12 +1,12 @@
 type InputDataState = {
   inputData: unknown;
   inputDataRootName: string | null;
-}
+};
 
 type RemoveFieldsResult = {
   inputData: unknown;
   inputDataRootName: string | null;
-}
+};
 
 export const reconstructFullData = (
   inputData: unknown,

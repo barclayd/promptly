@@ -121,7 +121,7 @@ export default function PromptDetailLayout() {
         </div>
       ) : (
         <ResizablePanelGroup
-          direction="horizontal"
+          orientation="horizontal"
           className="flex-1 min-h-svh max-h-svh overflow-hidden"
           defaultLayout={defaultLayout}
           onLayoutChange={onLayoutChange}

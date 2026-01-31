@@ -7,7 +7,7 @@ import { Resend } from 'resend';
 
 type Database = Record<string, string>;
 
-export const getAuth = (ctx: RouterContextProvider) => {
+export const getAuth = (ctx: Readonly<RouterContextProvider>) => {
   const baseURL = ctx.cloudflare.env.BETTER_AUTH_URL;
   const resendApiKey = ctx.cloudflare.env.RESEND_API_KEY;
 

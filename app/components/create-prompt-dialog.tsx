@@ -25,7 +25,7 @@ type ActionData = {
 
 type CreatePromptDialogProps = {
   children: React.ReactNode;
-}
+};
 
 export const CreatePromptDialog = ({ children }: CreatePromptDialogProps) => {
   const actionData = useActionData<ActionData>();

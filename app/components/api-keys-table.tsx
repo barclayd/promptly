@@ -26,7 +26,7 @@ type ApiKey = {
 
 type ApiKeysTableProps = {
   apiKeys: ApiKey[];
-}
+};
 
 const formatKeyPreview = (
   prefix: string | null,

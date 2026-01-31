@@ -110,15 +110,15 @@ export const loader = async ({
 
   const invitationRow = await db
     .selectFrom('invitation')
-    .innerJoin('organization', 'organization.id', 'invitation.organizationId')
-    .innerJoin('user as inviter', 'inviter.id', 'invitation.inviterId')
+    .innerJoin('organization', 'organization.id', 'invitation.organization_id')
+    .innerJoin('user as inviter', 'inviter.id', 'invitation.inviter_id')
     .select([
       'invitation.id',
       'invitation.email',
       'invitation.role',
       'invitation.status',
-      'invitation.expiresAt',
-      'invitation.organizationId',
+      'invitation.expires_at as expiresAt',
+      'invitation.organization_id as organizationId',
       'organization.id as orgId',
       'organization.name as orgName',
       'organization.slug as orgSlug',
@@ -199,7 +199,14 @@ export const action = async ({
 
   const invitationRow = await db
     .selectFrom('invitation')
-    .select(['id', 'email', 'role', 'status', 'expiresAt', 'organizationId'])
+    .select([
+      'id',
+      'email',
+      'role',
+      'status',
+      'expires_at as expiresAt',
+      'organization_id as organizationId',
+    ])
     .where('id', '=', id)
     .executeTakeFirst();
 
@@ -476,7 +483,9 @@ const InvitePage = ({ loaderData, actionData }: Route.ComponentProps) => {
     <div className="bg-muted flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm md:max-w-4xl">
         <SignUpForm
-          fetcher={fetcher}
+          fetcher={
+            fetcher as unknown as Parameters<typeof SignUpForm>[0]['fetcher']
+          }
           invitation={{
             id: invitation.id,
             email: invitation.email,
@@ -487,7 +496,7 @@ const InvitePage = ({ loaderData, actionData }: Route.ComponentProps) => {
             inviter: {
               name: inviterName,
             },
-            role,
+            role: role ?? 'Member',
           }}
         />
       </div>

@@ -25,7 +25,7 @@ export const orgMiddleware = async ({
   context,
 }: {
   request: Request;
-  context: RouterContextProvider;
+  context: Readonly<RouterContextProvider>;
 }) => {
   const url = new URL(request.url);
 

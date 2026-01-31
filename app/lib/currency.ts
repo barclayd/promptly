@@ -130,8 +130,6 @@ export const formatCurrency = (
   amount: number,
   currency: SupportedCurrency,
 ): string => {
-  const currencyInfo = SUPPORTED_CURRENCIES.find((c) => c.code === currency);
-
   // JPY doesn't use decimals
   const fractionDigits = currency === 'JPY' ? 0 : amount < 0.01 ? 6 : 4;
 
@@ -151,10 +149,6 @@ export const detectLocaleCurrency = (): SupportedCurrency => {
 
   try {
     const locale = navigator.language || 'en-US';
-    const options = new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: 'USD',
-    }).resolvedOptions();
 
     // Map common locales to currencies
     const localeTourrency: Record<string, SupportedCurrency> = {

@@ -35,7 +35,7 @@ export type NavDocumentItem = {
   icon: Icon;
   folderName?: string;
   version?: string | null;
-}
+};
 
 export const NavDocuments = ({ items }: { items: NavDocumentItem[] }) => {
   const { isMobile } = useSidebar();

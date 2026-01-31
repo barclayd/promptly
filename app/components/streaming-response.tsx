@@ -16,7 +16,7 @@ type StreamingResponseProps = {
   isStreaming: boolean;
   isComplete: boolean;
   error?: string | null;
-}
+};
 
 export const StreamingResponse = ({
   text,

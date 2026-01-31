@@ -2,6 +2,22 @@
 
 import { useSyncExternalStore } from 'react';
 
+// Navigation API types (experimental)
+type NavigationHistoryEntry = {
+  url: string | null;
+};
+
+type NavigationCurrentEntryChangeEvent = Event & {
+  from: NavigationHistoryEntry | null;
+};
+
+type Navigation = {
+  addEventListener(
+    type: 'currententrychange',
+    listener: (event: NavigationCurrentEntryChangeEvent) => void,
+  ): void;
+};
+
 const STORAGE_KEY = 'promptly-recents';
 const MAX_RECENTS = 10;
 
@@ -13,7 +29,7 @@ export type RecentPrompt = {
   version: string | null;
   url: string;
   lastSeenAt: number;
-}
+};
 
 type PromptInfo = Omit<RecentPrompt, 'lastSeenAt'>;
 
@@ -79,10 +95,10 @@ const setupNavigationListener = () => {
   if (!('navigation' in window)) return;
 
   listenerSetup = true;
-  const nav = window.navigation as Navigation;
+  const nav = window.navigation as unknown as Navigation;
 
   nav.addEventListener('currententrychange', (event) => {
-    const fromEntry = (event as NavigationCurrentEntryChangeEvent).from;
+    const fromEntry = event.from;
     if (!fromEntry) return;
 
     const fromUrl = fromEntry.url;

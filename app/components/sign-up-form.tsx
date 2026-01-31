@@ -47,7 +47,7 @@ type InvitationContext = {
 type SignUpFormProps = React.ComponentProps<'div'> & {
   fetcher: FetcherWithComponents<ActionData>;
   invitation?: InvitationContext;
-}
+};
 
 export const SignUpForm = ({
   className,

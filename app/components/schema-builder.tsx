@@ -10,7 +10,7 @@ type SchemaBuilderProps = {
   onGenerateTestData?: () => void;
   isGeneratingTestData?: boolean;
   disabled?: boolean;
-}
+};
 
 export const SchemaBuilder = ({
   fields,

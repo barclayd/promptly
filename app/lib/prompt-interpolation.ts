@@ -79,7 +79,7 @@ export const getNestedValue = (
 type InterpolationResult = {
   text: string;
   usedKeys: Set<string>;
-}
+};
 
 export const interpolatePrompt = (
   template: string,
@@ -119,14 +119,14 @@ type PreparePromptsOptions = {
   userMessage: string;
   inputDataJson: string | null;
   inputDataRootName: string | null;
-}
+};
 
 type PreparePromptsResult = {
   systemMessage: string;
   userMessage: string;
   unusedFields: string[];
   error: string | null;
-}
+};
 
 export const preparePrompts = (
   options: PreparePromptsOptions,

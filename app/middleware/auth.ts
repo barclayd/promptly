@@ -24,7 +24,7 @@ export const authMiddleware = async ({
   context,
 }: {
   request: Request;
-  context: RouterContextProvider;
+  context: Readonly<RouterContextProvider>;
 }) => {
   // Create auth instance ONCE and cache in context
   const auth = getAuth(context);

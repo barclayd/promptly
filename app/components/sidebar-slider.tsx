@@ -11,7 +11,7 @@ type SidebarSliderProps = {
   value?: number;
   onChange?: (value: number) => void;
   disabled?: boolean;
-}
+};
 
 export const SidebarSlider = ({
   value = 0.25,

@@ -29,7 +29,7 @@ type Member = {
 type TeamMembersTableProps = {
   members: Member[];
   currentUserId?: string;
-}
+};
 
 const getInitials = (name: string) => {
   return name
