@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const inviteMemberSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   role: z.enum(['member', 'admin', 'owner'], {
-    errorMap: () => ({ message: 'Please select a valid role' }),
+    error: 'Please select a valid role',
   }),
 });
 

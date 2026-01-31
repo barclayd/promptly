@@ -88,6 +88,7 @@ export const FunctionSchema = ({ field, onChange }: FunctionSchemaProps) => {
       <div className="space-y-2">
         <Label>Parameters</Label>
         {params.map((param, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: Parameter order is significant
           <div key={index} className="space-y-2 p-3 border rounded-md">
             <div className="flex gap-2">
               <Input

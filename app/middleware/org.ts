@@ -1,5 +1,4 @@
-import type { RouterContextProvider } from 'react-router';
-import { redirect } from 'react-router';
+import { type MiddlewareFunction, redirect } from 'react-router';
 import { authContext, orgContext, sessionContext } from '~/context';
 import { getActiveOrganizationWithAuth } from '~/lib/org.server';
 
@@ -20,12 +19,9 @@ const isPublicRoute = (pathname: string) =>
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
 
-export const orgMiddleware = async ({
+export const orgMiddleware: MiddlewareFunction<Response> = async ({
   request,
   context,
-}: {
-  request: Request;
-  context: RouterContextProvider;
 }) => {
   const url = new URL(request.url);
 

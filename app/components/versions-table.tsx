@@ -329,7 +329,11 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
 
               return pages.map((page, idx) =>
                 page === 'ellipsis' ? (
-                  <PaginationItem key={`ellipsis-${idx}`}>
+                  <PaginationItem
+                    key={
+                      idx < pages.length / 2 ? 'ellipsis-start' : 'ellipsis-end'
+                    }
+                  >
                     <PaginationEllipsis />
                   </PaginationItem>
                 ) : (

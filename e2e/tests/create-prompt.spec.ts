@@ -53,39 +53,38 @@ test('can create a new prompt via prompts page card', async ({
   await authenticatedPage.goto(ROUTES.prompts);
   await expect(authenticatedPage).toHaveURL(ROUTES.prompts);
 
-  // Look for "New Prompt" card/button
-  const newPromptCard = authenticatedPage.getByText('New Prompt');
+  // Wait for the Suspense/Await to resolve - either prompts load or "New Prompt" card appears
+  // Use getByRole('button') with .first() to handle any potential duplicates during loading
+  const newPromptCard = authenticatedPage
+    .getByRole('button', { name: 'New Prompt' })
+    .first();
+  await newPromptCard.waitFor({ state: 'visible', timeout: 10000 });
 
-  // If there's a card-style create button, click it
-  if (await newPromptCard.isVisible()) {
-    await newPromptCard.click();
+  // Click the card to open the create dialog
+  await newPromptCard.click();
 
-    // Verify dialog opens
-    const dialog = authenticatedPage.getByRole('dialog');
-    await expect(dialog).toBeVisible();
+  // Verify dialog opens
+  const dialog = authenticatedPage.getByRole('dialog');
+  await expect(dialog).toBeVisible();
 
-    // Fill in prompt name
-    const promptName = `E2E Card Prompt ${Date.now()}`;
-    const nameInput = dialog.locator('input[name="name"]');
-    await nameInput.fill(promptName);
+  // Fill in prompt name
+  const promptName = `E2E Card Prompt ${Date.now()}`;
+  const nameInput = dialog.locator('input[name="name"]');
+  await nameInput.fill(promptName);
 
-    // Click create button
-    const submitButton = dialog.getByRole('button', { name: /^create$/i });
-    await submitButton.click();
+  // Click create button
+  const submitButton = dialog.getByRole('button', { name: /^create$/i });
+  await submitButton.click();
 
-    // Wait for redirect
-    await authenticatedPage.waitForURL(/\/prompts\/[a-zA-Z0-9_-]+$/, {
-      timeout: 15000,
-    });
+  // Wait for redirect
+  await authenticatedPage.waitForURL(/\/prompts\/[a-zA-Z0-9_-]+$/, {
+    timeout: 15000,
+  });
 
-    // Verify the prompt name is visible
-    await expect(
-      authenticatedPage.getByRole('heading', { name: promptName }),
-    ).toBeVisible();
-  } else {
-    // Skip if card-style button doesn't exist
-    test.skip(true, 'New Prompt card not visible on prompts page');
-  }
+  // Verify the prompt name is visible
+  await expect(
+    authenticatedPage.getByRole('heading', { name: promptName }),
+  ).toBeVisible();
 });
 
 test('create dialog can be opened and closed', async ({

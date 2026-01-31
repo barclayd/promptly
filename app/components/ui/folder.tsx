@@ -45,6 +45,7 @@ export const Folder = ({
   // Tab width: 2/5 of 192px = ~77px
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: Visual folder animation, not interactive control
     <div
       className={cn(
         'relative h-[140px] w-48',

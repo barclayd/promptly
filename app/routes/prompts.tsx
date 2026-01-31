@@ -90,13 +90,10 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
                 </EmptyContent>
                 <Button
                   variant="link"
-                  asChild
                   className="text-muted-foreground"
                   size="sm"
                 >
-                  <a href="#">
-                    Learn More <ArrowUpRightIcon />
-                  </a>
+                  Learn More <ArrowUpRightIcon />
                 </Button>
               </Empty>
             </div>

@@ -29,6 +29,7 @@ const getPromptTooltipContent = (title: string) => {
   return {
     heading: 'User Prompt',
     description:
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: Intentional - describes template syntax to users
       'The message template sent to the AI. Use ${variables} to insert dynamic values at runtime.',
   };
 };

@@ -66,7 +66,7 @@ export const CreateApiKeyDialog = ({ children }: CreateApiKeyDialogProps) => {
     lastFetcherDataRef.current = fetcher.data;
   }
 
-  if (hasNewApiKey) {
+  if (hasNewApiKey && fetcher.data?.apiKey?.key) {
     setStoredKey(fetcher.data.apiKey.key);
   }
 

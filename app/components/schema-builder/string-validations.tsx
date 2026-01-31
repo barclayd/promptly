@@ -61,7 +61,7 @@ export const StringValidations = ({
                     ...field.params.stringOptions,
                     datetime: {
                       ...field.params.stringOptions?.datetime,
-                      precision: parseInt(e.target.value) || 0,
+                      precision: parseInt(e.target.value, 10) || 0,
                     },
                   },
                 })

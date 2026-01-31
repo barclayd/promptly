@@ -78,7 +78,14 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     );
   }
 
-  let versionData;
+  let versionData: {
+    system_message: string | null;
+    user_message: string | null;
+    config: string;
+    major: number | null;
+    minor: number | null;
+    patch: number | null;
+  } | null = null;
 
   if (version) {
     const [major, minor, patch] = version.split('.').map(Number);

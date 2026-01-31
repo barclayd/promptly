@@ -58,56 +58,60 @@ import { usePromptEditorStore } from '~/stores/prompt-editor-store';
 const DEFAULT_INPUT_DATA: unknown = {};
 
 const sidebarLightTheme: Theme = {
-  container: {
-    backgroundColor: 'transparent',
-    fontFamily: 'inherit',
-  },
-  property: 'oklch(0.554 0.046 257.417)', // muted-foreground
-  bracket: 'oklch(0.704 0.04 256.788)', // ring color
-  string: 'oklch(0.208 0.042 265.755)', // primary
-  number: 'oklch(0.646 0.222 41.116)', // chart-1
-  boolean: 'oklch(0.6 0.118 184.704)', // chart-2
-  null: 'oklch(0.554 0.046 257.417)', // muted-foreground
-  iconEdit: 'oklch(0.488 0.243 264.376)',
-  iconDelete: 'oklch(0.577 0.245 27.325)', // destructive
-  iconAdd: 'oklch(0.6 0.118 184.704)', // chart-2
-  iconCopy: 'oklch(0.554 0.046 257.417)',
-  iconOk: 'oklch(0.6 0.118 184.704)',
-  iconCancel: 'oklch(0.577 0.245 27.325)',
-  input: {
-    backgroundColor: 'oklch(0.968 0.007 247.896)', // muted
-    color: 'oklch(0.129 0.042 264.695)', // foreground
-    border: '1px solid oklch(0.929 0.013 255.508)', // border
-    borderRadius: '0.375rem',
-    padding: '0.25rem 0.5rem',
-    fontSize: '0.75rem',
+  styles: {
+    container: {
+      backgroundColor: 'transparent',
+      fontFamily: 'inherit',
+    },
+    property: 'oklch(0.554 0.046 257.417)', // muted-foreground
+    bracket: 'oklch(0.704 0.04 256.788)', // ring color
+    string: 'oklch(0.208 0.042 265.755)', // primary
+    number: 'oklch(0.646 0.222 41.116)', // chart-1
+    boolean: 'oklch(0.6 0.118 184.704)', // chart-2
+    null: 'oklch(0.554 0.046 257.417)', // muted-foreground
+    iconEdit: 'oklch(0.488 0.243 264.376)',
+    iconDelete: 'oklch(0.577 0.245 27.325)', // destructive
+    iconAdd: 'oklch(0.6 0.118 184.704)', // chart-2
+    iconCopy: 'oklch(0.554 0.046 257.417)',
+    iconOk: 'oklch(0.6 0.118 184.704)',
+    iconCancel: 'oklch(0.577 0.245 27.325)',
+    input: {
+      backgroundColor: 'oklch(0.968 0.007 247.896)', // muted
+      color: 'oklch(0.129 0.042 264.695)', // foreground
+      border: '1px solid oklch(0.929 0.013 255.508)', // border
+      borderRadius: '0.375rem',
+      padding: '0.25rem 0.5rem',
+      fontSize: '0.75rem',
+    },
   },
 };
 
 const sidebarDarkTheme: Theme = {
-  container: {
-    backgroundColor: 'transparent',
-    fontFamily: 'inherit',
-  },
-  property: 'lab(66.128% 0 0)', // muted-foreground (zinc)
-  bracket: 'lab(48.496% 0 0)', // ring (zinc)
-  string: 'lab(98.26% 0 0)', // foreground (zinc)
-  number: 'lab(70% 45 65)', // chart-3 (warm orange)
-  boolean: 'lab(65% -35 30)', // chart-2 (teal)
-  null: 'lab(66.128% 0 0)', // muted-foreground (zinc)
-  iconEdit: 'lab(36.9089% 35.0961 -85.6872)', // sidebar-primary (blue)
-  iconDelete: 'lab(63.7053% 60.745 31.3109)', // destructive (red)
-  iconAdd: 'lab(65% -35 30)', // chart-2 (teal)
-  iconCopy: 'lab(66.128% 0 0)',
-  iconOk: 'lab(65% -35 30)',
-  iconCancel: 'lab(63.7053% 60.745 31.3109)',
-  input: {
-    backgroundColor: 'lab(15.204% 0 0)', // muted (zinc)
-    color: 'lab(98.26% 0 0)', // foreground (zinc)
-    border: '1px solid lab(100% 0 0 / 15%)', // input (zinc)
-    borderRadius: '0.375rem',
-    padding: '0.25rem 0.5rem',
-    fontSize: '0.75rem',
+  styles: {
+    container: {
+      backgroundColor: 'transparent',
+      fontFamily: 'inherit',
+    },
+    property: 'lab(66.128% 0 0)', // muted-foreground (zinc)
+    bracket: 'lab(48.496% 0 0)', // ring (zinc)
+    string: 'lab(98.26% 0 0)', // foreground (zinc)
+    number: 'lab(70% 45 65)', // chart-3 (warm orange)
+    boolean: 'lab(65% -35 30)', // chart-2 (teal)
+    null: 'lab(66.128% 0 0)', // muted-foreground (zinc)
+    iconEdit: 'lab(36.9089% 35.0961 -85.6872)', // sidebar-primary (blue)
+    iconDelete: 'lab(63.7053% 60.745 31.3109)', // destructive (red)
+    iconAdd: 'lab(65% -35 30)', // chart-2 (teal)
+    iconCopy: 'lab(66.128% 0 0)',
+    iconOk: 'lab(65% -35 30)',
+    iconCancel: 'lab(63.7053% 60.745 31.3109)',
+    input: {
+      backgroundColor: 'lab(15.204% 0 0)', // muted (zinc)
+      color: 'lab(98.26% 0 0)', // foreground (zinc)
+      border: '1px solid lab(100% 0 0 / 15%)', // input (zinc)
+      borderRadius: '0.375rem',
+      padding: '0.25rem 0.5rem',
+      fontSize: '0.75rem',
+    },
   },
 };
 
@@ -220,7 +224,10 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         });
 
         if (response.ok) {
-          const result = await response.json();
+          const result = (await response.json()) as {
+            inputData?: unknown;
+            rootName?: string | null;
+          };
           if (result.inputData !== undefined) {
             setInputData(result.inputData, result.rootName ?? null);
             debouncedSaveConfig();
@@ -352,7 +359,9 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         });
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
+          const errorData = (await response.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(errorData.error || `HTTP ${response.status}`);
         }
 
@@ -399,14 +408,18 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
             `/api/prompts/usage?${usageParams.toString()}`,
           );
           if (usageRes.ok) {
-            const usageData = await usageRes.json();
-            if (usageData.outputTokens !== null) {
+            const usageData = (await usageRes.json()) as {
+              outputTokens?: number | null;
+              systemInputTokens?: number | null;
+              userInputTokens?: number | null;
+            };
+            if (usageData.outputTokens != null) {
               setLastOutputTokens(usageData.outputTokens);
             }
-            if (usageData.systemInputTokens !== null) {
+            if (usageData.systemInputTokens != null) {
               setLastSystemInputTokens(usageData.systemInputTokens);
             }
-            if (usageData.userInputTokens !== null) {
+            if (usageData.userInputTokens != null) {
               setLastUserInputTokens(usageData.userInputTokens);
             }
           }

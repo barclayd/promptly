@@ -2,6 +2,18 @@
 
 import { useSyncExternalStore } from 'react';
 
+// Navigation API types (not yet in standard TypeScript lib)
+interface NavigationCurrentEntryChangeEvent extends Event {
+  from?: { url?: string };
+}
+
+interface Navigation extends EventTarget {
+  addEventListener(
+    type: 'currententrychange',
+    listener: (event: NavigationCurrentEntryChangeEvent) => void,
+  ): void;
+}
+
 const STORAGE_KEY = 'promptly-recents';
 const MAX_RECENTS = 10;
 
@@ -79,10 +91,11 @@ const setupNavigationListener = () => {
   if (!('navigation' in window)) return;
 
   listenerSetup = true;
-  const nav = window.navigation as Navigation;
+  const nav = (window as Window & { navigation?: Navigation }).navigation;
+  if (!nav) return;
 
   nav.addEventListener('currententrychange', (event) => {
-    const fromEntry = (event as NavigationCurrentEntryChangeEvent).from;
+    const fromEntry = event.from;
     if (!fromEntry) return;
 
     const fromUrl = fromEntry.url;

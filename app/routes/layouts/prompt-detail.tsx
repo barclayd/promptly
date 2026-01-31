@@ -49,6 +49,7 @@ const createCookieStorage = (serverCookie: string | null): LayoutStorage => ({
   },
   setItem: (key: string, value: string) => {
     if (typeof document !== 'undefined') {
+      // biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API has limited browser support
       document.cookie = `${key}=${value}; path=/; max-age=31536000`;
     }
   },
@@ -121,7 +122,7 @@ export default function PromptDetailLayout() {
         </div>
       ) : (
         <ResizablePanelGroup
-          direction="horizontal"
+          orientation="horizontal"
           className="flex-1 min-h-svh max-h-svh overflow-hidden"
           defaultLayout={defaultLayout}
           onLayoutChange={onLayoutChange}

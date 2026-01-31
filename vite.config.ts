@@ -11,4 +11,22 @@ export default defineConfig(() => ({
     reactRouter(),
     tsconfigPaths(),
   ],
+  build: {
+    // Increase chunk size limit (prompt-detail includes heavy deps like syntax highlighter)
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress sourcemap warnings from third-party libraries that don't ship complete sourcemaps
+        // This is a known Vite 5 / Rollup 4 issue: https://github.com/vitejs/vite/issues/15012
+        if (warning.code === 'SOURCEMAP_BROKEN') {
+          return;
+        }
+        // Suppress empty chunk warnings (expected for action-only API routes)
+        if (warning.code === 'EMPTY_BUNDLE') {
+          return;
+        }
+        warn(warning);
+      },
+    },
+  },
 }));

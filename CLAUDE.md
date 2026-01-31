@@ -12,6 +12,15 @@
 # Code Style
 - Always use arrow functions instead of function declarations
 - Use `export const` inline rather than separate export statements
+- **Always look up documentation** when unsure about APIs - don't guess or assume. Use web search to find official docs.
+
+# Testing Requirements
+- **All tests must pass** before completing any feature: `bun run lint`, `bun run typecheck`, and `bun run test:e2e`
+- Fix lint errors as you go - don't accumulate technical debt
+- When building new features, consider whether an e2e test would be valuable:
+  - **Add e2e tests** for: critical user flows, complex interactions, features prone to regression
+  - **Skip e2e tests** for: simple UI changes, internal refactors, features already covered by existing tests
+- Run the full test suite before marking work as complete
 
 # React Patterns
 - Avoid `useEffect` wherever possible - it causes unintended bugs

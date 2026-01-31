@@ -40,8 +40,8 @@ export const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
       isFetchingRef.current = true;
       setLoading(true);
       fetch('/api/search-prompts')
-        .then((res) => res.json())
-        .then((data: { prompts?: SearchPrompt[] }) => {
+        .then((res) => res.json() as Promise<{ prompts?: SearchPrompt[] }>)
+        .then((data) => {
           setPrompts(data.prompts || []);
           hasFetchedRef.current = true;
         })
