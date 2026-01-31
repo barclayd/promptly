@@ -47,7 +47,7 @@ type Invitation = {
   email: string;
   role: string | null;
   status: string;
-  expiresAt: Date;
+  expiresAt: string | null; // ISO string for serialization
   organizationId: string;
   organization?: {
     id: string;
@@ -140,7 +140,11 @@ export const loader = async ({
     });
   }
 
-  if (new Date(invitationRow.expires_at) < new Date()) {
+  // expires_at is stored as milliseconds timestamp in D1
+  const expiresAtMs = invitationRow.expires_at;
+  const expiresAtDate = expiresAtMs ? new Date(expiresAtMs) : null;
+
+  if (expiresAtDate && expiresAtDate < new Date()) {
     throw new Response('This invitation has expired', { status: 400 });
   }
 
@@ -149,7 +153,7 @@ export const loader = async ({
     email: invitationRow.email,
     role: invitationRow.role,
     status: invitationRow.status,
-    expiresAt: new Date(invitationRow.expires_at),
+    expiresAt: expiresAtDate ? expiresAtDate.toISOString() : null,
     organizationId: invitationRow.organization_id,
     organization: {
       id: invitationRow.orgId,
@@ -463,9 +467,11 @@ const InvitePage = ({ loaderData, actionData }: Route.ComponentProps) => {
 
           <FieldDescription className="px-6 text-center">
             This invitation expires on{' '}
-            {new Date(invitation.expiresAt).toLocaleDateString('en-GB', {
-              dateStyle: 'long',
-            })}
+            {invitation.expiresAt
+              ? new Date(invitation.expiresAt).toLocaleDateString('en-GB', {
+                  dateStyle: 'long',
+                })
+              : 'soon'}
           </FieldDescription>
         </div>
       </div>
