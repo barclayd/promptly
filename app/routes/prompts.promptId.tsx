@@ -915,6 +915,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
                   />
                 )
               }
+              disabled={isViewingOldVersion}
             />
             <PromptReview
               title="User Prompt"
@@ -941,6 +942,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
                   />
                 )
               }
+              disabled={isViewingOldVersion}
             />
           </div>
         </div>

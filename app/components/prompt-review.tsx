@@ -129,6 +129,7 @@ export const PromptReview = ({
   cursorOverlay,
   textareaRef,
   onSelectionChange,
+  disabled,
 }: {
   title: string;
   value?: string;
@@ -142,6 +143,7 @@ export const PromptReview = ({
   cursorOverlay?: React.ReactNode;
   textareaRef?: (el: HTMLTextAreaElement | null) => void;
   onSelectionChange?: (position: number) => void;
+  disabled?: boolean;
 }) => {
   const isCurrentlySaving = isPendingSave || isSaving;
   const [copied, setCopied] = useState(false);
@@ -179,6 +181,7 @@ export const PromptReview = ({
           cursorOverlay={cursorOverlay}
           textareaRef={textareaRef}
           onSelectionChange={onSelectionChange}
+          disabled={disabled}
         />
         <InputGroupAddon align="block-end" className="border-t">
           <InputGroupText className="min-w-0">
