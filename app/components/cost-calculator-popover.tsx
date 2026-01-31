@@ -321,7 +321,12 @@ export const CostCalculatorPopover = ({
           <CurrencyIcon className="size-4" />
         </InputGroupButton>
       </PopoverTrigger>
-      <PopoverContent className="w-80" side="bottom" align="end">
+      <PopoverContent
+        className="w-80"
+        side="bottom"
+        align="end"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <div className="grid gap-4">
           <div className="space-y-2">
             <div className="space-y-1">
