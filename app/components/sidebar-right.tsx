@@ -48,7 +48,7 @@ import {
   SidebarSeparator,
 } from '~/components/ui/sidebar';
 import { type Version, VersionsTable } from '~/components/versions-table';
-import { useIsDarkMode } from '~/hooks/use-dark-mode';
+import { useTheme } from '~/hooks/use-dark-mode';
 import { useIsMobile } from '~/hooks/use-mobile';
 import { removeFieldsFromInputData } from '~/lib/input-data-utils';
 import type { SchemaField } from '~/lib/schema-types';
@@ -496,7 +496,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       setTemperature,
     ]);
 
-    const isDarkMode = useIsDarkMode();
+    const { isDark: isDarkMode } = useTheme();
     const jsonEditorTheme = isDarkMode ? sidebarDarkTheme : sidebarLightTheme;
 
     return (
@@ -790,7 +790,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                             'w-full font-medium transition-all duration-200',
                             isStreaming
                               ? 'bg-primary/80'
-                              : 'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/95 hover:to-primary/85 shadow-sm hover:shadow-md',
+                              : 'bg-linear-to-r from-primary to-primary/90 hover:from-primary/95 hover:to-primary/85 shadow-sm hover:shadow-md',
                           )}
                           onClick={handleRunPrompt}
                           disabled={isStreaming}

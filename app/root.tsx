@@ -5,7 +5,13 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from 'react-router';
+import {
+  PreventFlashOnWrongTheme,
+  ThemeProvider,
+  useTheme,
+} from 'remix-themes';
 import { Toaster } from '~/components/ui/sonner';
 import { sessionContext } from '~/context';
 import { RecentsProvider } from '~/context/recents-context';
@@ -13,6 +19,7 @@ import { SearchProvider } from '~/context/search-context';
 import { parseCookie } from '~/lib/cookies';
 import { authMiddleware } from '~/middleware/auth';
 import { orgMiddleware } from '~/middleware/org';
+import { themeSessionResolver } from '~/sessions.server';
 
 import type { Route } from './+types/root';
 import './app.css';
@@ -31,9 +38,13 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   // Use cached session from authMiddleware (already fetched once)
   const session = context.get(sessionContext);
 
+  // Get theme from cookie session
+  const { getTheme } = await themeSessionResolver(request);
+
   return {
     serverLayoutCookie: layoutCookie ?? null,
     user: session?.user ?? null,
+    theme: getTheme(),
   };
 };
 
@@ -50,31 +61,17 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
-export const Layout = ({ children }: { children: React.ReactNode }) => {
+const AppWithTheme = ({ children }: { children: React.ReactNode }) => {
+  const data = useLoaderData<typeof loader>();
+  const [theme] = useTheme();
+
   return (
-    <html lang="en">
+    <html lang="en" className={theme ?? ''} suppressHydrationWarning>
       <head title="Promptly">
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <script
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: Theme script prevents flash of unstyled content
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                var stored = localStorage.getItem('theme');
-                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
-                function apply() {
-                  var isDark = stored === 'dark' || (stored !== 'light' && prefersDark.matches);
-                  document.documentElement.classList.toggle('dark', isDark);
-                }
-                apply();
-                prefersDark.addEventListener('change', function() {
-                  if (!stored || stored === 'system') apply();
-                });
-              })();
-            `,
-          }}
-        />
+        <title>Promptly</title>
+        <PreventFlashOnWrongTheme ssrTheme={Boolean(data?.theme)} />
         <Meta />
         <Links />
       </head>
@@ -87,6 +84,19 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         <Scripts />
       </body>
     </html>
+  );
+};
+
+export const Layout = ({ children }: { children: React.ReactNode }) => {
+  const data = useLoaderData<typeof loader>();
+
+  return (
+    <ThemeProvider
+      specifiedTheme={data?.theme ?? null}
+      themeAction="/api/set-theme"
+    >
+      <AppWithTheme>{children}</AppWithTheme>
+    </ThemeProvider>
   );
 };
 

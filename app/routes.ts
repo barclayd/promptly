@@ -6,6 +6,7 @@ import {
 } from '@react-router/dev/routes';
 
 export default [
+  route('api/set-theme', './routes/api/set-theme.ts'),
   route('api/auth/*', './routes/api/auth.ts'),
   route('api/prompts/get', './routes/api/prompts.get.ts'),
   route('api/prompts/create', './routes/api/prompts.create.ts'),

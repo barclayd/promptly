@@ -1,41 +1,31 @@
-import { useSyncExternalStore } from 'react';
+import { Theme, useTheme as useRemixTheme } from 'remix-themes';
 
-type Theme = 'light' | 'dark' | 'system';
-const THEME_KEY = 'theme';
+export { Theme };
 
-const subscribe = (callback: () => void) => {
-  const query = window.matchMedia('(prefers-color-scheme: dark)');
-  window.addEventListener('storage', callback);
-  query.addEventListener('change', callback);
-  return () => {
-    window.removeEventListener('storage', callback);
-    query.removeEventListener('change', callback);
-  };
-};
-
-const getIsDark = () => document.documentElement.classList.contains('dark');
-
-const getTheme = (): Theme => {
-  if (typeof window === 'undefined') return 'system';
-  const stored = localStorage.getItem(THEME_KEY);
-  return stored === 'light' || stored === 'dark' || stored === 'system'
-    ? stored
-    : 'system';
-};
-
-export const setTheme = (theme: Theme) => {
-  localStorage.setItem(THEME_KEY, theme);
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const isDark = theme === 'dark' || (theme === 'system' && prefersDark);
-  document.documentElement.classList.toggle('dark', isDark);
-  window.dispatchEvent(new StorageEvent('storage', { key: THEME_KEY }));
-};
+export type ThemeValue = 'light' | 'dark' | 'system';
 
 export const useTheme = () => {
-  const isDark = useSyncExternalStore(subscribe, getIsDark, () => false);
-  const theme = useSyncExternalStore(subscribe, getTheme, () => 'system');
-  return { theme, isDark, setTheme };
-};
+  const [theme, setRemixTheme] = useRemixTheme();
 
-// Keep backward compatibility
-export const useIsDarkMode = () => useTheme().isDark;
+  const isDark = theme === Theme.DARK;
+
+  // Convert Theme enum to string for UI display
+  const themeValue: ThemeValue =
+    theme === Theme.DARK ? 'dark' : theme === Theme.LIGHT ? 'light' : 'system';
+
+  const setTheme = (newTheme: ThemeValue) => {
+    if (newTheme === 'system') {
+      setRemixTheme(null);
+    } else if (newTheme === 'dark') {
+      setRemixTheme(Theme.DARK);
+    } else {
+      setRemixTheme(Theme.LIGHT);
+    }
+  };
+
+  return {
+    theme: themeValue,
+    isDark,
+    setTheme,
+  };
+};
