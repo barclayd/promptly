@@ -4,7 +4,9 @@ import { ROUTES } from '../helpers/test-data';
 test.describe('Smoke Tests', () => {
   test('login page loads', async ({ page }) => {
     await page.goto(ROUTES.login);
-    await expect(page.getByRole('button', { name: 'Login', exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Login', exact: true }),
+    ).toBeVisible();
   });
 
   test('user can login and reach home', async ({ authenticatedPage }) => {

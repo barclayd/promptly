@@ -12,4 +12,13 @@ export const ROUTES = {
   login: '/login',
   dashboard: '/dashboard',
   prompts: '/prompts',
+  analytics: '/analytics',
+  team: '/team',
+  settings: '/settings',
+} as const;
+
+export const TIMEOUTS = {
+  autoSave: 3500, // Auto-save delay + buffer
+  streaming: 30000, // Max time for streaming response
+  navigation: 5000, // Page navigation timeout
 } as const;
