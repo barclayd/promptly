@@ -53,6 +53,7 @@
         "react-router": "7.13.0",
         "react-syntax-highlighter": "^16.1.0",
         "recharts": "3.7.0",
+        "remix-themes": "^2.0.4",
         "resend": "^6.9.1",
         "sonner": "^2.0.7",
         "tailwind-merge": "^3.4.0",
@@ -1081,6 +1082,8 @@
     "redux-thunk": ["redux-thunk@3.1.0", "", { "peerDependencies": { "redux": "^5.0.0" } }, "sha512-NW2r5T6ksUKXCabzhL9z+h206HQw/NJkcLm1GPImRQ8IzfXwRGqjVhKJGauHirT0DAuyy6hjdnMZaRoAcy0Klw=="],
 
     "refractor": ["refractor@5.0.0", "", { "dependencies": { "@types/hast": "^3.0.0", "@types/prismjs": "^1.0.0", "hastscript": "^9.0.0", "parse-entities": "^4.0.0" } }, "sha512-QXOrHQF5jOpjjLfiNk5GFnWhRXvxjUVnlFxkeDmewR5sXkr3iM46Zo+CnRR8B+MDVqkULW4EcLVcRBNOPXHosw=="],
+
+    "remix-themes": ["remix-themes@2.0.4", "", { "peerDependencies": { "react-router": ">=7.0.0" } }, "sha512-S1vIx86xdsMv+ceaWGWtlVZBMhU4tmZeBOBzOiZnhbHnGBbd5YeyIlZ5EL3BSEhZq35oEcINeTrMrVju9GPYEA=="],
 
     "remove-accents": ["remove-accents@0.5.0", "", {}, "sha512-8g3/Otx1eJaVD12e31UbJj1YzdtVvzH85HV7t+9MJYk/u3XmkOUJ5Ys9wQrf9PCPK8+xn4ymzqYCiZl6QWKn+A=="],
 

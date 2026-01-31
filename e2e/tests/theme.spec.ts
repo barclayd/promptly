@@ -39,42 +39,84 @@ test('can toggle to dark mode via user menu', async ({ authenticatedPage }) => {
   // Select "Dark" mode
   await darkOption.click();
 
+  // Wait for theme to be applied
+  await authenticatedPage.waitForTimeout(100);
+
   // Verify document has dark class
   const hasDarkClass = await authenticatedPage.evaluate(() => {
     return document.documentElement.classList.contains('dark');
   });
   expect(hasDarkClass).toBe(true);
-
-  // Verify localStorage was updated
-  const themeValue = await authenticatedPage.evaluate(() => {
-    return localStorage.getItem('theme');
-  });
-  expect(themeValue).toBe('dark');
 });
 
 test('theme persists after page reload', async ({ authenticatedPage }) => {
   await authenticatedPage.goto(ROUTES.home);
+  await authenticatedPage.waitForLoadState('networkidle');
 
-  // Set theme to dark via localStorage directly for faster test
-  await authenticatedPage.evaluate(() => {
-    localStorage.setItem('theme', 'dark');
+  // Set theme to dark via UI
+  const userMenuButton = authenticatedPage
+    .locator('button')
+    .filter({
+      has: authenticatedPage.locator('img, span.rounded-lg'),
+    })
+    .filter({
+      hasText: /Scott McTester|test@/i,
+    });
+  await userMenuButton.click();
+
+  const dropdownContent = authenticatedPage.locator('[role="menu"]');
+  await expect(dropdownContent).toBeVisible();
+
+  const themeSubmenuTrigger = dropdownContent.getByText(/toggle theme/i);
+  await themeSubmenuTrigger.hover();
+  await authenticatedPage.waitForTimeout(200);
+
+  const darkOption = authenticatedPage.getByRole('menuitemradio', {
+    name: /dark/i,
   });
+  await darkOption.click();
 
-  // Reload the page
-  await authenticatedPage.reload();
-
-  // Verify dark mode is applied after reload
-  const hasDarkClass = await authenticatedPage.evaluate(() => {
+  // Verify dark class is applied
+  let hasDarkClass = await authenticatedPage.evaluate(() => {
     return document.documentElement.classList.contains('dark');
   });
   expect(hasDarkClass).toBe(true);
 
-  // Set back to light
-  await authenticatedPage.evaluate(() => {
-    localStorage.setItem('theme', 'light');
+  // Reload the page
+  await authenticatedPage.reload();
+  await authenticatedPage.waitForLoadState('networkidle');
+
+  // Verify dark mode persists after reload
+  hasDarkClass = await authenticatedPage.evaluate(() => {
+    return document.documentElement.classList.contains('dark');
   });
+  expect(hasDarkClass).toBe(true);
+
+  // Set back to light via UI
+  const userMenuButton2 = authenticatedPage
+    .locator('button')
+    .filter({
+      has: authenticatedPage.locator('img, span.rounded-lg'),
+    })
+    .filter({
+      hasText: /Scott McTester|test@/i,
+    });
+  await userMenuButton2.click();
+
+  const dropdownContent2 = authenticatedPage.locator('[role="menu"]');
+  await expect(dropdownContent2).toBeVisible();
+
+  const themeSubmenuTrigger2 = dropdownContent2.getByText(/toggle theme/i);
+  await themeSubmenuTrigger2.hover();
+  await authenticatedPage.waitForTimeout(200);
+
+  const lightOption = authenticatedPage.getByRole('menuitemradio', {
+    name: /light/i,
+  });
+  await lightOption.click();
 
   await authenticatedPage.reload();
+  await authenticatedPage.waitForLoadState('networkidle');
 
   // Verify light mode
   const hasDarkClassAfter = await authenticatedPage.evaluate(() => {
@@ -86,18 +128,40 @@ test('theme persists after page reload', async ({ authenticatedPage }) => {
 test('system theme option respects OS preference', async ({
   authenticatedPage,
 }) => {
-  await authenticatedPage.goto(ROUTES.home);
-
-  // Set theme to system
-  await authenticatedPage.evaluate(() => {
-    localStorage.setItem('theme', 'system');
-  });
-
-  // Emulate dark mode preference
+  // Emulate dark mode preference before navigation
   await authenticatedPage.emulateMedia({ colorScheme: 'dark' });
-  await authenticatedPage.reload();
 
-  // Verify dark mode is applied
+  await authenticatedPage.goto(ROUTES.home);
+  await authenticatedPage.waitForLoadState('networkidle');
+
+  // Set theme to system via UI
+  const userMenuButton = authenticatedPage
+    .locator('button')
+    .filter({
+      has: authenticatedPage.locator('img, span.rounded-lg'),
+    })
+    .filter({
+      hasText: /Scott McTester|test@/i,
+    });
+  await userMenuButton.click();
+
+  const dropdownContent = authenticatedPage.locator('[role="menu"]');
+  await expect(dropdownContent).toBeVisible();
+
+  const themeSubmenuTrigger = dropdownContent.getByText(/toggle theme/i);
+  await themeSubmenuTrigger.hover();
+  await authenticatedPage.waitForTimeout(200);
+
+  const systemOption = authenticatedPage.getByRole('menuitemradio', {
+    name: /system/i,
+  });
+  await systemOption.click();
+
+  // Reload with dark color scheme
+  await authenticatedPage.reload();
+  await authenticatedPage.waitForLoadState('networkidle');
+
+  // Verify dark mode is applied (following system preference)
   const hasDarkClass = await authenticatedPage.evaluate(() => {
     return document.documentElement.classList.contains('dark');
   });
@@ -106,8 +170,9 @@ test('system theme option respects OS preference', async ({
   // Emulate light mode preference
   await authenticatedPage.emulateMedia({ colorScheme: 'light' });
   await authenticatedPage.reload();
+  await authenticatedPage.waitForLoadState('networkidle');
 
-  // Verify light mode
+  // Verify light mode (following system preference)
   const hasDarkClassAfter = await authenticatedPage.evaluate(() => {
     return document.documentElement.classList.contains('dark');
   });

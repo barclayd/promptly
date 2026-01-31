@@ -33,7 +33,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '~/components/ui/sidebar';
-import { useTheme } from '~/hooks/use-dark-mode';
+import { type ThemeValue, useTheme } from '~/hooks/use-dark-mode';
 
 const getUserInitials = (name: string) => {
   const initials = name.split(' ');
@@ -119,9 +119,7 @@ export function NavUser({
                 <DropdownMenuSubContent>
                   <DropdownMenuRadioGroup
                     value={theme}
-                    onValueChange={(value) =>
-                      setTheme(value as 'light' | 'dark' | 'system')
-                    }
+                    onValueChange={(value) => setTheme(value as ThemeValue)}
                   >
                     <DropdownMenuRadioItem value="light">
                       <IconSun className="mr-2 size-4" />
