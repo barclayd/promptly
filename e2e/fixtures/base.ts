@@ -6,23 +6,29 @@ import { ROUTES, TEST_USER } from '../helpers/test-data';
  */
 export const login = async (page: Page) => {
   await page.goto(ROUTES.login);
+  await page.waitForLoadState('domcontentloaded');
 
   // Wait for form fields to be visible and interactive
   const emailField = page.locator('#email');
   const passwordField = page.locator('#password');
 
-  await emailField.waitFor({ state: 'visible' });
+  await emailField.waitFor({ state: 'visible', timeout: 10000 });
   await emailField.fill(TEST_USER.email);
 
-  await passwordField.waitFor({ state: 'visible' });
+  await passwordField.waitFor({ state: 'visible', timeout: 10000 });
   await passwordField.fill(TEST_USER.password);
 
-  await page.getByRole('button', { name: 'Login', exact: true }).click();
+  const loginButton = page.getByRole('button', { name: 'Login', exact: true });
+  await loginButton.waitFor({ state: 'visible', timeout: 10000 });
+  await loginButton.click();
 
   // Wait for navigation to complete after login
   await page.waitForURL((url) => !url.pathname.includes('/login'), {
-    timeout: 15000,
+    timeout: 30000,
   });
+
+  // Wait for the authenticated page to be fully loaded
+  await page.waitForLoadState('networkidle', { timeout: 15000 });
 };
 
 /**

@@ -9,6 +9,7 @@ test('analytics page shows coming soon message', async ({
   authenticatedPage,
 }) => {
   await authenticatedPage.goto(ROUTES.analytics);
+  await authenticatedPage.waitForLoadState('networkidle');
   await expect(authenticatedPage).toHaveURL(ROUTES.analytics);
 
   // Verify placeholder message is visible
@@ -19,6 +20,7 @@ test('analytics page shows coming soon message', async ({
 
 test('team page loads successfully', async ({ authenticatedPage }) => {
   await authenticatedPage.goto(ROUTES.team);
+  await authenticatedPage.waitForLoadState('networkidle');
   await expect(authenticatedPage).toHaveURL(ROUTES.team);
 
   // Verify page content is present (team heading or member list)
@@ -33,6 +35,7 @@ test('team page loads successfully', async ({ authenticatedPage }) => {
 
 test('settings page loads successfully', async ({ authenticatedPage }) => {
   await authenticatedPage.goto(ROUTES.settings);
+  await authenticatedPage.waitForLoadState('networkidle');
   await expect(authenticatedPage).toHaveURL(ROUTES.settings);
 
   // Verify settings content is present

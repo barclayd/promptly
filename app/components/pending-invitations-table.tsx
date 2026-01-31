@@ -59,8 +59,14 @@ export const PendingInvitationsTable = ({
     return null;
   }
 
+  const parseDate = (date: Date | string | number): Date | null => {
+    const parsed = new Date(date);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
   const isExpiringSoon = (expiresAt: Date | string | number) => {
-    const expiry = new Date(expiresAt);
+    const expiry = parseDate(expiresAt);
+    if (!expiry) return false;
     const now = new Date();
     const hoursUntilExpiry =
       (expiry.getTime() - now.getTime()) / (1000 * 60 * 60);
@@ -68,7 +74,18 @@ export const PendingInvitationsTable = ({
   };
 
   const isExpired = (expiresAt: Date | string | number) => {
-    return new Date(expiresAt) < new Date();
+    const expiry = parseDate(expiresAt);
+    if (!expiry) return false;
+    return expiry < new Date();
+  };
+
+  const formatDate = (
+    date: Date | string | number,
+    options: Intl.DateTimeFormatOptions,
+  ): string => {
+    const parsed = parseDate(date);
+    if (!parsed) return '-';
+    return parsed.toLocaleDateString('en-GB', options);
   };
 
   return (
@@ -131,13 +148,10 @@ export const PendingInvitationsTable = ({
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {new Date(invitation.createdAt).toLocaleDateString(
-                      'en-GB',
-                      {
-                        month: 'short',
-                        day: 'numeric',
-                      },
-                    )}
+                    {formatDate(invitation.createdAt, {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
                   </TableCell>
                   <TableCell>
                     {expired ? (
@@ -149,23 +163,17 @@ export const PendingInvitationsTable = ({
                       </Badge>
                     ) : expiringSoon ? (
                       <span className="text-amber-600 font-medium text-sm">
-                        {new Date(invitation.expiresAt).toLocaleDateString(
-                          'en-US',
-                          {
-                            month: 'short',
-                            day: 'numeric',
-                          },
-                        )}
+                        {formatDate(invitation.expiresAt, {
+                          month: 'short',
+                          day: 'numeric',
+                        })}
                       </span>
                     ) : (
                       <span className="text-muted-foreground">
-                        {new Date(invitation.expiresAt).toLocaleDateString(
-                          'en-US',
-                          {
-                            month: 'short',
-                            day: 'numeric',
-                          },
-                        )}
+                        {formatDate(invitation.expiresAt, {
+                          month: 'short',
+                          day: 'numeric',
+                        })}
                       </span>
                     )}
                   </TableCell>

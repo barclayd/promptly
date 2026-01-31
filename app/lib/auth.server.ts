@@ -4,6 +4,7 @@ import { CamelCasePlugin, Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
 import type { RouterContextProvider } from 'react-router';
 import { Resend } from 'resend';
+import { hashPassword, verifyPassword } from './password.server';
 
 type Database = Record<string, string>;
 
@@ -14,6 +15,10 @@ export const getAuth = (ctx: Readonly<RouterContextProvider>) => {
   return betterAuth({
     emailAndPassword: {
       enabled: true,
+      password: {
+        hash: hashPassword,
+        verify: verifyPassword,
+      },
     },
     baseURL,
     trustedOrigins: [baseURL],

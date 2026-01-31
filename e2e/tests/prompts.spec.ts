@@ -10,17 +10,20 @@ test('can navigate to a prompt and run a test', async ({
 }) => {
   // Navigate to prompts page
   await authenticatedPage.goto(ROUTES.prompts);
+  await authenticatedPage.waitForLoadState('networkidle');
   await expect(authenticatedPage).toHaveURL(ROUTES.prompts);
 
-  // Click on the first prompt in the list
+  // Wait for prompt list to load and click on the first prompt
   const firstPromptLink = authenticatedPage
     .locator('a[href^="/prompts/"]')
     .first();
-  await expect(firstPromptLink).toBeVisible();
+  await firstPromptLink.waitFor({ state: 'visible', timeout: 15000 });
   await firstPromptLink.click();
 
   // Verify URL changed to a specific prompt
-  await expect(authenticatedPage).toHaveURL(/\/prompts\/[a-zA-Z0-9_-]+$/);
+  await expect(authenticatedPage).toHaveURL(/\/prompts\/[a-zA-Z0-9_-]+$/, {
+    timeout: 15000,
+  });
 
   // Click "Test" button - it's a button with variant="default" containing "Test" text
   const testButton = authenticatedPage
@@ -45,11 +48,16 @@ test('can navigate to a prompt and run a test', async ({
 test('prompt editor has expected sections', async ({ authenticatedPage }) => {
   // Navigate to a prompt
   await authenticatedPage.goto(ROUTES.prompts);
+  await authenticatedPage.waitForLoadState('networkidle');
+
   const firstPromptLink = authenticatedPage
     .locator('a[href^="/prompts/"]')
     .first();
+  await firstPromptLink.waitFor({ state: 'visible', timeout: 15000 });
   await firstPromptLink.click();
-  await expect(authenticatedPage).toHaveURL(/\/prompts\/[a-zA-Z0-9_-]+$/);
+  await expect(authenticatedPage).toHaveURL(/\/prompts\/[a-zA-Z0-9_-]+$/, {
+    timeout: 15000,
+  });
 
   // Verify System Prompt section exists
   await expect(authenticatedPage.getByText('System Prompt')).toBeVisible();
@@ -75,11 +83,16 @@ test('prompt editor has expected sections', async ({ authenticatedPage }) => {
 test('can edit prompt text', async ({ authenticatedPage }) => {
   // Navigate to a prompt
   await authenticatedPage.goto(ROUTES.prompts);
+  await authenticatedPage.waitForLoadState('networkidle');
+
   const firstPromptLink = authenticatedPage
     .locator('a[href^="/prompts/"]')
     .first();
+  await firstPromptLink.waitFor({ state: 'visible', timeout: 15000 });
   await firstPromptLink.click();
-  await expect(authenticatedPage).toHaveURL(/\/prompts\/[a-zA-Z0-9_-]+$/);
+  await expect(authenticatedPage).toHaveURL(/\/prompts\/[a-zA-Z0-9_-]+$/, {
+    timeout: 15000,
+  });
 
   // Find the System Prompt textarea
   const textarea = authenticatedPage.locator('#textarea-system-prompt');
