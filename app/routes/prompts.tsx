@@ -44,7 +44,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
   const prompts = untitledFolder
     ? db
         .prepare(
-          'SELECT id, name, description, updated_at FROM prompt WHERE folder_id = ? AND organization_id = ?',
+          'SELECT id, name, description, updated_at FROM prompt WHERE folder_id = ? AND organization_id = ? AND deleted_at IS NULL',
         )
         .bind(untitledFolder.id, org.organizationId)
         .all<{

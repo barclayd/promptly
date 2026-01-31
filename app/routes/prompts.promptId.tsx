@@ -35,6 +35,15 @@ type PromptDetailContext = {
   getIsTestRunning: () => boolean;
 };
 
+type OrgMember = {
+  userId: string;
+  role: 'member' | 'admin' | 'owner';
+};
+
+type FullOrganization = {
+  members?: OrgMember[];
+};
+
 // biome-ignore lint/correctness/noEmptyPattern: react router default
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -54,6 +63,23 @@ export const loader = async ({
   const org = context.get(orgContext);
   if (!org) {
     throw new Response('Unauthorized', { status: 403 });
+  }
+
+  // Get current user's role to check if they're an owner
+  const auth = getAuth(context);
+  const session = await auth.api.getSession({ headers: request.headers });
+  let isOwner = false;
+  if (session?.user) {
+    const orgResponse = await auth.api.getFullOrganization({
+      query: { organizationId: org.organizationId },
+      headers: request.headers,
+      asResponse: true,
+    });
+    const fullOrg = (await orgResponse.json()) as FullOrganization | null;
+    const currentUserMember = fullOrg?.members?.find(
+      (m) => m.userId === session.user.id,
+    );
+    isOwner = currentUserMember?.role === 'owner';
   }
 
   const { promptId } = params;
@@ -287,6 +313,7 @@ export const loader = async ({
     isViewingOldVersion,
     versionNotFound,
     requestedVersion,
+    isOwner,
   };
 };
 
@@ -865,7 +892,10 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           {!isViewingOldVersion && (
             <div className="hidden md:flex px-4 lg:px-6 items-center justify-between gap-2">
-              <PromptEditorMenubar prompt={loaderData.prompt} />
+              <PromptEditorMenubar
+                prompt={loaderData.prompt}
+                isOwner={loaderData.isOwner}
+              />
               <PublishPromptDialog
                 promptId={loaderData.prompt.id}
                 suggestedVersion={suggestedVersion}

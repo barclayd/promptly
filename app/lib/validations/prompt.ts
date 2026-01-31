@@ -7,3 +7,9 @@ export const updatePromptSchema = z.object({
 });
 
 export type UpdatePromptInput = z.infer<typeof updatePromptSchema>;
+
+export const deletePromptSchema = z.object({
+  promptId: z.string().min(1, 'Prompt ID is required'),
+});
+
+export type DeletePromptInput = z.infer<typeof deletePromptSchema>;
