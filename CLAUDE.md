@@ -12,6 +12,7 @@
 # Code Style
 - Always use arrow functions instead of function declarations
 - Use `export const` inline rather than separate export statements
+- **Always look up documentation** when unsure about APIs - don't guess or assume. Use web search to find official docs.
 
 # React Patterns
 - Avoid `useEffect` wherever possible - it causes unintended bugs

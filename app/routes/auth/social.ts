@@ -23,7 +23,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     asResponse: true,
   });
 
-  const data = await response.json();
+  const data = (await response.json()) as { url?: string };
 
   if (!data.url) {
     throw new Response('Failed to get OAuth URL', { status: 500 });

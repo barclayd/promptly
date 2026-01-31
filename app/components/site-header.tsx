@@ -93,7 +93,7 @@ export const SiteHeader = ({ promptId }: SiteHeaderProps) => {
           {hasPresence && (
             <PresenceAvatars users={users} currentUserId={currentUserId} />
           )}
-          <SearchForm compact={hasPresence} />
+          <SearchForm compact={!!hasPresence} />
         </div>
       </div>
     </header>

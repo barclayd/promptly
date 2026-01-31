@@ -1,5 +1,4 @@
-import type { RouterContextProvider } from 'react-router';
-import { redirect } from 'react-router';
+import { type MiddlewareFunction, redirect } from 'react-router';
 import { authContext, sessionContext, userContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
 
@@ -19,12 +18,9 @@ const isPublicRoute = (pathname: string) =>
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
 
-export const authMiddleware = async ({
+export const authMiddleware: MiddlewareFunction<Response> = async ({
   request,
   context,
-}: {
-  request: Request;
-  context: RouterContextProvider;
 }) => {
   // Create auth instance ONCE and cache in context
   const auth = getAuth(context);

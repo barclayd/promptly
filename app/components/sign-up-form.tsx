@@ -23,11 +23,12 @@ import {
 import { cn } from '~/lib/utils';
 
 type ActionData = {
-  errors: {
+  errors?: {
     name?: string[];
     email?: string[];
     password?: string[];
     confirmPassword?: string[];
+    form?: string[];
   };
 };
 

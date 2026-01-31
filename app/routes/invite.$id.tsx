@@ -110,15 +110,15 @@ export const loader = async ({
 
   const invitationRow = await db
     .selectFrom('invitation')
-    .innerJoin('organization', 'organization.id', 'invitation.organizationId')
-    .innerJoin('user as inviter', 'inviter.id', 'invitation.inviterId')
+    .innerJoin('organization', 'organization.id', 'invitation.organization_id')
+    .innerJoin('user as inviter', 'inviter.id', 'invitation.inviter_id')
     .select([
       'invitation.id',
       'invitation.email',
       'invitation.role',
       'invitation.status',
-      'invitation.expiresAt',
-      'invitation.organizationId',
+      'invitation.expires_at',
+      'invitation.organization_id',
       'organization.id as orgId',
       'organization.name as orgName',
       'organization.slug as orgSlug',
@@ -140,7 +140,7 @@ export const loader = async ({
     });
   }
 
-  if (new Date(invitationRow.expiresAt) < new Date()) {
+  if (new Date(invitationRow.expires_at) < new Date()) {
     throw new Response('This invitation has expired', { status: 400 });
   }
 
@@ -149,8 +149,8 @@ export const loader = async ({
     email: invitationRow.email,
     role: invitationRow.role,
     status: invitationRow.status,
-    expiresAt: new Date(invitationRow.expiresAt),
-    organizationId: invitationRow.organizationId,
+    expiresAt: new Date(invitationRow.expires_at),
+    organizationId: invitationRow.organization_id,
     organization: {
       id: invitationRow.orgId,
       name: invitationRow.orgName,
@@ -199,7 +199,7 @@ export const action = async ({
 
   const invitationRow = await db
     .selectFrom('invitation')
-    .select(['id', 'email', 'role', 'status', 'expiresAt', 'organizationId'])
+    .select(['id', 'email', 'role', 'status', 'expires_at', 'organization_id'])
     .where('id', '=', id)
     .executeTakeFirst();
 
@@ -215,8 +215,8 @@ export const action = async ({
     email: invitationRow.email,
     role: invitationRow.role,
     status: invitationRow.status,
-    expiresAt: new Date(invitationRow.expiresAt),
-    organizationId: invitationRow.organizationId,
+    expiresAt: new Date(invitationRow.expires_at),
+    organizationId: invitationRow.organization_id,
   };
 
   if (intent === 'signup') {
@@ -375,7 +375,8 @@ const InvitePage = ({ loaderData, actionData }: Route.ComponentProps) => {
 
   const orgName = invitation.organization?.name || 'the organization';
   const inviterName = invitation.inviter?.user?.name || 'A team member';
-  const role = roleLabels[invitation.role || 'member'] || invitation.role;
+  const role =
+    roleLabels[invitation.role || 'member'] || invitation.role || 'member';
 
   // For logged-in users, show accept invitation UI
   if (isLoggedIn) {

@@ -15,11 +15,13 @@ export const HighlightedPromptText = ({
   return (
     <span className={cn('whitespace-pre-wrap break-words', className)}>
       {segments.map((segment, index) => {
+        // Use segment + index as key since segments are derived from static text splitting
+        const key = `${index}-${segment.slice(0, 10)}`;
         if (VARIABLE_PATTERN.test(segment)) {
           VARIABLE_PATTERN.lastIndex = 0;
-          return <ShineText key={index}>{segment}</ShineText>;
+          return <ShineText key={key}>{segment}</ShineText>;
         }
-        return <span key={index}>{segment}</span>;
+        return <span key={key}>{segment}</span>;
       })}
     </span>
   );

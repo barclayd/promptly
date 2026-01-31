@@ -5,7 +5,9 @@ import { ROUTES, TIMEOUTS } from '../helpers/test-data';
 // We avoid describe blocks to reduce cognitive load and nesting.
 // See: https://kentcdodds.com/blog/avoid-nesting-when-youre-testing
 
-test('can navigate to a prompt and run a test', async ({ authenticatedPage }) => {
+test('can navigate to a prompt and run a test', async ({
+  authenticatedPage,
+}) => {
   // Navigate to prompts page
   await authenticatedPage.goto(ROUTES.prompts);
   await expect(authenticatedPage).toHaveURL(ROUTES.prompts);
@@ -83,16 +85,12 @@ test('can edit prompt text', async ({ authenticatedPage }) => {
   const textarea = authenticatedPage.locator('#textarea-system-prompt');
   await expect(textarea).toBeVisible();
 
-  // Verify we can type in the textarea
+  // Clear existing content and enter test text
   const testText = `Test input ${Date.now()}`;
-  await textarea.click();
-  await textarea.press('End'); // Move to end
-  await authenticatedPage.keyboard.type(testText);
+  await textarea.fill(testText);
 
   // Verify the text was entered
-  await expect(textarea).toHaveValue(
-    new RegExp(testText.replace(/[[\]]/g, '\\$&')),
-  );
+  await expect(textarea).toHaveValue(testText);
 });
 
 test('can publish a version and view it in read-only mode', async ({

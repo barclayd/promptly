@@ -8,13 +8,14 @@ export const buildZodSchema = (
     return z.object({});
   }
 
-  const shape: z.ZodRawShape = {};
+  // Use Record for mutable shape building, then cast to ZodRawShape
+  const shape: Record<string, z.ZodTypeAny> = {};
 
   for (const field of fields) {
     shape[field.name] = buildFieldSchema(field);
   }
 
-  return z.object(shape);
+  return z.object(shape as z.ZodRawShape);
 };
 
 const buildFieldSchema = (field: SchemaField): z.ZodTypeAny => {
@@ -161,12 +162,13 @@ const getSimpleType = (typeName: string): z.ZodTypeAny => {
 
 const buildDiscriminatedUnion = (
   config: NonNullable<SchemaField['params']['discriminatedUnion']>,
-): z.ZodDiscriminatedUnion<string, z.ZodDiscriminatedUnionOption<string>[]> => {
+): z.ZodTypeAny => {
   const { discriminator, cases } = config;
-  const caseSchemas: z.ZodDiscriminatedUnionOption<string>[] = [];
+  const caseSchemas: z.ZodObject<z.ZodRawShape>[] = [];
 
   for (const [_key, caseConfig] of Object.entries(cases)) {
-    const shape: z.ZodRawShape = {
+    // Use Record for mutable shape building, then cast to ZodRawShape
+    const shape: Record<string, z.ZodTypeAny> = {
       [discriminator]: z.literal(caseConfig.value),
     };
 
@@ -174,16 +176,18 @@ const buildDiscriminatedUnion = (
       shape[field.name] = buildFieldSchema(field);
     }
 
-    caseSchemas.push(z.object(shape));
+    caseSchemas.push(z.object(shape as z.ZodRawShape));
   }
 
-  return z.discriminatedUnion(
-    discriminator,
-    caseSchemas as [
-      z.ZodDiscriminatedUnionOption<string>,
-      ...z.ZodDiscriminatedUnionOption<string>[],
-    ],
-  );
+  if (caseSchemas.length < 2) {
+    return caseSchemas[0] ?? z.object({});
+  }
+
+  return z.discriminatedUnion(discriminator, [
+    caseSchemas[0],
+    caseSchemas[1],
+    ...caseSchemas.slice(2),
+  ]);
 };
 
 const applyValidations = (
@@ -310,15 +314,22 @@ const applyValidations = (
         }
         break;
       case 'ip':
-        if (result instanceof z.ZodString) {
-          const ipOptions: { version?: 'v4' | 'v6'; message?: string } = {};
-          if (field.params.stringOptions?.ip?.version) {
-            ipOptions.version = field.params.stringOptions.ip.version;
+        // In Zod v4, IP validation uses top-level z.ipv4() and z.ipv6() validators
+        // See: https://zod.dev/api
+        {
+          const version = field.params.stringOptions?.ip?.version;
+          if (version === 'v4') {
+            result = z.ipv4(
+              validation.message ? { message: validation.message } : undefined,
+            );
+          } else if (version === 'v6') {
+            result = z.ipv6(
+              validation.message ? { message: validation.message } : undefined,
+            );
+          } else {
+            // Default: accept either IPv4 or IPv6 using union
+            result = z.union([z.ipv4(), z.ipv6()]);
           }
-          if (validation.message) ipOptions.message = validation.message;
-          result = result.ip(
-            Object.keys(ipOptions).length > 0 ? ipOptions : undefined,
-          );
         }
         break;
       case 'trim':
