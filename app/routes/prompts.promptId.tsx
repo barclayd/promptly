@@ -864,7 +864,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           {!isViewingOldVersion && (
-            <div className="px-4 lg:px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="hidden md:flex px-4 lg:px-6 items-center justify-between gap-2">
               <PromptEditorMenubar />
               <PublishPromptDialog
                 promptId={loaderData.prompt.id}
@@ -886,9 +886,11 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
                 ? `v${loaderData.currentVersion}`
                 : 'Draft'}
             </div>
-            <p className="text-secondary-foreground">
-              {loaderData.prompt.description}
-            </p>
+            {loaderData.prompt.description && (
+              <p className="text-secondary-foreground">
+                {loaderData.prompt.description}
+              </p>
+            )}
             <Separator className="my-4" />
             <PromptReview
               title="System Prompt"
@@ -944,6 +946,24 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               }
               disabled={isViewingOldVersion}
             />
+            {!isViewingOldVersion && (
+              <div className="mt-4 md:hidden">
+                <PublishPromptDialog
+                  promptId={loaderData.prompt.id}
+                  suggestedVersion={suggestedVersion}
+                  lastPublishedVersion={loaderData.lastPublishedVersion}
+                  isSchemaChanged={!schemasEqual}
+                  disabled={!canPublish}
+                >
+                  <Button
+                    className="cursor-pointer w-full"
+                    disabled={!canPublish}
+                  >
+                    Publish <RssIcon />
+                  </Button>
+                </PublishPromptDialog>
+              </div>
+            )}
           </div>
         </div>
       </div>
