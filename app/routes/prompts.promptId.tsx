@@ -865,7 +865,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           {!isViewingOldVersion && (
             <div className="hidden md:flex px-4 lg:px-6 items-center justify-between gap-2">
-              <PromptEditorMenubar />
+              <PromptEditorMenubar prompt={loaderData.prompt} />
               <PublishPromptDialog
                 promptId={loaderData.prompt.id}
                 suggestedVersion={suggestedVersion}

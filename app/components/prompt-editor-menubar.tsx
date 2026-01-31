@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useLocation } from 'react-router';
+import { EditPromptDetailsDialog } from '~/components/edit-prompt-details-dialog';
 import {
   Menubar,
   MenubarContent,
   MenubarItem,
   MenubarMenu,
+  MenubarSeparator,
   MenubarShortcut,
   MenubarSub,
   MenubarSubContent,
@@ -12,9 +15,18 @@ import {
 } from '~/components/ui/menubar';
 import { useUndoRedo } from '~/hooks/use-undo-redo';
 
-export const PromptEditorMenubar = () => {
+type PromptEditorMenubarProps = {
+  prompt: {
+    id: string;
+    name: string;
+    description: string;
+  };
+};
+
+export const PromptEditorMenubar = ({ prompt }: PromptEditorMenubarProps) => {
   const { canUndo, canRedo, undo, redo } = useUndoRedo();
   const location = useLocation();
+  const [editDetailsOpen, setEditDetailsOpen] = useState(false);
 
   const handleCopyLink = async () => {
     const url = `${window.location.origin}${location.pathname}`;
@@ -43,8 +55,17 @@ export const PromptEditorMenubar = () => {
           <MenubarItem onClick={redo} disabled={!canRedo}>
             Redo <MenubarShortcut>⇧⌘Z</MenubarShortcut>
           </MenubarItem>
+          <MenubarSeparator />
+          <MenubarItem onClick={() => setEditDetailsOpen(true)}>
+            Edit Details...
+          </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
+      <EditPromptDetailsDialog
+        open={editDetailsOpen}
+        onOpenChange={setEditDetailsOpen}
+        prompt={prompt}
+      />
     </Menubar>
   );
 };

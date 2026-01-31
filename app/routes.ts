@@ -13,6 +13,7 @@ export default [
   route('api/prompts/run', './routes/api/prompts.run.ts'),
   route('api/prompts/usage', './routes/api/prompts.usage.ts'),
   route('api/prompts/publish', './routes/api/prompts.publish.ts'),
+  route('api/prompts/update', './routes/api/prompts.update.ts'),
   route('api/prompt-info', './routes/api/prompt-info.ts'),
   route('api/generate-input-data', './routes/api/generate-input-data.ts'),
   route('api/team/invite', './routes/api/team.invite.ts'),
