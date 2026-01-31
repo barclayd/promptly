@@ -52,22 +52,26 @@ export const PresenceAvatars = ({
         return (
           <Tooltip key={user.id}>
             <TooltipTrigger asChild>
-              <div
-                className="rounded-full p-0.5 cursor-default"
-                style={{
-                  background: userColor,
-                  boxShadow: `0 0 10px ${userColor}70`,
-                }}
-              >
-                <Avatar className="size-7 overflow-visible">
-                  {user.image && (
-                    <AvatarImage src={user.image} alt={user.name} />
-                  )}
-                  <AvatarFallback className="text-xs">
-                    {getInitials(user.name)}
-                  </AvatarFallback>
-                  {user.isActive && <AvatarBadge className="bg-green-500" />}
-                </Avatar>
+              <div className="relative cursor-default">
+                <div
+                  className="rounded-full p-0.5"
+                  style={{
+                    background: userColor,
+                    boxShadow: `0 0 10px ${userColor}70`,
+                  }}
+                >
+                  <Avatar className="size-7">
+                    {user.image && (
+                      <AvatarImage src={user.image} alt={user.name} />
+                    )}
+                    <AvatarFallback className="text-xs">
+                      {getInitials(user.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                {user.isActive && (
+                  <span className="absolute bottom-0 right-0 z-10 size-2.5 rounded-full border-2 border-background bg-green-500" />
+                )}
               </div>
             </TooltipTrigger>
             <TooltipContent side="bottom">

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CursorIndicator } from '~/components/cursor-indicator';
 import type { CursorPosition } from '~/hooks/use-presence';
 import { getUserColor } from '~/lib/user-colors';
@@ -129,10 +129,11 @@ export const RemoteCursorsOverlay = ({
   }, [updateCursorPositions]);
 
   // Trigger update when cursors change
-  // Since we're using useSyncExternalStore for cursors, this runs on every cursor change
-  if (textareaRef && cursors.length > 0) {
-    scheduleUpdate();
-  }
+  useEffect(() => {
+    if (textareaRef && cursors.length > 0) {
+      scheduleUpdate();
+    }
+  }, [cursors, textareaRef, scheduleUpdate]);
 
   if (calculatedCursors.length === 0) {
     return null;
