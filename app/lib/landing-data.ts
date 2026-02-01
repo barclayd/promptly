@@ -60,7 +60,7 @@ export type Feature = {
   icon: ComponentType<{ className?: string }>;
   title: string;
   description: string;
-  badge?: string;
+  badge?: string | string[];
 };
 
 export const features: Feature[] = [
@@ -93,7 +93,7 @@ export const features: Feature[] = [
     title: 'Developer SDK',
     description:
       'Easy to integrate API. TypeScript client with Zod schemas. Full autocomplete, zero guesswork.',
-    badge: 'TypeScript',
+    badge: ['TypeScript', 'API'],
   },
   {
     icon: IconLock,
