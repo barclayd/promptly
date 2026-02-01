@@ -1,8 +1,8 @@
 /**
- * Pre-render the landing page and upload to Cloudflare KV.
+ * Pre-render the landing page as a static asset.
  *
  * This script fetches the landing page HTML from a running server
- * and uploads it to KV for instant serving to unauthenticated users.
+ * and saves it to build/client/index.html for direct CDN serving.
  *
  * Usage:
  *   bun run scripts/prerender-landing.ts [--local|--production]
@@ -12,44 +12,22 @@
  *   - Production: Deploy first, then run with --production flag
  *
  * Options:
- *   --local       Fetch from localhost:8787 (wrangler dev) and upload to local KV (default)
- *   --production  Fetch from production URL and upload to production KV
+ *   --local       Fetch from localhost:8787 (wrangler dev) - default
+ *   --production  Fetch from production URL
+ *
+ * After running, deploy with `bunx wrangler deploy` to upload the static asset.
  */
 
 // IMPORTANT: Use wrangler dev (8787) NOT Vite dev server (5173)
 // Vite serves development HTML with HMR scripts that won't work in production
 const LANDING_URL_LOCAL = 'http://localhost:8787/';
 const LANDING_URL_PROD = 'https://promptlycms.com/';
-const KV_KEY = 'landing-page';
 
 const isProduction = process.argv.includes('--production');
 const targetUrl = isProduction ? LANDING_URL_PROD : LANDING_URL_LOCAL;
 
 const main = async () => {
   console.log(`\n🚀 Pre-rendering landing page from: ${targetUrl}\n`);
-
-  // Clear existing KV entry first to force SSR fallback
-  // This ensures we capture fresh HTML, not stale pre-rendered content
-  console.log('🗑️  Clearing existing KV entry...');
-  const kvFlag = isProduction ? '' : '--local';
-  const deleteProc = Bun.spawn(
-    [
-      'bunx',
-      'wrangler',
-      'kv',
-      'key',
-      'delete',
-      '--binding=PRERENDER_CACHE',
-      KV_KEY,
-      ...(kvFlag ? [kvFlag] : []),
-    ],
-    {
-      stdout: 'inherit',
-      stderr: 'inherit',
-    },
-  );
-  await deleteProc.exited;
-  // Ignore delete errors (key may not exist)
 
   // Fetch the landing page HTML
   console.log('📥 Fetching HTML...');
@@ -77,42 +55,15 @@ const main = async () => {
     process.exit(1);
   }
 
-  // Save to a local file for inspection
-  const outputPath = './build/prerendered-landing.html';
-  await Bun.write(outputPath, html);
-  console.log(`💾 Saved to ${outputPath}\n`);
+  // Save to build/client/index.html for direct CDN serving
+  const staticAssetPath = './build/client/index.html';
+  await Bun.write(staticAssetPath, html);
+  console.log(`💾 Saved to ${staticAssetPath}`);
 
-  // Upload to KV using wrangler
-  console.log('☁️  Uploading to Cloudflare KV...');
-  const proc = Bun.spawn(
-    [
-      'bunx',
-      'wrangler',
-      'kv',
-      'key',
-      'put',
-      '--binding=PRERENDER_CACHE',
-      KV_KEY,
-      '--path',
-      outputPath,
-      ...(kvFlag ? [kvFlag] : []),
-    ],
-    {
-      stdout: 'inherit',
-      stderr: 'inherit',
-    },
-  );
-
-  const exitCode = await proc.exited;
-  if (exitCode !== 0) {
-    console.error(`❌ Failed to upload to KV (exit code: ${exitCode})`);
-    process.exit(1);
-  }
-
-  console.log(`\n✅ Successfully pre-rendered and uploaded to KV!`);
-  console.log(`   Key: ${KV_KEY}`);
+  console.log(`\n✅ Pre-rendered landing page ready!`);
+  console.log(`   Path: ${staticAssetPath}`);
   console.log(`   Size: ${(html.length / 1024).toFixed(1)} KB`);
-  console.log(`   Environment: ${isProduction ? 'production' : 'local'}\n`);
+  console.log(`\n📌 Next step: Run 'bunx wrangler deploy' to upload\n`);
 };
 
 main().catch((err) => {
