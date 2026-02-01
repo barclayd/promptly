@@ -8,7 +8,8 @@ export const TEST_USER = {
 } as const;
 
 export const ROUTES = {
-  home: '/',
+  landing: '/',
+  home: '/dashboard',
   login: '/login',
   dashboard: '/dashboard',
   prompts: '/prompts',

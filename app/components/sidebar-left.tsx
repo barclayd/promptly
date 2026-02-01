@@ -147,7 +147,7 @@ export const SidebarLeft = ({
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <NavLink to="/">
+              <NavLink to="/dashboard">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">Promptly</span>
               </NavLink>
