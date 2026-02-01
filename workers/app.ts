@@ -98,6 +98,38 @@ export default {
 
     const context = new RouterContextProvider();
     Object.assign(context, { cloudflare: { env, ctx } });
-    return requestHandler(request, context);
+    const response = await requestHandler(request, context);
+
+    // Add edge caching ONLY for the landing page
+    // All other routes are SSR with authenticated content - don't cache
+    const url = new URL(request.url);
+    const isLandingPage = url.pathname === '/';
+    const isHtmlResponse = response.headers
+      .get('content-type')
+      ?.includes('text/html');
+
+    if (isLandingPage && isHtmlResponse) {
+      const headers = new Headers(response.headers);
+      // Landing page: cache at edge for 1 hour, browser always revalidates
+      headers.set(
+        'Cache-Control',
+        'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400',
+      );
+
+      // Early Hints: preconnect to Google Fonts for faster font loading
+      // Cloudflare caches these Link headers and serves them in 103 responses
+      headers.append(
+        'Link',
+        '<https://fonts.gstatic.com>; rel=preconnect; crossorigin',
+      );
+
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      });
+    }
+
+    return response;
   },
 } satisfies ExportedHandler<Env>;
