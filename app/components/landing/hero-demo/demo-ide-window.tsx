@@ -62,7 +62,7 @@ export const DemoIdeWindow = ({
         { name: 'package.json', active: false },
       ]}
     >
-      <div className="p-3 min-h-[180px] sm:min-h-[200px] relative bg-zinc-950">
+      <div className="p-3 h-[165px] sm:h-[195px] overflow-y-auto relative bg-zinc-950">
         {/* Code editor */}
         {isActive && (
           <CodeBlock

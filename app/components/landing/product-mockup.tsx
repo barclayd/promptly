@@ -29,9 +29,8 @@ export const ProductMockup = ({ className }: { className?: string }) => {
         {/* System prompt indicator */}
         <div className="flex items-center gap-2 text-muted-foreground text-xs">
           <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium">
-            SYSTEM
+            SYSTEM prompt
           </span>
-          <span>prompt</span>
         </div>
 
         {/* Prompt content with typing animation */}
@@ -44,6 +43,11 @@ export const ProductMockup = ({ className }: { className?: string }) => {
             </span>
             .
           </p>
+          <div className="flex items-center gap-2 text-muted-foreground text-xs">
+            <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium">
+              USER prompt
+            </span>
+          </div>
           <p>
             Write a warm welcome email for{' '}
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">

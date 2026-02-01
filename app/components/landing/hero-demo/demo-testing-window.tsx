@@ -56,16 +56,24 @@ export const DemoTestingWindow = ({
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [phase, setPhase] = useState<AnimationPhase>('idle');
   const [isRunning, setIsRunning] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const hasAnimated = useRef(false);
 
+  const clearAllTimeouts = useCallback(() => {
+    for (const t of timeoutsRef.current) {
+      clearTimeout(t);
+    }
+    timeoutsRef.current = [];
+  }, []);
+
   const reset = useCallback(() => {
+    clearAllTimeouts();
     setSelectedValues({});
     setActiveDropdown(null);
     setPhase('idle');
     setIsRunning(false);
     hasAnimated.current = false;
-  }, []);
+  }, [clearAllTimeouts]);
 
   useEffect(() => {
     if (!isActive) {
@@ -126,15 +134,13 @@ export const DemoTestingWindow = ({
     for (const step of sequence) {
       totalDelay += step.delay;
       const t = setTimeout(step.action, totalDelay);
-      timeoutRef.current = t;
+      timeoutsRef.current.push(t);
     }
 
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      clearAllTimeouts();
     };
-  }, [isActive, onAnimationComplete, reset]);
+  }, [isActive, onAnimationComplete, reset, clearAllTimeouts]);
 
   const getVariantColor = (variant: string) => {
     switch (variant) {
@@ -151,7 +157,7 @@ export const DemoTestingWindow = ({
 
   return (
     <DemoWindowFrame title="Promptly">
-      <div className="p-4 min-h-[180px] sm:min-h-[200px]">
+      <div className="p-4 h-[165px] sm:h-[195px] overflow-y-auto">
         {/* Header */}
         <div className="text-[10px] text-muted-foreground mb-3">
           Fill in variables to test your prompt

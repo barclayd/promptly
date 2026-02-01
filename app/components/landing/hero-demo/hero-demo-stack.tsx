@@ -9,8 +9,61 @@ type HeroDemoStackProps = {
   className?: string;
 };
 
-const WINDOW_DURATION = 6700; // ~6.7 seconds per window (slowed by 0.75x)
+const WINDOW_DURATION = 7800; // ~6.7 seconds per window (slowed by 0.75x)
+const FINAL_WINDOW_PAUSE = 2000; // Extra 2 second pause after final window
 const WINDOW_COUNT = 4;
+
+const WINDOW_LABELS = [
+  { text: 'Experts write prompts', emoji: '✍️' },
+  { text: 'Test in seconds, not days', emoji: '⚡' },
+  { text: 'Integrate anywhere', emoji: '🔌' },
+  { text: 'Watch them shine', emoji: '✨' },
+];
+
+type AnimatedLabelProps = {
+  text: string;
+  emoji: string;
+};
+
+const AnimatedLabel = ({ text, emoji }: AnimatedLabelProps) => {
+  const [displayedLabel, setDisplayedLabel] = useState({ text, emoji });
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (text !== displayedLabel.text) {
+      setIsAnimating(true);
+      const timeout = setTimeout(() => {
+        setDisplayedLabel({ text, emoji });
+        setIsAnimating(false);
+      }, 200);
+      return () => clearTimeout(timeout);
+    }
+  }, [text, emoji, displayedLabel.text]);
+
+  return (
+    <div
+      className={cn(
+        'inline-flex items-center gap-2.5 rounded-full px-5 py-2.5',
+        'bg-gradient-to-r from-zinc-900/95 to-zinc-800/95 dark:from-zinc-800/95 dark:to-zinc-700/95',
+        'border border-white/10 shadow-xl shadow-black/20',
+        'backdrop-blur-sm',
+        isAnimating ? 'animate-label-exit' : 'animate-label-enter',
+      )}
+    >
+      <span
+        className="text-lg transition-transform duration-300"
+        role="img"
+        aria-hidden="true"
+        style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.3))' }}
+      >
+        {displayedLabel.emoji}
+      </span>
+      <span className="text-sm font-medium tracking-wide text-white/95">
+        {displayedLabel.text}
+      </span>
+    </div>
+  );
+};
 
 // Stack positions for 4 windows
 // Position 0 = front (active)
@@ -52,29 +105,44 @@ const getPositionStyles = (position: number): React.CSSProperties => {
 export const HeroDemoStack = ({ className }: HeroDemoStackProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const cycleNext = useCallback(() => {
-    setActiveIndex((prev) => (prev + 1) % WINDOW_COUNT);
+  const scheduleNext = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    setActiveIndex((prev) => {
+      const next = (prev + 1) % WINDOW_COUNT;
+      // Give output window (index 3) extra time for its longer animation
+      const isOutputWindow = next === WINDOW_COUNT - 1;
+      const delay = isOutputWindow
+        ? WINDOW_DURATION + FINAL_WINDOW_PAUSE
+        : WINDOW_DURATION;
+
+      timeoutRef.current = setTimeout(scheduleNext, delay);
+      return next;
+    });
   }, []);
 
   useEffect(() => {
     if (isPaused) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
       return;
     }
 
-    intervalRef.current = setInterval(cycleNext, WINDOW_DURATION);
+    // Start the cycle
+    timeoutRef.current = setTimeout(scheduleNext, WINDOW_DURATION);
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
     };
-  }, [cycleNext, isPaused]);
+  }, [scheduleNext, isPaused]);
 
   // Calculate position for each window based on activeIndex
   const getWindowPosition = (windowIndex: number): number => {
@@ -103,49 +171,58 @@ export const HeroDemoStack = ({ className }: HeroDemoStackProps) => {
     <div
       role="region"
       aria-label="Product demo carousel"
-      className={cn(
-        'relative h-[320px] sm:h-[380px] lg:h-[420px] w-full flex items-center justify-center',
-        className,
-      )}
+      className={cn('flex flex-col items-center gap-6', className)}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {windows.map((window, index) => {
-        const position = getWindowPosition(index);
-        const isActive = position === 0;
+      {/* Windows container with fixed height */}
+      <div className="relative h-[280px] sm:h-[320px] lg:h-[340px] w-full flex items-start justify-center pt-12 overflow-hidden">
+        {windows.map((window, index) => {
+          const position = getWindowPosition(index);
+          const isActive = position === 0;
 
-        return (
-          <div
-            key={window.id}
-            className="absolute w-[min(420px,85vw)] transition-all duration-500 ease-out"
-            style={getPositionStyles(position)}
-          >
-            <window.Component
-              isActive={isActive}
-              onAnimationComplete={undefined}
+          return (
+            <div
+              key={window.id}
+              className="absolute w-[min(420px,85vw)] max-h-[245px] sm:max-h-[285px] lg:max-h-[305px] transition-all duration-500 ease-out"
+              style={getPositionStyles(position)}
+            >
+              <window.Component
+                isActive={isActive}
+                onAnimationComplete={undefined}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Label and progress indicators - always visible below windows */}
+      <div className="flex flex-col items-center gap-4">
+        {/* Animated label */}
+        <AnimatedLabel
+          text={WINDOW_LABELS[activeIndex].text}
+          emoji={WINDOW_LABELS[activeIndex].emoji}
+        />
+
+        {/* Progress indicators */}
+        <div className="flex gap-2">
+          {windows.map((window) => (
+            <button
+              type="button"
+              key={window.id}
+              className={cn(
+                'h-1.5 rounded-full transition-all duration-300 ease-out',
+                windows.findIndex((w) => w.id === window.id) === activeIndex
+                  ? 'w-7 bg-gradient-to-r from-indigo-500 to-violet-500 shadow-md shadow-indigo-500/30'
+                  : 'w-2 bg-zinc-400/50 dark:bg-zinc-600/50 hover:bg-zinc-400 dark:hover:bg-zinc-500',
+              )}
+              onClick={() =>
+                setActiveIndex(windows.findIndex((w) => w.id === window.id))
+              }
+              aria-label={`Go to ${window.id} demo`}
             />
-          </div>
-        );
-      })}
-
-      {/* Progress indicators */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-1.5">
-        {windows.map((window) => (
-          <button
-            type="button"
-            key={window.id}
-            className={cn(
-              'h-1.5 rounded-full transition-all duration-300',
-              windows.findIndex((w) => w.id === window.id) === activeIndex
-                ? 'w-6 bg-indigo-500'
-                : 'w-1.5 bg-zinc-300 dark:bg-zinc-600 hover:bg-zinc-400 dark:hover:bg-zinc-500',
-            )}
-            onClick={() =>
-              setActiveIndex(windows.findIndex((w) => w.id === window.id))
-            }
-            aria-label={`Go to ${window.id} demo`}
-          />
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

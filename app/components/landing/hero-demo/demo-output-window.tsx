@@ -1,4 +1,3 @@
-import { IconCheck } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ShineText } from '~/components/ui/shine-text';
 import { BlinkingCursor, ConfettiBurst, NumberTicker } from './animations';
@@ -37,6 +36,7 @@ export const DemoOutputWindow = ({
   const [isComplete, setIsComplete] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasAnimated = useRef(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const reset = useCallback(() => {
     setDisplayedWords(0);
@@ -91,67 +91,55 @@ export const DemoOutputWindow = ({
 
   const displayedText = WORDS.slice(0, displayedWords).join('');
 
+  // Auto-scroll to bottom as content streams in
+  useEffect(() => {
+    if (scrollContainerRef.current && displayedWords > 0) {
+      scrollContainerRef.current.scrollTop =
+        scrollContainerRef.current.scrollHeight;
+    }
+  }, [displayedWords]);
+
   return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden">
+    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden">
       {/* macOS Mail window chrome */}
-      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-200 dark:border-zinc-800 bg-gradient-to-b from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900">
-        <div className="flex gap-1.5">
-          <div className="size-2.5 rounded-full bg-red-400 dark:bg-red-500" />
-          <div className="size-2.5 rounded-full bg-yellow-400 dark:bg-yellow-500" />
-          <div className="size-2.5 rounded-full bg-green-400 dark:bg-green-500" />
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800/80">
+        <div className="flex gap-2">
+          <div className="size-3 rounded-full bg-[#FF5F57]" />
+          <div className="size-3 rounded-full bg-[#FFBD2E]" />
+          <div className="size-3 rounded-full bg-[#28C840]" />
         </div>
         <div className="flex-1 flex justify-center">
-          <div className="px-3 py-0.5 rounded text-xs text-muted-foreground font-medium">
-            New Message
-          </div>
+          <span className="text-sm text-foreground font-medium">Mail</span>
         </div>
         <div className="w-[52px]" />
       </div>
 
       {/* Email header fields */}
-      <div className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+      <div className="bg-zinc-100/80 dark:bg-zinc-800/50">
         {/* To field */}
-        <div className="flex items-center gap-3 px-4 py-2 border-b border-zinc-100 dark:border-zinc-800">
-          <span className="text-xs text-muted-foreground font-medium w-12">
-            To:
-          </span>
-          <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-medium">
-            sarah@example.com
+        <div className="flex items-center gap-3 px-4 py-2.5 border-b border-zinc-200 dark:border-zinc-700/50">
+          <span className="text-sm text-muted-foreground">To:</span>
+          <span className="px-2.5 py-0.5 rounded-md bg-blue-500 text-white text-sm font-medium">
+            Sarah Chen
           </span>
         </div>
 
         {/* Subject field */}
-        <div className="flex items-center gap-3 px-4 py-2">
-          <span className="text-xs text-muted-foreground font-medium w-12">
+        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-zinc-200 dark:border-zinc-700/50">
+          <span className="text-sm font-semibold text-foreground">
             Subject:
           </span>
-          <span className="text-xs text-foreground font-medium">
-            Welcome to Acme!
-          </span>
+          <span className="text-sm text-foreground">Welcome to Acme!</span>
         </div>
       </div>
 
       {/* Email body */}
-      <div className="p-4 min-h-[120px] sm:min-h-[140px] relative">
-        {/* Status indicator */}
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-3">
-          {isComplete ? (
-            <>
-              <IconCheck className="size-3 text-emerald-500" />
-              <span className="text-emerald-600 dark:text-emerald-400">
-                Sent
-              </span>
-            </>
-          ) : (
-            <>
-              <div className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Composing...</span>
-            </>
-          )}
-        </div>
-
+      <div
+        ref={scrollContainerRef}
+        className="px-4 py-4 h-[115px] sm:h-[135px] overflow-y-auto relative bg-white dark:bg-zinc-900"
+      >
         {/* Email content with ShineText */}
-        <ShineText className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-sans block">
+        <ShineText className="text-sm leading-relaxed whitespace-pre-wrap font-sans block text-foreground">
           {displayedText}
           {!isComplete && displayedWords > 0 && <BlinkingCursor />}
         </ShineText>
@@ -161,7 +149,7 @@ export const DemoOutputWindow = ({
       </div>
 
       {/* Bottom bar with token/cost info */}
-      <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+      <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-100/80 dark:bg-zinc-800/50">
         <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
           {isComplete ? (
             <>
@@ -175,12 +163,7 @@ export const DemoOutputWindow = ({
         <div className="flex items-center gap-1.5 text-[10px]">
           <span className="text-muted-foreground">Cost:</span>
           <span className="text-emerald-600 dark:text-emerald-400 font-medium tabular-nums">
-            <NumberTicker
-              value={cost}
-              decimals={7}
-              prefix="$"
-              duration={100}
-            />
+            <NumberTicker value={cost} decimals={7} prefix="$" duration={100} />
           </span>
         </div>
       </div>

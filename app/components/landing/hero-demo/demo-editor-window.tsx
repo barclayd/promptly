@@ -17,7 +17,9 @@ const PROMPT_SEGMENTS = [
     name: 'company_name',
     variant: 'company' as const,
   },
-  { type: 'text' as const, content: '.\n\nWrite a warm welcome email for ' },
+  { type: 'text' as const, content: '.' },
+  { type: 'label' as const, label: 'USER', sublabel: 'prompt' },
+  { type: 'text' as const, content: 'Write a warm welcome email for ' },
   { type: 'variable' as const, name: 'user_name', variant: 'user' as const },
   { type: 'text' as const, content: ' who just signed up for the ' },
   { type: 'variable' as const, name: 'plan_type', variant: 'plan' as const },
@@ -88,6 +90,11 @@ export const DemoEditorWindow = ({
         currentSegmentIndex++;
         currentSegmentCharIndex = 0;
         timeoutRef.current = setTimeout(typeNextChar, 530); // slowed from 400
+      } else if (segment.type === 'label') {
+        // Show label with a brief pause
+        currentSegmentIndex++;
+        currentSegmentCharIndex = 0;
+        timeoutRef.current = setTimeout(typeNextChar, 400);
       }
     };
 
@@ -131,6 +138,21 @@ export const DemoEditorWindow = ({
             }
           });
         }
+      } else if (segment.type === 'label') {
+        // Only show label if we've typed past it
+        if (typedChars >= textIndex) {
+          elements.push(
+            <div
+              key={`label-${i}`}
+              className="flex items-center gap-2 text-muted-foreground text-[10px] mt-3 mb-1"
+            >
+              <span className="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium font-sans">
+                {segment.label}
+              </span>
+              <span className="font-sans">{segment.sublabel}</span>
+            </div>,
+          );
+        }
       } else if (
         segment.type === 'variable' &&
         visibleVariables.has(segment.name)
@@ -166,7 +188,7 @@ export const DemoEditorWindow = ({
         </div>
       }
     >
-      <div className="p-4 min-h-[180px] sm:min-h-[200px]">
+      <div className="p-4 h-[165px] sm:h-[195px] overflow-y-auto">
         {/* System prompt label */}
         <div className="flex items-center gap-2 text-muted-foreground text-[10px] mb-3">
           <span className="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium">
