@@ -175,7 +175,7 @@ export const HeroDemoStack = ({ className }: HeroDemoStackProps) => {
       onMouseLeave={handleMouseLeave}
     >
       {/* Windows container with fixed height */}
-      <div className="relative h-[340px] sm:h-[340px] lg:h-[360px] w-full flex items-start justify-center pt-12 overflow-hidden">
+      <div className="relative h-[400px] sm:h-[380px] lg:h-[360px] w-full flex items-start justify-center pt-12 overflow-hidden">
         {windows.map((window, index) => {
           const position = getWindowPosition(index);
           const isActive = position === 0;
@@ -183,7 +183,7 @@ export const HeroDemoStack = ({ className }: HeroDemoStackProps) => {
           return (
             <div
               key={window.id}
-              className="absolute w-[min(420px,85vw)] max-h-[305px] sm:max-h-[305px] lg:max-h-[325px] transition-all duration-500 ease-out"
+              className="absolute w-[min(420px,85vw)] max-h-[365px] sm:max-h-[345px] lg:max-h-[325px] transition-all duration-500 ease-out"
               style={getPositionStyles(position)}
             >
               <window.Component

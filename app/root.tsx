@@ -49,18 +49,11 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 };
 
 export const links: Route.LinksFunction = () => [
+  { rel: 'icon', href: '/favicon.ico' },
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
   {
     rel: 'preconnect',
     href: 'https://fonts.gstatic.com',
-    crossOrigin: 'anonymous',
-  },
-  // Preload critical Inter font weights to reduce render-blocking
-  {
-    rel: 'preload',
-    href: 'https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff2',
-    as: 'font',
-    type: 'font/woff2',
     crossOrigin: 'anonymous',
   },
   {
@@ -75,10 +68,9 @@ const AppWithTheme = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <html lang="en" className={theme ?? ''} suppressHydrationWarning>
-      <head title="Promptly">
+      <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Promptly</title>
         <PreventFlashOnWrongTheme ssrTheme={Boolean(data?.theme)} />
         <Meta />
         <Links />

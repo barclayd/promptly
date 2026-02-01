@@ -21,7 +21,7 @@ const getAuth = (env: Env) => {
   return betterAuth({
     emailAndPassword: { enabled: true },
     baseURL: env.BETTER_AUTH_URL,
-    trustedOrigins: [env.BETTER_AUTH_URL],
+    trustedOrigins: [env.BETTER_AUTH_URL, 'https://promptlycms.com'],
     secret: env.BETTER_AUTH_SECRET,
     database: {
       db: new Kysely<Database>({
@@ -31,6 +31,12 @@ const getAuth = (env: Env) => {
       type: 'sqlite',
     },
     plugins: [organization()],
+    advanced: {
+      crossSubDomainCookies: {
+        enabled: true,
+        domain: '.promptlycms.com', // Share cookies across app.promptlycms.com and promptlycms.com
+      },
+    },
   });
 };
 
@@ -88,8 +94,30 @@ const requestHandler = createRequestHandler(
   import.meta.env.MODE,
 );
 
+// Landing page is served as a static asset (build/client/index.html)
+// No Worker code needed - Cloudflare serves it directly from CDN
+// This function is kept as a fallback for non-GET requests or if static asset is missing
+
 export default {
   async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+
+    // Redirect app subdomain root based on auth status
+    if (url.pathname === '/' && url.hostname.startsWith('app.')) {
+      const auth = getAuth(env);
+      const session = await auth.api.getSession({
+        headers: request.headers,
+      });
+
+      if (session?.user) {
+        // Logged in → go to dashboard
+        return Response.redirect(`${url.origin}/dashboard`, 302);
+      }
+      // Not logged in → go to landing page
+      const landingUrl = url.hostname.replace('app.', '');
+      return Response.redirect(`https://${landingUrl}/`, 302);
+    }
+
     // Handle presence WebSocket requests before React Router
     const presenceResponse = await handlePresenceWebSocket(request, env);
     if (presenceResponse) {
@@ -102,7 +130,6 @@ export default {
 
     // Add edge caching ONLY for the landing page
     // All other routes are SSR with authenticated content - don't cache
-    const url = new URL(request.url);
     const isLandingPage = url.pathname === '/';
     const isHtmlResponse = response.headers
       .get('content-type')

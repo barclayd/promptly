@@ -1,0 +1,17 @@
+# Homepage - serve cached, revalidate in background
+/
+  Cache-Control: public, max-age=0, s-maxage=3600, stale-while-revalidate=86400
+
+# Fingerprinted assets (JS, CSS) - cache aggressively (1 year)
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Favicon - cache for 1 week
+/favicon.ico
+  Cache-Control: public, max-age=604800
+
+# Default for other static files
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin

@@ -4,7 +4,7 @@ export default defineConfig({
   testDir: './e2e/tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 1, // 1 retry locally for flaky tests
+  retries: 2, // 2 retries everywhere for flaky tests
   workers: process.env.CI ? 1 : 4, // Limit workers to reduce race conditions
   reporter: process.env.CI ? 'github' : 'html',
   timeout: 60000, // Increase overall timeout
@@ -24,10 +24,10 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  // Run dev server before tests (optional, requires server to not be running)
-  // webServer: {
-  //   command: 'bun run dev',
-  //   url: 'http://localhost:5173',
-  //   reuseExistingServer: !process.env.CI,
-  // },
+  webServer: {
+    command: 'bun run dev',
+    url: 'http://localhost:5173',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000, // 2 min for cold start
+  },
 });

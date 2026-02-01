@@ -15,6 +15,7 @@
       "!.react-router",
       "!playwright-report",
       "!test-results",
+      "!landing-pages",
       "!worker-configuration.d.ts"
     ]
   },
