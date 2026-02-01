@@ -186,7 +186,7 @@ export const pricingTiers: PricingTier[] = [
       '1 team member',
       'Basic analytics',
       'Community support',
-      '1,000 API calls/month',
+      '5,000 API calls/month',
     ],
     cta: 'Start free',
   },
@@ -281,7 +281,7 @@ export const testimonials: Testimonial[] = [
     quote:
       'The cost tracking alone paid for itself in the first week. We found a runaway prompt that was costing us $2000/day. Promptly gave us visibility and controls to run AI at scale.',
     author: 'Dan B',
-    role: 'Engineering Lead',
+    role: 'CTO',
     company: 'KeepFresh',
   },
   {

@@ -33,7 +33,7 @@ const solutionTabs = [
     description:
       'Install our SDK, call your prompts by name, and get full TypeScript types automatically. No more managing string templates or syncing prompt changes.',
     benefits: [
-      'npm install @promptly/sdk',
+      "Built with support for Vercel's AI SDK",
       'Full TypeScript autocomplete',
       'Zod schema validation built-in',
       'Automatic sync when prompts change',
