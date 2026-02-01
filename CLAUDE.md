@@ -221,3 +221,189 @@ test('example test', async ({ authenticatedPage }) => {
   await expect(authenticatedPage).toHaveURL(/dashboard/);
 });
 ```
+
+# Landing Page
+
+The landing page (`app/routes/landing.tsx`) is a marketing page with complex animations showcasing the product.
+
+## Directory Structure
+```
+app/components/landing/
+├── hero-section.tsx          # Main hero with copy + demo
+├── hero-demo/
+│   ├── index.ts              # Exports all demo components
+│   ├── hero-demo-stack.tsx   # Window carousel orchestrator
+│   ├── demo-window-frame.tsx # Reusable window chrome
+│   ├── demo-editor-window.tsx
+│   ├── demo-testing-window.tsx
+│   ├── demo-ide-window.tsx
+│   ├── demo-output-window.tsx
+│   └── animations/
+│       ├── typing-text.tsx   # Character-by-character typing
+│       ├── blinking-cursor.tsx
+│       ├── code-block.tsx    # Syntax-highlighted typing
+│       ├── variable-badge.tsx
+│       ├── confetti-burst.tsx
+│       └── number-ticker.tsx # Animated counter
+├── animated-wrapper.tsx      # Scroll-triggered fade-in
+├── social-proof-badge.tsx    # Avatar stack + rating
+├── navigation.tsx
+├── pain-points-section.tsx
+├── solution-section.tsx
+├── features-grid-section.tsx
+├── how-it-works-section.tsx
+├── audience-section.tsx
+├── cost-section.tsx
+├── social-proof-section.tsx
+├── pricing-section.tsx
+├── faq-section.tsx
+└── footer-section.tsx
+```
+
+## Hero Section Architecture
+
+The hero (`hero-section.tsx`) is a two-column layout:
+- **Left column**: Animated copy with staggered entrance (badge → heading → paragraph → social proof → CTAs)
+- **Right column**: `HeroDemoStack` - the rotating window carousel
+
+All left-column elements use `AnimatedWrapper` with increasing delays (0ms → 400ms) for cascading fade-in.
+
+## Hero Demo Stack (Window Carousel)
+
+**File:** `app/components/landing/hero-demo/hero-demo-stack.tsx`
+
+The centerpiece is a 4-window rotating carousel demonstrating the product workflow:
+
+### Window Stack System
+Windows are layered using CSS transforms based on position:
+```
+Position 0 (Front):     scale(1), rotate(0°)     - Active, full opacity
+Position 1 (Back-Right): scale(0.92), rotate(2°)  - Partially visible
+Position 2 (Back-Left):  scale(0.88), rotate(-2°) - Dimmed
+Position 3 (Hidden):     scale(0.84), rotate(0°)  - Not visible
+```
+
+All transitions use `duration-500 ease-out`.
+
+### Timing Constants
+```typescript
+WINDOW_DURATION = 10500  // Each window active for 10.5s
+FINAL_WINDOW_PAUSE = 2000 // Extra pause after output window
+WINDOW_COUNT = 4
+```
+
+### Window Cycle (repeats ~45s)
+1. **Editor Window** (0-10.5s): Shows prompt being typed with variable badges
+2. **Testing Window** (10.5-21s): Dropdown selections → run button → output preview
+3. **IDE Window** (21-31.5s): Code typing with syntax highlighting
+4. **Output Window** (31.5-44s): Word streaming + cost ticker + confetti
+
+### State Management
+- `activeIndex`: Which window is at position 0
+- `isPaused`: Carousel pauses on hover
+- Position calculation: `(windowIndex - activeIndex + WINDOW_COUNT) % WINDOW_COUNT`
+
+### Reset Behavior
+When a window becomes inactive, it resets its internal state after 600ms (allows exit animations to complete).
+
+## Individual Window Animations
+
+### DemoEditorWindow
+- Segments typed at 40ms per character
+- Variable badges appear with 530ms delay using `badge-pop` animation
+- Auto-save indicator shows after typing completes
+
+### DemoTestingWindow
+Animation phases (sequential):
+1. `select-company` → dropdown opens → value selected (1.3s)
+2. `select-user` → dropdown opens → value selected (1.3s)
+3. `select-plan` → dropdown opens → value selected (1.3s)
+4. `click-run` → button highlights
+5. `running` → spinner state
+6. Output preview appears, 3s pause for reading
+
+### DemoIdeWindow
+- `CodeBlock` types at 24ms per character
+- Syntax highlighting via token types (keywords=purple, strings=emerald, functions=yellow)
+- Auto-scrolls during typing
+- `onComplete` callback triggers next window
+
+### DemoOutputWindow
+- Words stream at 67ms intervals (word-by-word, not character)
+- `NumberTicker` animates cost from $0 to final value
+- `ConfettiBurst` triggers when complete (12 particles, 1.2s)
+- Gets extra 2s pause due to longer animation
+
+## Animation Utilities
+
+### NumberTicker (`animations/number-ticker.tsx`)
+Animated number counter with:
+- `value`: Target number
+- `from`: Starting number (default 0)
+- `delay`: Delay before animation starts (default 0, only on first render)
+- `duration`: Animation duration in ms (default 1000)
+- Uses `requestAnimationFrame` with ease-out-cubic easing
+
+### AnimatedWrapper (`animated-wrapper.tsx`)
+Scroll-triggered fade-in wrapper:
+```tsx
+<AnimatedWrapper delay={100} direction="up">
+  {content}
+</AnimatedWrapper>
+```
+- Directions: `up` (default), `left`, `right`
+- Uses `useInView` hook with IntersectionObserver
+- `triggerOnce: true` - only animates once
+
+### useInView Hook (`app/hooks/use-in-view.ts`)
+Uses **ref callback pattern** (not useEffect) for intersection detection:
+```tsx
+const { ref, isInView } = useInView({ threshold: 0.1, triggerOnce: true });
+```
+
+## CSS Animations
+
+**File:** `app/app.css`
+
+Key keyframes for landing page:
+```css
+@keyframes fade-in-up      /* Section entrance */
+@keyframes fade-in-left    /* Section entrance */
+@keyframes fade-in-right   /* Section entrance */
+@keyframes badge-pop       /* Variable badges: scale 0→1.15→1 */
+@keyframes dropdown-slide  /* Dropdown: translateY(-8px)→0 */
+@keyframes confetti-fall   /* Particle trajectory */
+@keyframes label-enter     /* Label bounce in */
+@keyframes label-exit      /* Label scale out */
+@keyframes blink           /* Cursor blinking */
+```
+
+## Making Changes Safely
+
+### Adding a new section
+1. Create component in `app/components/landing/`
+2. Import and add to `app/routes/landing.tsx`
+3. Wrap content in `AnimatedWrapper` for entrance animation
+
+### Modifying window animations
+1. Each window manages its own animation state internally
+2. Windows receive `isActive` prop from `HeroDemoStack`
+3. Use `onComplete` callback to signal animation finished
+4. Reset state when `isActive` becomes false (with 600ms delay)
+
+### Adjusting timing
+- **Window duration**: Change `WINDOW_DURATION` in `hero-demo-stack.tsx`
+- **Transition speed**: Modify `duration-500` classes on window containers
+- **Typing speed**: Adjust `charDelay` prop on `TypingText`/`CodeBlock`
+- **NumberTicker speed**: Use `duration` and `delay` props
+
+### Adding new animations
+1. Define keyframes in `app/app.css`
+2. Add Tailwind animation class in the CSS file
+3. Apply class conditionally based on component state
+
+## Performance Notes
+- `useInView` with `triggerOnce` prevents re-triggering animations
+- Carousel pauses on hover to reduce animation load
+- All timeouts are cleaned up on unmount
+- CSS transforms are GPU-accelerated (scale, rotate, translate)

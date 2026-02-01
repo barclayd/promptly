@@ -48,6 +48,12 @@ export const painPoints: PainPoint[] = [
     description:
       'The people who understand your content best need to ask engineers for every change.',
   },
+  {
+    icon: IconLock,
+    title: 'Wrong people, wrong job',
+    description:
+      'Developers become copywriters. Marketing waits in ticket queues. Everyone stuck doing work outside their expertise.',
+  },
 ];
 
 export type Feature = {
@@ -86,7 +92,7 @@ export const features: Feature[] = [
     icon: IconCode,
     title: 'Developer SDK',
     description:
-      'Type-safe TypeScript client with Zod schemas. Full autocomplete, zero guesswork.',
+      'Easy to integrate API. TypeScript client with Zod schemas. Full autocomplete, zero guesswork.',
     badge: 'TypeScript',
   },
   {
@@ -139,8 +145,8 @@ export const audienceCards: AudienceCard[] = [
     title: 'For Developers',
     forRole: 'developers',
     benefits: [
+      "Seamless integration with Vercel's AI SDK",
       'Type-safe TypeScript SDK',
-      'npm install @promptly/sdk',
       'Full Zod schema validation',
       'Autocomplete for all prompts',
       'No more string interpolation',
@@ -267,36 +273,36 @@ export const testimonials: Testimonial[] = [
   {
     quote:
       'We cut our prompt iteration cycle from days to minutes. Our content team can now experiment freely without waiting for engineering.',
-    author: 'Sarah Chen',
-    role: 'Head of AI',
-    company: 'TechFlow',
+    author: 'Sarah D-G',
+    role: 'Head of Product Marketing',
+    company: 'AnyVan',
   },
   {
     quote:
-      'The cost tracking alone paid for itself in the first week. We found a runaway prompt that was costing us $500/day.',
-    author: 'Marcus Rodriguez',
+      'The cost tracking alone paid for itself in the first week. We found a runaway prompt that was costing us $2000/day. Promptly gave us visibility and controls to run AI at scale.',
+    author: 'Dan B',
     role: 'Engineering Lead',
-    company: 'DataScale',
+    company: 'KeepFresh',
   },
   {
     quote:
-      'Finally, our product team can own their prompts. Engineers focus on building features, not babysitting string changes.',
-    author: 'Emily Watson',
-    role: 'VP Product',
-    company: 'AI First Labs',
+      'Finally, our product team can own their prompts. Engineers focus on building features, not sending Google Docs changes back and forth.',
+    author: 'Hannah S',
+    role: 'Head of CRM',
+    company: 'AVB',
   },
 ];
 
 export const companyLogos = [
-  'TechFlow',
-  'DataScale',
-  'AI First Labs',
-  'CloudNine',
-  'Quantum AI',
+  'AnyVan',
+  'KeepFresh',
+  'AVB',
+  'myFridge',
+  'TripSplit',
 ];
 
 export const stats = [
-  { value: '10M+', label: 'API calls processed' },
-  { value: '500+', label: 'Teams using Promptly' },
+  { value: '1M+', label: 'API calls processed' },
+  { value: '300+', label: 'Users on Promptly' },
   { value: '99.9%', label: 'Uptime SLA' },
 ];
