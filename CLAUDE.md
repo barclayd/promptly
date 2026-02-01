@@ -515,8 +515,29 @@ bunx wrangler d1 migrations apply promptly --local
 - **Cause**: Usually means auth actually failed (check logs)
 - **Fix**: Check Better Auth logs for the real error (often password-related)
 
-## Prerendering
-The landing page uses React Router's prerendering for static HTML generation:
-- Configured in `react-router.config.ts`
-- Prerendered routes are served as static HTML from Cloudflare Pages
-- Dynamic routes (app) are server-rendered by Cloudflare Workers
+## Landing Page Deployment (Manual)
+
+The landing page is deployed separately to Cloudflare Pages. Manual process:
+
+```bash
+# Option A: From local build
+bun run build
+bunx wrangler dev  # Start local server on port 8787
+# In another terminal:
+bun run prerender
+cp build/client/index.html landing-pages/
+cp -r build/client/assets landing-pages/
+
+# Option B: From production (if app is already deployed)
+bun run prerender:prod
+cp build/client/index.html landing-pages/
+cp -r build/client/assets landing-pages/
+```
+
+Then deploy via Cloudflare Pages dashboard or push to trigger auto-deploy.
+
+**Files in `landing-pages/`:**
+- `index.html` - Prerendered landing page (gitignored)
+- `assets/` - JS/CSS bundles (gitignored)
+- `_headers` - Cloudflare Pages caching config (tracked in git)
+- `favicon.ico` - Site favicon (gitignored)
