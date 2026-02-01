@@ -63,104 +63,119 @@ export const CollaborativeEditorDemo = ({
   const [displayText, setDisplayText] = useState(PROMPT_TEXT);
   const animationRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasStarted = useRef(false);
+  const isAnimatingRef = useRef(false);
 
-  // Cursor movement patterns for each collaborator
-  const moveCursors = useCallback(() => {
-    if (!isVisible) return;
+  // Run the cursor animation loop
+  const runAnimation = useCallback(() => {
+    if (isAnimatingRef.current) return; // Prevent double-start
+    isAnimatingRef.current = true;
 
-    setCollaborators((prev) =>
-      prev.map((collab) => {
-        // Each cursor has different movement patterns
-        const textLength = displayText.length;
-        let newPosition = collab.cursorPosition;
-        const movement = Math.random();
-
-        if (collab.id === 'sarah') {
-          // Sarah focuses on the beginning - variables area
-          if (movement < 0.3) {
-            newPosition = Math.min(newPosition + 1, 80);
-          } else if (movement < 0.5) {
-            newPosition = Math.max(newPosition - 1, 40);
-          } else {
-            // Jump to a variable
-            const variablePositions = [45, 78, 150, 200];
-            newPosition =
-              variablePositions[
-                Math.floor(Math.random() * variablePositions.length)
-              ];
-          }
-        } else if (collab.id === 'alex') {
-          // Alex works in the middle section
-          if (movement < 0.4) {
-            newPosition = Math.min(newPosition + 2, 180);
-          } else if (movement < 0.6) {
-            newPosition = Math.max(newPosition - 1, 100);
-          } else {
-            newPosition = 100 + Math.floor(Math.random() * 80);
-          }
-        } else {
-          // Jordan focuses on the end
-          if (movement < 0.3) {
-            newPosition = Math.min(newPosition + 1, textLength - 10);
-          } else if (movement < 0.5) {
-            newPosition = Math.max(newPosition - 2, textLength - 80);
-          } else {
-            newPosition = textLength - 80 + Math.floor(Math.random() * 70);
-          }
-        }
-
-        return {
-          ...collab,
-          cursorPosition: Math.max(0, Math.min(newPosition, textLength)),
-          isTyping: Math.random() > 0.6,
-        };
-      }),
-    );
-  }, [isVisible, displayText.length]);
-
-  // Animation loop
-  useEffect(() => {
-    if (!isVisible) {
-      hasStarted.current = false;
-      return;
-    }
-
-    if (hasStarted.current) return;
-    hasStarted.current = true;
+    const textLength = PROMPT_TEXT.length;
 
     // Initialize cursor positions
     setCollaborators((prev) =>
       prev.map((collab, idx) => ({
         ...collab,
-        cursorPosition: [55, 130, displayText.length - 40][idx],
+        cursorPosition: [55, 130, textLength - 40][idx],
       })),
     );
+
+    const moveCursors = () => {
+      setCollaborators((prev) =>
+        prev.map((collab) => {
+          let newPosition = collab.cursorPosition;
+          const movement = Math.random();
+
+          if (collab.id === 'sarah') {
+            // Sarah focuses on the beginning - variables area
+            if (movement < 0.3) {
+              newPosition = Math.min(newPosition + 1, 80);
+            } else if (movement < 0.5) {
+              newPosition = Math.max(newPosition - 1, 40);
+            } else {
+              // Jump to a variable
+              const variablePositions = [45, 78, 150, 200];
+              newPosition =
+                variablePositions[
+                  Math.floor(Math.random() * variablePositions.length)
+                ];
+            }
+          } else if (collab.id === 'alex') {
+            // Alex works in the middle section
+            if (movement < 0.4) {
+              newPosition = Math.min(newPosition + 2, 180);
+            } else if (movement < 0.6) {
+              newPosition = Math.max(newPosition - 1, 100);
+            } else {
+              newPosition = 100 + Math.floor(Math.random() * 80);
+            }
+          } else {
+            // Jordan focuses on the end
+            if (movement < 0.3) {
+              newPosition = Math.min(newPosition + 1, textLength - 10);
+            } else if (movement < 0.5) {
+              newPosition = Math.max(newPosition - 2, textLength - 80);
+            } else {
+              newPosition = textLength - 80 + Math.floor(Math.random() * 70);
+            }
+          }
+
+          return {
+            ...collab,
+            cursorPosition: Math.max(0, Math.min(newPosition, textLength)),
+            isTyping: Math.random() > 0.6,
+          };
+        }),
+      );
+    };
 
     const animate = () => {
       moveCursors();
       animationRef.current = setTimeout(animate, 800 + Math.random() * 600);
     };
 
+    // Start animation after a short delay
     animationRef.current = setTimeout(animate, 500);
+  }, []);
 
-    return () => {
-      if (animationRef.current) {
-        clearTimeout(animationRef.current);
-      }
-    };
-  }, [isVisible, moveCursors, displayText.length]);
-
-  // Reset when not visible
+  // Initialize animation when component becomes visible
   useEffect(() => {
     if (!isVisible) {
-      const resetTimer = setTimeout(() => {
-        setCollaborators(COLLABORATORS);
-        setDisplayText(PROMPT_TEXT);
-        hasStarted.current = false;
-      }, 600);
-      return () => clearTimeout(resetTimer);
+      // Reset everything when not visible
+      hasStarted.current = false;
+      isAnimatingRef.current = false;
+      if (animationRef.current) {
+        clearTimeout(animationRef.current);
+        animationRef.current = null;
+      }
+      return;
     }
-  }, [isVisible]);
+
+    // Prevent double-start (especially in React StrictMode)
+    if (hasStarted.current) return;
+    hasStarted.current = true;
+
+    // Reset state before starting
+    setCollaborators(COLLABORATORS);
+    setDisplayText(PROMPT_TEXT);
+
+    // Small delay to ensure state is settled before animation starts
+    const startDelay = setTimeout(() => {
+      runAnimation();
+    }, 50);
+
+    return () => {
+      // Clean up on unmount or when effect re-runs
+      clearTimeout(startDelay);
+      if (animationRef.current) {
+        clearTimeout(animationRef.current);
+        animationRef.current = null;
+      }
+      // Reset refs so animation can restart on next mount
+      hasStarted.current = false;
+      isAnimatingRef.current = false;
+    };
+  }, [isVisible, runAnimation]);
 
   // Render text with cursors
   const renderTextWithCursors = () => {

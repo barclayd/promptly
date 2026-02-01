@@ -9,6 +9,7 @@ import { Badge } from '~/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { AnimatedWrapper } from './animated-wrapper';
 import { CollaborativeEditorDemo } from './collaborative-editor-demo';
+import { MultiLanguageIdeDemo } from './multi-language-ide-demo';
 
 const solutionTabs = [
   {
@@ -153,46 +154,7 @@ const TabVisual = ({ tab, isActive }: { tab: string; isActive: boolean }) => {
   }
 
   if (tab === 'developers') {
-    return (
-      <div className="rounded-2xl border border-border/50 bg-zinc-950 shadow-xl shadow-black/10 dark:shadow-black/30 overflow-hidden font-mono text-sm">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
-          <span className="text-zinc-500">app.ts</span>
-        </div>
-        <div className="p-6 text-zinc-300 space-y-1">
-          <p>
-            <span className="text-purple-400">import</span>{' '}
-            <span className="text-zinc-100">{'{ Promptly }'}</span>{' '}
-            <span className="text-purple-400">from</span>{' '}
-            <span className="text-emerald-400">'@promptly/sdk'</span>
-          </p>
-          <p className="text-zinc-600">{'// ...'}</p>
-          <p className="mt-4">
-            <span className="text-purple-400">const</span>{' '}
-            <span className="text-zinc-100">result</span>{' '}
-            <span className="text-purple-400">=</span>{' '}
-            <span className="text-purple-400">await</span>{' '}
-            <span className="text-blue-400">promptly</span>
-            <span className="text-zinc-500">.</span>
-            <span className="text-yellow-400">run</span>
-            <span className="text-zinc-500">(</span>
-          </p>
-          <p className="pl-4">
-            <span className="text-emerald-400">'welcome-email'</span>
-            <span className="text-zinc-500">,</span>
-          </p>
-          <p className="pl-4">
-            <span className="text-zinc-500">{'{'}</span>{' '}
-            <span className="text-zinc-100">user_name</span>
-            <span className="text-zinc-500">:</span>{' '}
-            <span className="text-emerald-400">'Sarah'</span>{' '}
-            <span className="text-zinc-500">{'}'}</span>
-          </p>
-          <p>
-            <span className="text-zinc-500">)</span>
-          </p>
-        </div>
-      </div>
-    );
+    return <MultiLanguageIdeDemo isVisible={isActive} />;
   }
 
   return (
