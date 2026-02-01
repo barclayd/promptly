@@ -163,7 +163,7 @@ export const DemoTestingWindow = ({
 
   return (
     <DemoWindowFrame title="Promptly">
-      <div className="p-4 h-[195px] sm:h-[195px] lg:h-[215px] overflow-y-auto relative">
+      <div className="p-4 h-[195px] sm:h-[195px] lg:h-[215px] overflow-y-auto scrollbar-hide relative">
         {/* Header */}
         <div className="text-[10px] text-muted-foreground mb-3">
           Fill in variables to test your prompt

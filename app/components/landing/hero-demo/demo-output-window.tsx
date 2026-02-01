@@ -136,7 +136,7 @@ export const DemoOutputWindow = ({
       {/* Email body */}
       <div
         ref={scrollContainerRef}
-        className="px-4 py-4 h-[135px] sm:h-[135px] lg:h-[155px] overflow-y-auto relative bg-white dark:bg-zinc-900"
+        className="px-4 py-4 h-[135px] sm:h-[135px] lg:h-[155px] overflow-y-auto scrollbar-hide relative bg-white dark:bg-zinc-900"
       >
         {/* Email content with ShineText */}
         <ShineText className="text-sm leading-relaxed whitespace-pre-wrap font-sans block text-foreground">
