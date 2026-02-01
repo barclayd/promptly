@@ -14,6 +14,7 @@ const publicRoutes = [
 ];
 
 const isPublicRoute = (pathname: string) =>
+  pathname === '/' ||
   publicRoutes.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   );

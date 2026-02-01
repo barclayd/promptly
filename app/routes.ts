@@ -6,6 +6,10 @@ import {
 } from '@react-router/dev/routes';
 
 export default [
+  // Public landing page at root
+  index('./routes/landing.tsx'),
+
+  // API routes
   route('api/set-theme', './routes/api/set-theme.ts'),
   route('api/auth/*', './routes/api/auth.ts'),
   route('api/prompts/get', './routes/api/prompts.get.ts'),
@@ -45,7 +49,7 @@ export default [
     route('sign-up', './routes/auth/sign-up.tsx'),
   ]),
   layout('./routes/layouts/app.tsx', [
-    index('./routes/index.tsx'),
+    route('dashboard', './routes/dashboard.tsx'),
     route('home', './routes/home.tsx'),
     route('logout', './routes/logout.tsx'),
     route('prompts', './routes/prompts.tsx'),

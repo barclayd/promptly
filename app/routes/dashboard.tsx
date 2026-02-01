@@ -9,7 +9,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from '~/components/ui/item';
-import type { Route } from './+types/index';
+import type { Route } from './+types/dashboard';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
 export const meta = ({}: Route.MetaArgs) => [
