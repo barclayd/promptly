@@ -48,6 +48,12 @@ export const painPoints: PainPoint[] = [
     description:
       'The people who understand your content best need to ask engineers for every change.',
   },
+  {
+    icon: IconLock,
+    title: 'Wrong people, wrong job',
+    description:
+      'Developers become copywriters. Marketing waits in ticket queues. Everyone stuck doing work outside their expertise.',
+  },
 ];
 
 export type Feature = {
