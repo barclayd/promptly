@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { AnimatedWrapper } from './animated-wrapper';
-import { ProductMockup } from './product-mockup';
+import { HeroDemoStack } from './hero-demo';
 
 export const HeroSection = () => {
   return (
@@ -101,10 +101,10 @@ export const HeroSection = () => {
             </AnimatedWrapper>
           </div>
 
-          {/* Right: Product Mockup */}
+          {/* Right: Animated Demo Stack */}
           <AnimatedWrapper direction="right" delay={400} className="lg:pl-8">
             <div className="relative">
-              <ProductMockup className="w-full max-w-xl mx-auto lg:mx-0" />
+              <HeroDemoStack className="w-full max-w-xl mx-auto lg:mx-0" />
               {/* Decorative elements */}
               <div className="absolute -top-8 -left-8 size-16 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 blur-xl" />
               <div className="absolute -bottom-8 -right-8 size-24 rounded-full bg-gradient-to-br from-pink-500/20 to-orange-500/20 blur-xl" />
