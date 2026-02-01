@@ -7,6 +7,12 @@
   "observability": {
     "enabled": true
   },
+  "kv_namespaces": [
+    {
+      "binding": "PRERENDER_CACHE",
+      "id": "f0cf76f0951945c783dacbc8eeeaa3be"
+    }
+  ],
   "d1_databases": [
     {
       "binding": "promptly",

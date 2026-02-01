@@ -88,12 +88,49 @@ const requestHandler = createRequestHandler(
   import.meta.env.MODE,
 );
 
+// Serve pre-rendered landing page from KV for all users
+// Auth state doesn't matter - login/signup buttons redirect authenticated users
+const servePrerenderedLanding = async (
+  request: Request,
+  env: Env,
+): Promise<Response | null> => {
+  const url = new URL(request.url);
+
+  // Only handle landing page GET requests
+  if (url.pathname !== '/' || request.method !== 'GET') return null;
+
+  // Try to get pre-rendered HTML from KV
+  try {
+    const html = await env.PRERENDER_CACHE.get('landing-page', 'text');
+    if (!html) return null;
+
+    const headers = new Headers({
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control':
+        'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400',
+      Link: '<https://fonts.gstatic.com>; rel=preconnect; crossorigin',
+      'X-Prerendered': 'true',
+    });
+
+    return new Response(html, { status: 200, headers });
+  } catch {
+    // KV error - fall back to SSR
+    return null;
+  }
+};
+
 export default {
   async fetch(request, env, ctx) {
     // Handle presence WebSocket requests before React Router
     const presenceResponse = await handlePresenceWebSocket(request, env);
     if (presenceResponse) {
       return presenceResponse;
+    }
+
+    // Try to serve pre-rendered landing page (faster than SSR)
+    const prerenderedResponse = await servePrerenderedLanding(request, env);
+    if (prerenderedResponse) {
+      return prerenderedResponse;
     }
 
     const context = new RouterContextProvider();
