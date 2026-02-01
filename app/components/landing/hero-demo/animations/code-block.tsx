@@ -5,6 +5,8 @@ type CodeBlockProps = {
   delay?: number;
   charDelay?: number;
   onComplete?: () => void;
+  onProgress?: (chars: number) => void;
+  showLineNumbers?: boolean;
   className?: string;
 };
 
@@ -73,6 +75,8 @@ export const CodeBlock = ({
   delay = 0,
   charDelay = 20,
   onComplete,
+  onProgress,
+  showLineNumbers = false,
   className,
 }: CodeBlockProps) => {
   const [displayedChars, setDisplayedChars] = useState(0);
@@ -89,6 +93,7 @@ export const CodeBlock = ({
       if (charIndex < code.length) {
         charIndex++;
         setDisplayedChars(charIndex);
+        onProgress?.(charIndex);
         timeoutRef.current = setTimeout(typeNextChar, charDelay);
       } else {
         onComplete?.();
@@ -102,7 +107,7 @@ export const CodeBlock = ({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [code, delay, charDelay, onComplete]);
+  }, [code, delay, charDelay, onComplete, onProgress]);
 
   // Build displayed tokens
   let remainingChars = displayedChars;
@@ -113,6 +118,54 @@ export const CodeBlock = ({
     const charsToShow = Math.min(remainingChars, token.text.length);
     displayedTokens.push({ token, chars: charsToShow });
     remainingChars -= charsToShow;
+  }
+
+  // Get the displayed text for line number calculation
+  const displayedText = code.slice(0, displayedChars);
+  const lines = displayedText.split('\n');
+  const lineCount = lines.length;
+
+  // Calculate total lines in the full code for line number width
+  const totalLines = code.split('\n').length;
+  const lineNumberWidth = String(totalLines).length;
+
+  if (showLineNumbers) {
+    // Only render line numbers for lines that have been typed to
+    // This ensures the content height grows naturally as typing progresses
+    const visibleLineCount = displayedChars > 0 ? lineCount : 1;
+
+    return (
+      <pre
+        className={`font-mono text-xs leading-relaxed bg-zinc-950 ${className || ''}`}
+      >
+        <div className="flex">
+          {/* Line numbers gutter - only render lines we've typed to */}
+          <div className="flex-shrink-0 pr-3 mr-3 border-r border-zinc-800 text-zinc-600 select-none text-right">
+            {Array.from({ length: visibleLineCount }, (_, lineIndex) => (
+              <div
+                key={lineIndex}
+                style={{ minWidth: `${lineNumberWidth}ch` }}
+              >
+                {lineIndex + 1}
+              </div>
+            ))}
+          </div>
+
+          {/* Code content */}
+          <code className="flex-1 overflow-x-auto">
+            {displayedTokens.map((dt, i) => (
+              <span key={i} className={getTokenColor(dt.token.type)}>
+                {dt.token.text.slice(0, dt.chars)}
+              </span>
+            ))}
+            <span
+              className="inline-block w-0.5 h-[1.1em] bg-zinc-400 rounded-sm align-middle ml-0.5"
+              style={{ animation: 'blink 1s step-end infinite' }}
+            />
+          </code>
+        </div>
+      </pre>
+    );
   }
 
   return (

@@ -2,7 +2,7 @@ import { cn } from '~/lib/utils';
 
 type DemoWindowFrameProps = {
   title: string;
-  tabs?: { name: string; active?: boolean }[];
+  tabs?: { name: string; active?: boolean; icon?: React.ReactNode }[];
   children: React.ReactNode;
   className?: string;
   bottomBar?: React.ReactNode;
@@ -36,12 +36,13 @@ export const DemoWindowFrame = ({
               <div
                 key={tab.name}
                 className={cn(
-                  'px-3 py-1 rounded-md text-xs font-medium transition-colors',
+                  'flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors',
                   tab.active
                     ? 'bg-white dark:bg-zinc-800 text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
+                {tab.icon}
                 {tab.name}
               </div>
             ))}
