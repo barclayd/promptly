@@ -4,9 +4,11 @@ import {
   IconCode,
   IconPencil,
 } from '@tabler/icons-react';
+import { useState } from 'react';
 import { Badge } from '~/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { AnimatedWrapper } from './animated-wrapper';
+import { CollaborativeEditorDemo } from './collaborative-editor-demo';
 
 const solutionTabs = [
   {
@@ -57,6 +59,8 @@ const solutionTabs = [
 ];
 
 export const SolutionSection = () => {
+  const [activeTab, setActiveTab] = useState('editors');
+
   return (
     <section id="features" className="py-24 lg:py-32">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -79,7 +83,11 @@ export const SolutionSection = () => {
         </AnimatedWrapper>
 
         <AnimatedWrapper delay={200}>
-          <Tabs defaultValue="editors" className="w-full">
+          <Tabs
+            defaultValue="editors"
+            className="w-full"
+            onValueChange={setActiveTab}
+          >
             <TabsList className="w-full max-w-md mx-auto grid grid-cols-3 h-auto p-1 mb-12">
               {solutionTabs.map((tab) => (
                 <TabsTrigger
@@ -124,7 +132,10 @@ export const SolutionSection = () => {
 
                   {/* Right: Visual */}
                   <div className="relative">
-                    <TabVisual tab={tab.value} />
+                    <TabVisual
+                      tab={tab.value}
+                      isActive={activeTab === tab.value}
+                    />
                   </div>
                 </div>
               </TabsContent>
@@ -136,35 +147,9 @@ export const SolutionSection = () => {
   );
 };
 
-const TabVisual = ({ tab }: { tab: string }) => {
+const TabVisual = ({ tab, isActive }: { tab: string; isActive: boolean }) => {
   if (tab === 'editors') {
-    return (
-      <div className="rounded-2xl border border-border/50 bg-card shadow-xl shadow-black/5 dark:shadow-black/20 overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 bg-muted/30">
-          <div className="flex gap-1.5">
-            <div className="size-2.5 rounded-full bg-red-400/80" />
-            <div className="size-2.5 rounded-full bg-yellow-400/80" />
-            <div className="size-2.5 rounded-full bg-green-400/80" />
-          </div>
-        </div>
-        <div className="p-6 space-y-4">
-          <div className="h-4 w-32 rounded bg-muted animate-pulse" />
-          <div className="space-y-2">
-            <div className="h-3 w-full rounded bg-muted/60" />
-            <div className="h-3 w-4/5 rounded bg-muted/60" />
-            <div className="h-3 w-3/4 rounded bg-muted/60" />
-          </div>
-          <div className="flex gap-2 pt-4">
-            <div className="px-3 py-1.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-medium">
-              user_name
-            </div>
-            <div className="px-3 py-1.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
-              company
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <CollaborativeEditorDemo isVisible={isActive} />;
   }
 
   if (tab === 'developers') {
