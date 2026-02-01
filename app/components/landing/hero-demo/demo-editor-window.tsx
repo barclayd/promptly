@@ -191,7 +191,7 @@ export const DemoEditorWindow = ({
         </div>
       }
     >
-      <div className="p-4 h-[165px] sm:h-[195px] overflow-y-auto">
+      <div className="p-4 h-[195px] sm:h-[195px] lg:h-[215px] overflow-y-auto">
         {/* System prompt label */}
         <div className="flex items-center gap-2 text-muted-foreground text-[10px] mb-3">
           <span className="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium">

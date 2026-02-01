@@ -288,12 +288,18 @@ export const testimonials: Testimonial[] = [
     quote:
       'Finally, our product team can own their prompts. Engineers focus on building features, not sending Google Docs changes back and forth.',
     author: 'Hannah S',
-    role: 'VP Product',
-    company: 'AI First Labs',
+    role: 'Head of CRM',
+    company: 'AVB',
   },
 ];
 
-export const companyLogos = ['AnyVan', 'KeepFresh', 'TripSplit'];
+export const companyLogos = [
+  'AnyVan',
+  'KeepFresh',
+  'AVB',
+  'myFridge',
+  'TripSplit',
+];
 
 export const stats = [
   { value: '1M+', label: 'API calls processed' },

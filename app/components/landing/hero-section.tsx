@@ -8,7 +8,7 @@ import { SocialProofBadge } from './social-proof-badge';
 
 export const HeroSection = () => {
   return (
-    <section className="relative min-h-screen flex items-center pt-16 overflow-hidden">
+    <section className="relative min-h-screen flex items-center pt-12 sm:pt-16 overflow-hidden">
       {/* Background gradient mesh */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-500/20 rounded-full blur-[128px] dark:bg-indigo-500/10" />
@@ -26,10 +26,10 @@ export const HeroSection = () => {
         }}
       />
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-20 lg:py-32">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left: Copy */}
-          <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-5 sm:gap-8">
             <AnimatedWrapper delay={0}>
               <Badge
                 variant="outline"
@@ -43,7 +43,7 @@ export const HeroSection = () => {
             </AnimatedWrapper>
 
             <AnimatedWrapper delay={100}>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight leading-[1.1]">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight leading-[1.05] sm:leading-[1.1]">
                 Your prompts don't belong in{' '}
                 <span className="relative">
                   <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
@@ -68,7 +68,7 @@ export const HeroSection = () => {
             </AnimatedWrapper>
 
             <AnimatedWrapper delay={200}>
-              <p className="text-lg sm:text-xl text-muted-foreground max-w-lg leading-relaxed">
+              <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
                 Manage, test, and deploy AI prompts without touching code.
                 Empower your whole team to iterate on prompts while developers
                 focus on building.
@@ -80,7 +80,7 @@ export const HeroSection = () => {
             </AnimatedWrapper>
 
             <AnimatedWrapper delay={300}>
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <Button
                   size="lg"
                   asChild
@@ -100,7 +100,7 @@ export const HeroSection = () => {
                   <a href="#features">See how it works</a>
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground mt-3">
+              <p className="text-sm text-muted-foreground mt-2 sm:mt-3">
                 No credit card required. Free tier available.
               </p>
             </AnimatedWrapper>
