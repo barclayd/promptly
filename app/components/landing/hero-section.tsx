@@ -4,6 +4,7 @@ import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { AnimatedWrapper } from './animated-wrapper';
 import { HeroDemoStack } from './hero-demo';
+import { SocialProofBadge } from './social-proof-badge';
 
 export const HeroSection = () => {
   return (
@@ -72,6 +73,10 @@ export const HeroSection = () => {
                 Empower your whole team to iterate on prompts while developers
                 focus on building.
               </p>
+            </AnimatedWrapper>
+
+            <AnimatedWrapper delay={250}>
+              <SocialProofBadge />
             </AnimatedWrapper>
 
             <AnimatedWrapper delay={300}>

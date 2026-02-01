@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 
 type NumberTickerProps = {
   value: number;
+  from?: number;
+  delay?: number;
   duration?: number;
   decimals?: number;
   prefix?: string;
@@ -11,16 +13,20 @@ type NumberTickerProps = {
 
 export const NumberTicker = ({
   value,
+  from = 0,
+  delay = 0,
   duration = 1000,
   decimals = 0,
   prefix = '',
   suffix = '',
   className,
 }: NumberTickerProps) => {
-  const [displayValue, setDisplayValue] = useState(0);
+  const [displayValue, setDisplayValue] = useState(from);
   const rafRef = useRef<number | null>(null);
+  const delayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startTimeRef = useRef<number | null>(null);
-  const startValueRef = useRef(0);
+  const startValueRef = useRef(from);
+  const isFirstRender = useRef(true);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: displayValue is intentionally captured at effect start to animate from current value
   useEffect(() => {
@@ -47,14 +53,28 @@ export const NumberTicker = ({
       }
     };
 
-    rafRef.current = requestAnimationFrame(animate);
+    const startAnimation = () => {
+      rafRef.current = requestAnimationFrame(animate);
+    };
+
+    // Only apply delay on first render
+    if (isFirstRender.current && delay > 0) {
+      isFirstRender.current = false;
+      delayTimerRef.current = setTimeout(startAnimation, delay);
+    } else {
+      isFirstRender.current = false;
+      startAnimation();
+    }
 
     return () => {
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
       }
+      if (delayTimerRef.current) {
+        clearTimeout(delayTimerRef.current);
+      }
     };
-  }, [value, duration]);
+  }, [value, duration, delay]);
 
   const formattedValue = displayValue.toFixed(decimals);
 
