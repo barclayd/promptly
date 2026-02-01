@@ -279,7 +279,7 @@ export const action = async ({
         headers: setCookie ? { Cookie: setCookie } : {},
       });
 
-      return redirect('/', {
+      return redirect('/dashboard', {
         headers: setCookie ? { 'Set-Cookie': setCookie } : {},
       });
     } catch (error) {

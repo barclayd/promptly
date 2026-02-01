@@ -22,7 +22,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 
   if (orgs && orgs.length > 0) {
     // User already has an org, redirect to home
-    return redirect('/');
+    return redirect('/dashboard');
   }
 
   // Create default organization
@@ -34,7 +34,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     headers: request.headers,
   });
 
-  return redirect('/');
+  return redirect('/dashboard');
 };
 
 // No UI needed - this is a redirect-only route

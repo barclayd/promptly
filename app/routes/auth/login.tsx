@@ -56,7 +56,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       }
     }
 
-    return redirect('/', {
+    return redirect('/dashboard', {
       headers: setCookie ? { 'Set-Cookie': setCookie } : {},
     });
   } catch (error) {

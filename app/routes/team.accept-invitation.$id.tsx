@@ -151,7 +151,7 @@ export const action = async ({
         return data({ error: errorMessage }, { status: rejectResponse.status });
       }
 
-      return redirect('/');
+      return redirect('/dashboard');
     }
 
     return data({ error: 'Invalid action' }, { status: 400 });

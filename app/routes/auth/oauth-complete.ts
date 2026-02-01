@@ -24,7 +24,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     });
   }
 
-  return redirect('/');
+  return redirect('/dashboard');
 };
 
 const OAuthComplete = () => null;

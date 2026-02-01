@@ -12,10 +12,10 @@ test('login page loads', async ({ page }) => {
   ).toBeVisible();
 });
 
-test('user can login and reach home', async ({ authenticatedPage }) => {
+test('user can login and reach dashboard', async ({ authenticatedPage }) => {
   // authenticatedPage is already logged in via fixture
-  // App redirects to home page (/) after successful login
-  await expect(authenticatedPage).toHaveURL('/');
+  // App redirects to dashboard after successful login
+  await expect(authenticatedPage).toHaveURL(ROUTES.dashboard);
   // Verify we're authenticated by checking for user-specific elements
   await expect(authenticatedPage.getByText('Create')).toBeVisible();
 });

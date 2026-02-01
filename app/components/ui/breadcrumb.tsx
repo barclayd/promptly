@@ -69,7 +69,7 @@ export const BreadcrumbWithDropdown = () => {
         {/* Home link - hidden on mobile */}
         <BreadcrumbItem className="hidden sm:inline-flex">
           <BreadcrumbLink asChild>
-            <NavLink to="/">Home</NavLink>
+            <NavLink to="/dashboard">Home</NavLink>
           </BreadcrumbLink>
         </BreadcrumbItem>
 
