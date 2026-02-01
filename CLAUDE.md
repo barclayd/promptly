@@ -111,7 +111,8 @@ When implementing or modifying UI components, test in both light and dark modes:
 - Local dev server: http://localhost:5173
 
 # Production Testing
-- Production URL: https://promptlycms.com
+- App URL: https://app.promptlycms.com (authenticated app)
+- Landing page URL: https://promptlycms.com (marketing site)
 - Test user email: test@promptlycms.com
 - Test user password: Testing123
 - To test prompts: Create a new prompt via the "Create" button in the sidebar or navigate to /prompts
@@ -407,3 +408,115 @@ Key keyframes for landing page:
 - Carousel pauses on hover to reduce animation load
 - All timeouts are cleaned up on unmount
 - CSS transforms are GPU-accelerated (scale, rotate, translate)
+
+# Deployment Architecture
+
+The application is split across two Cloudflare services for optimal performance:
+
+## Landing Page (promptlycms.com)
+- **Deployed on**: Cloudflare Pages (standalone, prerendered)
+- **Source**: `landing/` directory
+- **Caching**: Aggressive edge caching with `s-maxage=3600, stale-while-revalidate=86400`
+- **Purpose**: Marketing site, SEO-optimized, fast TTFB
+
+## App (app.promptlycms.com)
+- **Deployed on**: Cloudflare Workers
+- **Source**: Main React Router app
+- **Auth**: Better Auth with D1 database
+- **Purpose**: Authenticated application, dynamic content
+
+## Key URLs
+| Environment | Landing Page | App |
+|-------------|--------------|-----|
+| Production | https://promptlycms.com | https://app.promptlycms.com |
+| Workers Dev | N/A | https://promptly.barclaysd.workers.dev |
+
+## Environment Variables
+- `BETTER_AUTH_URL`: Must be set to `https://app.promptlycms.com` (no trailing slash, no leading spaces)
+- OAuth redirect URIs in Google Console must point to `https://app.promptlycms.com/api/auth/callback/google`
+
+# Authentication
+
+## Password Hashing
+The app uses **PBKDF2** for password hashing (not Better Auth's default Scrypt):
+- **File**: `app/lib/password.server.ts`
+- **Format**: `saltHex:hashHex` (97 characters total)
+- **Algorithm**: PBKDF2 with SHA-256, 100,000 iterations
+
+### Legacy Password Migration
+If users have legacy Scrypt hashes (from Better Auth defaults or old bun versions), they'll see "Invalid password" errors. The logs will show:
+```
+Legacy Scrypt hash detected - user needs password reset
+```
+
+**Fix**: Update the password hash in the `account` table:
+```sql
+UPDATE account
+SET password = '<new_pbkdf2_hash>'
+WHERE user_id = (SELECT id FROM user WHERE email = '<user_email>')
+AND provider_id = 'credential';
+```
+
+To generate a new PBKDF2 hash, use Node.js with the Web Crypto API (see `password.server.ts` for the algorithm).
+
+## Better Auth Internal API
+- `auth.api.signInEmail()` returns cookies via `response.headers.get('set-cookie')`
+- Social login (Google) works differently - cookies are set by the callback endpoint `/api/auth/callback/google`
+- Password column is in the `account` table, NOT the `user` table
+
+## Debugging Auth Issues
+1. Check Cloudflare Worker logs for Better Auth errors
+2. Verify `BETTER_AUTH_URL` has no leading/trailing spaces
+3. Check password hash format (should be `saltHex:hashHex`, ~97 chars)
+4. For OAuth: verify redirect URIs match exactly in Google Console
+
+# Deployment
+
+## Safe Deployment Checklist
+
+### Before Deploying
+1. Run `bun run lint` - fix any errors
+2. Run `bun run typecheck` - fix any type errors
+3. Run `bun run test:e2e` - ensure tests pass (dev server must be running)
+
+### Deploy Commands
+```bash
+# Deploy the main app (Workers)
+bun run deploy
+
+# This runs: bun run build && wrangler deploy
+```
+
+### After Deploying
+1. Test login flow at https://app.promptlycms.com/login
+2. Test Google SSO
+3. Check Cloudflare Worker logs for errors
+
+## Database Migrations
+```bash
+# Apply migrations to production
+bunx wrangler d1 migrations apply promptly --remote
+
+# Apply migrations to local dev
+bunx wrangler d1 migrations apply promptly --local
+```
+
+## Common Deployment Issues
+
+### "Legacy Scrypt hash detected"
+- **Cause**: Password hash format mismatch (see Authentication section)
+- **Fix**: Update user's password hash in D1 database
+
+### OAuth redirect_uri mismatch
+- **Cause**: `BETTER_AUTH_URL` has wrong value or extra spaces
+- **Fix**: Check env var in Cloudflare dashboard, ensure exact match with Google Console
+
+### Cookies not being set
+- **Cause**: Usually means auth actually failed (check logs)
+- **Fix**: Check Better Auth logs for the real error (often password-related)
+
+## Prerendering
+The landing page uses React Router's prerendering for static HTML generation:
+- Configured in `react-router.config.ts`
+- Prerendered routes are served as static HTML from Cloudflare Pages
+- Dynamic routes (app) are server-rendered by Cloudflare Workers
