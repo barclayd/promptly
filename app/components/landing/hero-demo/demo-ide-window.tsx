@@ -88,7 +88,7 @@ export const DemoIdeWindow = ({
     >
       <div
         ref={scrollContainerRef}
-        className="p-3 h-[165px] sm:h-[195px] overflow-y-auto relative bg-zinc-950"
+        className="p-3 h-48.75 sm:h-48.75 lg:h-53.75 overflow-y-auto relative bg-zinc-950"
       >
         {/* Code editor with line numbers */}
         {isActive && (
