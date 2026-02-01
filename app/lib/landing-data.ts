@@ -230,34 +230,35 @@ export type FAQ = {
 
 export const faqs: FAQ[] = [
   {
-    question: 'How does Promptly compare to storing prompts in my codebase?',
+    question: 'What is Promptly?',
     answer:
-      'Promptly separates your prompt logic from your application code. This means content teams can iterate on prompts without engineering involvement, changes go live instantly without deployments, and you get version history, analytics, and cost tracking out of the box.',
+      'Promptly is a prompt management platform that lets teams create, test, version, and deploy AI prompts without code changes. Editors get a familiar writing interface; developers integrate once with a type-safe SDK. Changes go live instantly — no PRs, no deployments.',
   },
   {
-    question: 'Is my data secure?',
+    question: 'Do I need coding experience to use Promptly?',
     answer:
-      "Absolutely. All data is encrypted at rest and in transit. We never train on your prompts or outputs. Each organization's data is isolated, and we support SSO, audit logs, and granular permissions for enterprise customers.",
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: docs
+      'No. The editor works like Google Docs — write in plain text, add variables like ${customer_name}, and test with sample data. Developers handle the one-time integration; after that, anyone can edit and publish prompts.',
   },
   {
     question: 'What AI providers do you support?',
     answer:
-      'Promptly works with OpenAI, Anthropic, Google, and any OpenAI-compatible API. You bring your own API keys, so you maintain full control over your AI provider relationships and costs.',
+      "Promptly is model-agnostic. We support all models from OpenAI (GPT-4, GPT-5 and others), all models Anthropic (Claude 4.5 Haiku, Sonnet and 4.5 Opus), Google Gemini, Grok other LLMs supported by Vercel's AI SDK.",
   },
   {
-    question: 'How does the SDK work?',
+    question: 'Is my data secure?',
     answer:
-      'Install our npm package, initialize it with your API key, and call your prompts by name. You get full TypeScript types, Zod validation for inputs, and automatic updates when prompts change. No more managing prompt strings in your code.',
+      "Yes. All data is encrypted in transit (TLS 1.3) and at rest (AES-256). We're hosted on SOC 2 Type II certified infrastructure and never train on your data.",
+  },
+  {
+    question: 'How much does Promptly cost?',
+    answer:
+      'Free: 3 prompts, 5,000 API calls/month. Pro ($29/mo): unlimited prompts, 50,000 API calls. Team ($99/mo): unlimited everything plus SSO and audit logs. All plans include a 14-day free trial.',
   },
   {
     question: 'Can I try Promptly before committing?',
     answer:
-      'Yes! Our free tier includes 3 prompts and 1,000 API calls per month. No credit card required. You can upgrade anytime as your needs grow.',
-  },
-  {
-    question: 'What happens if Promptly goes down?',
-    answer:
-      'Our SDK includes built-in caching and fallback support. If our service is unavailable, your app continues working with cached prompts. We also maintain 99.9% uptime SLA for paid plans.',
+      'Yes. Every plan includes a 14-day free trial with full Pro features — no credit card required. The Free plan is also available indefinitely for evaluation.',
   },
 ];
 
