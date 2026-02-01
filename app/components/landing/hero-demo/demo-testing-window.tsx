@@ -56,6 +56,7 @@ export const DemoTestingWindow = ({
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [phase, setPhase] = useState<AnimationPhase>('idle');
   const [isRunning, setIsRunning] = useState(false);
+  const [showOutputPreview, setShowOutputPreview] = useState(false);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const hasAnimated = useRef(false);
 
@@ -72,6 +73,7 @@ export const DemoTestingWindow = ({
     setActiveDropdown(null);
     setPhase('idle');
     setIsRunning(false);
+    setShowOutputPreview(false);
     hasAnimated.current = false;
   }, [clearAllTimeouts]);
 
@@ -122,7 +124,11 @@ export const DemoTestingWindow = ({
         },
       },
       {
-        delay: 1070,
+        delay: 500, // Show output preview 500ms after running starts
+        action: () => setShowOutputPreview(true),
+      },
+      {
+        delay: 3000, // Pause for 3 seconds so user can read the preview
         action: () => {
           setPhase('done');
           onAnimationComplete?.();
@@ -157,7 +163,7 @@ export const DemoTestingWindow = ({
 
   return (
     <DemoWindowFrame title="Promptly">
-      <div className="p-4 h-[165px] sm:h-[195px] overflow-y-auto">
+      <div className="p-4 h-[165px] sm:h-[195px] overflow-y-auto relative">
         {/* Header */}
         <div className="text-[10px] text-muted-foreground mb-3">
           Fill in variables to test your prompt
@@ -247,6 +253,25 @@ export const DemoTestingWindow = ({
             )}
           </button>
         </div>
+
+        {/* Output preview mini window */}
+        {showOutputPreview && (
+          <div
+            className="absolute -bottom-2 -right-2 w-[180px] rounded-lg border border-zinc-700 bg-zinc-800/95 shadow-xl shadow-black/30 p-2.5 transform rotate-1 z-30"
+            style={{
+              animation: 'output-preview-slide 0.3s ease-out forwards',
+            }}
+          >
+            <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 mb-1.5">
+              <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Output preview
+            </div>
+            <p className="text-[10px] text-zinc-300 leading-relaxed">
+              Hi Sarah! Welcome to Acme Inc. We're thrilled to have you on the
+              Pro plan...
+            </p>
+          </div>
+        )}
       </div>
     </DemoWindowFrame>
   );

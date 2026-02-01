@@ -9,7 +9,7 @@ type HeroDemoStackProps = {
   className?: string;
 };
 
-const WINDOW_DURATION = 7800; // ~6.7 seconds per window (slowed by 0.75x)
+const WINDOW_DURATION = 10500; // ~10.5 seconds per window to allow testing window animation to complete
 const FINAL_WINDOW_PAUSE = 2000; // Extra 2 second pause after final window
 const WINDOW_COUNT = 4;
 

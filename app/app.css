@@ -289,6 +289,18 @@ body {
   animation: confetti-fall 1.2s ease-out forwards;
 }
 
+/* Output preview slide-in animation */
+@keyframes output-preview-slide {
+  0% {
+    opacity: 0;
+    transform: rotate(1deg) translateY(10px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(1deg) translateY(0) scale(1);
+  }
+}
+
 /* Hero demo label animations */
 @keyframes label-enter {
   0% {
