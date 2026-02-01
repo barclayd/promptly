@@ -265,13 +265,22 @@ app/components/landing/
 │       ├── variable-badge.tsx
 │       ├── confetti-burst.tsx
 │       └── number-ticker.tsx # Animated counter
+├── how-it-works/
+│   ├── index.ts              # Exports step components
+│   ├── how-it-works-step.tsx # Reusable step card with visual
+│   ├── static-editor-window.tsx  # Static prompt editor preview
+│   ├── static-ide-window.tsx     # Static code preview
+│   └── animated-version-history.tsx # Version timeline animation
+├── collaborative-editor-demo.tsx # Real-time collab demo (Solution section)
+├── multi-language-ide-demo.tsx   # Language tabs IDE demo (Solution section)
 ├── animated-wrapper.tsx      # Scroll-triggered fade-in
 ├── social-proof-badge.tsx    # Avatar stack + rating
+├── feature-card.tsx          # Feature grid cards
 ├── navigation.tsx
 ├── pain-points-section.tsx
-├── solution-section.tsx
+├── solution-section.tsx      # Tab-based: Editors/Developers/Business
 ├── features-grid-section.tsx
-├── how-it-works-section.tsx
+├── how-it-works-section.tsx  # 3-step workflow with visual demos
 ├── audience-section.tsx
 ├── cost-section.tsx
 ├── social-proof-section.tsx
@@ -354,6 +363,63 @@ Animation phases (sequential):
 - `ConfettiBurst` triggers when complete (12 particles, 1.2s)
 - Gets extra 2s pause due to longer animation
 
+## Solution Section
+
+**File:** `app/components/landing/solution-section.tsx`
+
+Tab-based section showcasing the product for three audiences:
+
+### Tab Structure
+- **For Editors**: `CollaborativeEditorDemo` - shows real-time collaboration
+- **For Developers**: `MultiLanguageIdeDemo` - shows SDK code in multiple languages
+- **For Business**: Static cost overview visualization
+
+### CollaborativeEditorDemo (`collaborative-editor-demo.tsx`)
+Demonstrates real-time collaboration with multiple cursors:
+- Three collaborators (Sarah, Alex, Jordan) with color-coded cursors
+- Typing animation with cursor movement
+- Label popups showing collaborator names
+- Controlled by `isVisible` prop from parent tab state
+
+### MultiLanguageIdeDemo (`multi-language-ide-demo.tsx`)
+Shows SDK usage across different languages:
+- Language tabs: TypeScript, Python, Go, Swift
+- Syntax-highlighted code snippets for each language
+- Copy button functionality
+- Controlled by `isVisible` prop from parent tab state
+
+## How It Works Section
+
+**File:** `app/components/landing/how-it-works-section.tsx`
+
+Three-step workflow with modular visual components:
+
+### Component Structure
+- `HowItWorksStep` - Reusable card with step number, title, description, and visual slot
+- Step visuals are selected based on `visual` field in data:
+  - `'editor'` → `StaticEditorWindow`
+  - `'code'` → `StaticIdeWindow`
+  - `'iterate'` → `AnimatedVersionHistory`
+
+### StaticEditorWindow
+Non-animated prompt editor preview showing:
+- Window chrome (traffic lights)
+- Prompt text with variable badges
+- Auto-save indicator
+
+### StaticIdeWindow
+Non-animated IDE preview showing:
+- Language tabs
+- Syntax-highlighted TypeScript code
+- SDK usage example
+
+### AnimatedVersionHistory
+Animated version timeline that cycles through versions:
+- Shows 3 versions at a time, sliding in new versions
+- "Live" badge with pulsing animation on current version
+- `animate-version-slide-in` for entrance animation
+- `animate-live-pulse` for live indicator
+
 ## Animation Utilities
 
 ### NumberTicker (`animations/number-ticker.tsx`)
@@ -387,15 +453,18 @@ const { ref, isInView } = useInView({ threshold: 0.1, triggerOnce: true });
 
 Key keyframes for landing page:
 ```css
-@keyframes fade-in-up      /* Section entrance */
-@keyframes fade-in-left    /* Section entrance */
-@keyframes fade-in-right   /* Section entrance */
-@keyframes badge-pop       /* Variable badges: scale 0→1.15→1 */
-@keyframes dropdown-slide  /* Dropdown: translateY(-8px)→0 */
-@keyframes confetti-fall   /* Particle trajectory */
-@keyframes label-enter     /* Label bounce in */
-@keyframes label-exit      /* Label scale out */
-@keyframes blink           /* Cursor blinking */
+@keyframes fade-in-up        /* Section entrance */
+@keyframes fade-in-left      /* Section entrance */
+@keyframes fade-in-right     /* Section entrance */
+@keyframes badge-pop         /* Variable badges: scale 0→1.15→1 */
+@keyframes dropdown-slide    /* Dropdown: translateY(-8px)→0 */
+@keyframes confetti-fall     /* Particle trajectory */
+@keyframes label-enter       /* Label bounce in */
+@keyframes label-exit        /* Label scale out */
+@keyframes blink             /* Cursor blinking */
+@keyframes version-slide-in  /* Version history: translateY(20px)→0 with overshoot */
+@keyframes live-pulse        /* Pulsing glow for "live" badge */
+@keyframes step-activate     /* Step number scale bounce */
 ```
 
 ## Making Changes Safely
