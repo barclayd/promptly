@@ -116,6 +116,13 @@ export default {
         'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400',
       );
 
+      // Early Hints: preconnect to Google Fonts for faster font loading
+      // Cloudflare caches these Link headers and serves them in 103 responses
+      headers.append(
+        'Link',
+        '<https://fonts.gstatic.com>; rel=preconnect; crossorigin',
+      );
+
       return new Response(response.body, {
         status: response.status,
         statusText: response.statusText,
