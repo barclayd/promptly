@@ -265,13 +265,22 @@ app/components/landing/
 │       ├── variable-badge.tsx
 │       ├── confetti-burst.tsx
 │       └── number-ticker.tsx # Animated counter
+├── how-it-works/
+│   ├── index.ts              # Exports step components
+│   ├── how-it-works-step.tsx # Reusable step card with visual
+│   ├── static-editor-window.tsx  # Static prompt editor preview
+│   ├── static-ide-window.tsx     # Static code preview
+│   └── animated-version-history.tsx # Version timeline animation
+├── collaborative-editor-demo.tsx # Real-time collab demo (Solution section)
+├── multi-language-ide-demo.tsx   # Language tabs IDE demo (Solution section)
 ├── animated-wrapper.tsx      # Scroll-triggered fade-in
 ├── social-proof-badge.tsx    # Avatar stack + rating
+├── feature-card.tsx          # Feature grid cards
 ├── navigation.tsx
 ├── pain-points-section.tsx
-├── solution-section.tsx
+├── solution-section.tsx      # Tab-based: Editors/Developers/Business
 ├── features-grid-section.tsx
-├── how-it-works-section.tsx
+├── how-it-works-section.tsx  # 3-step workflow with visual demos
 ├── audience-section.tsx
 ├── cost-section.tsx
 ├── social-proof-section.tsx
@@ -354,6 +363,63 @@ Animation phases (sequential):
 - `ConfettiBurst` triggers when complete (12 particles, 1.2s)
 - Gets extra 2s pause due to longer animation
 
+## Solution Section
+
+**File:** `app/components/landing/solution-section.tsx`
+
+Tab-based section showcasing the product for three audiences:
+
+### Tab Structure
+- **For Editors**: `CollaborativeEditorDemo` - shows real-time collaboration
+- **For Developers**: `MultiLanguageIdeDemo` - shows SDK code in multiple languages
+- **For Business**: Static cost overview visualization
+
+### CollaborativeEditorDemo (`collaborative-editor-demo.tsx`)
+Demonstrates real-time collaboration with multiple cursors:
+- Three collaborators (Sarah, Alex, Jordan) with color-coded cursors
+- Typing animation with cursor movement
+- Label popups showing collaborator names
+- Controlled by `isVisible` prop from parent tab state
+
+### MultiLanguageIdeDemo (`multi-language-ide-demo.tsx`)
+Shows SDK usage across different languages:
+- Language tabs: TypeScript, Python, Go, Swift
+- Syntax-highlighted code snippets for each language
+- Copy button functionality
+- Controlled by `isVisible` prop from parent tab state
+
+## How It Works Section
+
+**File:** `app/components/landing/how-it-works-section.tsx`
+
+Three-step workflow with modular visual components:
+
+### Component Structure
+- `HowItWorksStep` - Reusable card with step number, title, description, and visual slot
+- Step visuals are selected based on `visual` field in data:
+  - `'editor'` → `StaticEditorWindow`
+  - `'code'` → `StaticIdeWindow`
+  - `'iterate'` → `AnimatedVersionHistory`
+
+### StaticEditorWindow
+Non-animated prompt editor preview showing:
+- Window chrome (traffic lights)
+- Prompt text with variable badges
+- Auto-save indicator
+
+### StaticIdeWindow
+Non-animated IDE preview showing:
+- Language tabs
+- Syntax-highlighted TypeScript code
+- SDK usage example
+
+### AnimatedVersionHistory
+Animated version timeline that cycles through versions:
+- Shows 3 versions at a time, sliding in new versions
+- "Live" badge with pulsing animation on current version
+- `animate-version-slide-in` for entrance animation
+- `animate-live-pulse` for live indicator
+
 ## Animation Utilities
 
 ### NumberTicker (`animations/number-ticker.tsx`)
@@ -387,15 +453,18 @@ const { ref, isInView } = useInView({ threshold: 0.1, triggerOnce: true });
 
 Key keyframes for landing page:
 ```css
-@keyframes fade-in-up      /* Section entrance */
-@keyframes fade-in-left    /* Section entrance */
-@keyframes fade-in-right   /* Section entrance */
-@keyframes badge-pop       /* Variable badges: scale 0→1.15→1 */
-@keyframes dropdown-slide  /* Dropdown: translateY(-8px)→0 */
-@keyframes confetti-fall   /* Particle trajectory */
-@keyframes label-enter     /* Label bounce in */
-@keyframes label-exit      /* Label scale out */
-@keyframes blink           /* Cursor blinking */
+@keyframes fade-in-up        /* Section entrance */
+@keyframes fade-in-left      /* Section entrance */
+@keyframes fade-in-right     /* Section entrance */
+@keyframes badge-pop         /* Variable badges: scale 0→1.15→1 */
+@keyframes dropdown-slide    /* Dropdown: translateY(-8px)→0 */
+@keyframes confetti-fall     /* Particle trajectory */
+@keyframes label-enter       /* Label bounce in */
+@keyframes label-exit        /* Label scale out */
+@keyframes blink             /* Cursor blinking */
+@keyframes version-slide-in  /* Version history: translateY(20px)→0 with overshoot */
+@keyframes live-pulse        /* Pulsing glow for "live" badge */
+@keyframes step-activate     /* Step number scale bounce */
 ```
 
 ## Making Changes Safely
@@ -427,32 +496,6 @@ Key keyframes for landing page:
 - Carousel pauses on hover to reduce animation load
 - All timeouts are cleaned up on unmount
 - CSS transforms are GPU-accelerated (scale, rotate, translate)
-
-# Deployment Architecture
-
-The application is split across two Cloudflare services for optimal performance:
-
-## Landing Page (promptlycms.com)
-- **Deployed on**: Cloudflare Pages (standalone, prerendered)
-- **Source**: `landing/` directory
-- **Caching**: Aggressive edge caching with `s-maxage=3600, stale-while-revalidate=86400`
-- **Purpose**: Marketing site, SEO-optimized, fast TTFB
-
-## App (app.promptlycms.com)
-- **Deployed on**: Cloudflare Workers
-- **Source**: Main React Router app
-- **Auth**: Better Auth with D1 database
-- **Purpose**: Authenticated application, dynamic content
-
-## Key URLs
-| Environment | Landing Page | App |
-|-------------|--------------|-----|
-| Production | https://promptlycms.com | https://app.promptlycms.com |
-| Workers Dev | N/A | https://promptly.barclaysd.workers.dev |
-
-## Environment Variables
-- `BETTER_AUTH_URL`: Must be set to `https://app.promptlycms.com` (no trailing slash, no leading spaces)
-- OAuth redirect URIs in Google Console must point to `https://app.promptlycms.com/api/auth/callback/google`
 
 # Authentication
 
@@ -491,27 +534,110 @@ To generate a new PBKDF2 hash, use Node.js with the Web Crypto API (see `passwor
 
 # Deployment
 
-## Safe Deployment Checklist
+## Deployment Architecture
 
-### Before Deploying
-1. Run `bun run lint` - fix any errors
-2. Run `bun run typecheck` - fix any type errors
-3. Run `bun run test:e2e` - ensure tests pass (dev server must be running)
+The application is split across two Cloudflare services:
 
-### Deploy Commands
+| Service | URL | Platform | Purpose |
+|---------|-----|----------|---------|
+| **App** | https://app.promptlycms.com | Cloudflare Workers | Authenticated app, dynamic content |
+| **Landing Page** | https://promptlycms.com | Cloudflare Pages | Marketing site, prerendered static HTML |
+
+**Cloudflare Project Names:**
+- Workers: `promptly`
+- Pages: `promptly-landing-pages`
+
+## Quick Deploy (Both Services)
+
 ```bash
-# Deploy the main app (Workers)
+# 1. Deploy the app to Workers
 bun run deploy
 
-# This runs: bun run build && wrangler deploy
+# 2. Pre-render landing page from production
+bun run prerender:prod
+
+# 3. Copy files to landing-pages directory
+cp build/client/index.html landing-pages/
+cp -r build/client/assets landing-pages/
+
+# 4. Deploy landing page to Cloudflare Pages
+bunx wrangler pages deploy landing-pages/ --project-name=promptly-landing-pages
 ```
 
-### After Deploying
+## App Deployment (Workers)
+
+### Pre-Deployment Checklist
+1. `bun run lint` - fix any errors
+2. `bun run typecheck` - fix any type errors
+3. `bun run test:e2e` - ensure tests pass (dev server must be running)
+
+### Deploy Command
+```bash
+bun run deploy
+# Runs: bun run build && wrangler deploy
+```
+
+### Post-Deployment Verification
 1. Test login flow at https://app.promptlycms.com/login
 2. Test Google SSO
 3. Check Cloudflare Worker logs for errors
 
+## Landing Page Deployment (Pages)
+
+The landing page is pre-rendered from the production app and deployed as static HTML.
+
+### Option A: Deploy from Production (Recommended)
+Use this when the app is already deployed to Workers:
+
+```bash
+# Pre-render from production
+bun run prerender:prod
+
+# Copy to landing-pages directory
+cp build/client/index.html landing-pages/
+cp -r build/client/assets landing-pages/
+
+# Deploy to Cloudflare Pages
+bunx wrangler pages deploy landing-pages/ --project-name=promptly-landing-pages
+```
+
+### Option B: Deploy from Local Build
+Use this when testing landing page changes locally:
+
+```bash
+# Build the app
+bun run build
+
+# Start local server (in one terminal)
+bunx wrangler dev
+
+# Pre-render from localhost (in another terminal)
+bun run prerender
+
+# Copy to landing-pages directory
+cp build/client/index.html landing-pages/
+cp -r build/client/assets landing-pages/
+
+# Deploy to Cloudflare Pages
+bunx wrangler pages deploy landing-pages/ --project-name=promptly-landing-pages
+```
+
+### Landing Page Files
+```
+landing-pages/
+├── index.html      # Prerendered HTML (gitignored)
+├── assets/         # JS/CSS bundles (gitignored)
+├── _headers        # Cloudflare Pages caching config (tracked)
+└── favicon.ico     # Site favicon (gitignored)
+```
+
+### Caching Configuration
+The `_headers` file configures aggressive edge caching:
+- `s-maxage=3600` - CDN caches for 1 hour
+- `stale-while-revalidate=86400` - Serve stale content while revalidating for 24 hours
+
 ## Database Migrations
+
 ```bash
 # Apply migrations to production
 bunx wrangler d1 migrations apply promptly --remote
@@ -519,6 +645,18 @@ bunx wrangler d1 migrations apply promptly --remote
 # Apply migrations to local dev
 bunx wrangler d1 migrations apply promptly --local
 ```
+
+## Environment Variables
+
+### Required for Workers
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `BETTER_AUTH_URL` | `https://app.promptlycms.com` | No trailing slash, no leading spaces |
+| `GOOGLE_CLIENT_ID` | From Google Console | OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | From Google Console | OAuth client secret |
+
+### OAuth Configuration (Google Console)
+- Authorized redirect URI: `https://app.promptlycms.com/api/auth/callback/google`
 
 ## Common Deployment Issues
 
@@ -534,29 +672,10 @@ bunx wrangler d1 migrations apply promptly --local
 - **Cause**: Usually means auth actually failed (check logs)
 - **Fix**: Check Better Auth logs for the real error (often password-related)
 
-## Landing Page Deployment (Manual)
+### Landing page shows old content
+- **Cause**: Pre-rendered from old deployment or cached
+- **Fix**: Re-run `bun run prerender:prod` after deploying app changes, then redeploy Pages
 
-The landing page is deployed separately to Cloudflare Pages. Manual process:
-
-```bash
-# Option A: From local build
-bun run build
-bunx wrangler dev  # Start local server on port 8787
-# In another terminal:
-bun run prerender
-cp build/client/index.html landing-pages/
-cp -r build/client/assets landing-pages/
-
-# Option B: From production (if app is already deployed)
-bun run prerender:prod
-cp build/client/index.html landing-pages/
-cp -r build/client/assets landing-pages/
-```
-
-Then deploy via Cloudflare Pages dashboard or push to trigger auto-deploy.
-
-**Files in `landing-pages/`:**
-- `index.html` - Prerendered landing page (gitignored)
-- `assets/` - JS/CSS bundles (gitignored)
-- `_headers` - Cloudflare Pages caching config (tracked in git)
-- `favicon.ico` - Site favicon (gitignored)
+### Wrangler pages deploy fails
+- **Cause**: Wrong project name or not authenticated
+- **Fix**: Run `bunx wrangler login` and verify project name is `promptly-landing-pages`

@@ -6,7 +6,7 @@ type FeatureCardProps = {
   icon: ComponentType<{ className?: string }>;
   title: string;
   description: string;
-  badge?: string;
+  badge?: string | string[];
   className?: string;
 };
 
@@ -33,12 +33,21 @@ export const FeatureCard = ({
             <Icon className="size-5 text-indigo-600 dark:text-indigo-400" />
           </div>
           {badge && (
-            <Badge
-              variant="secondary"
-              className="text-[10px] font-medium px-2 py-0.5"
-            >
-              {badge}
-            </Badge>
+            <div className="flex items-center gap-1.5">
+              {(Array.isArray(badge) ? badge : [badge]).map((b) => (
+                <Badge
+                  key={b}
+                  variant="secondary"
+                  className={cn(
+                    'text-[10px] font-medium px-2 py-0.5',
+                    b === 'API' &&
+                      'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700',
+                  )}
+                >
+                  {b}
+                </Badge>
+              ))}
+            </div>
           )}
         </div>
 
