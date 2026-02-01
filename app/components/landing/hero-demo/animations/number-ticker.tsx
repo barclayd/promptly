@@ -77,12 +77,22 @@ export const NumberTicker = ({
   }, [value, duration, delay]);
 
   const formattedValue = displayValue.toFixed(decimals);
+  const formattedFinalValue = value.toFixed(decimals);
 
   return (
     <span className={className}>
-      {prefix}
-      {formattedValue}
-      {suffix}
+      {/* SEO-friendly final value - visible to crawlers/screen readers */}
+      <span className="sr-only">
+        {prefix}
+        {formattedFinalValue}
+        {suffix}
+      </span>
+      {/* Animated value - visible to users */}
+      <span aria-hidden="true">
+        {prefix}
+        {formattedValue}
+        {suffix}
+      </span>
     </span>
   );
 };
