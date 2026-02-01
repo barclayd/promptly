@@ -497,32 +497,6 @@ Key keyframes for landing page:
 - All timeouts are cleaned up on unmount
 - CSS transforms are GPU-accelerated (scale, rotate, translate)
 
-# Deployment Architecture
-
-The application is split across two Cloudflare services for optimal performance:
-
-## Landing Page (promptlycms.com)
-- **Deployed on**: Cloudflare Pages (standalone, prerendered)
-- **Source**: `landing/` directory
-- **Caching**: Aggressive edge caching with `s-maxage=3600, stale-while-revalidate=86400`
-- **Purpose**: Marketing site, SEO-optimized, fast TTFB
-
-## App (app.promptlycms.com)
-- **Deployed on**: Cloudflare Workers
-- **Source**: Main React Router app
-- **Auth**: Better Auth with D1 database
-- **Purpose**: Authenticated application, dynamic content
-
-## Key URLs
-| Environment | Landing Page | App |
-|-------------|--------------|-----|
-| Production | https://promptlycms.com | https://app.promptlycms.com |
-| Workers Dev | N/A | https://promptly.barclaysd.workers.dev |
-
-## Environment Variables
-- `BETTER_AUTH_URL`: Must be set to `https://app.promptlycms.com` (no trailing slash, no leading spaces)
-- OAuth redirect URIs in Google Console must point to `https://app.promptlycms.com/api/auth/callback/google`
-
 # Authentication
 
 ## Password Hashing
@@ -560,27 +534,110 @@ To generate a new PBKDF2 hash, use Node.js with the Web Crypto API (see `passwor
 
 # Deployment
 
-## Safe Deployment Checklist
+## Deployment Architecture
 
-### Before Deploying
-1. Run `bun run lint` - fix any errors
-2. Run `bun run typecheck` - fix any type errors
-3. Run `bun run test:e2e` - ensure tests pass (dev server must be running)
+The application is split across two Cloudflare services:
 
-### Deploy Commands
+| Service | URL | Platform | Purpose |
+|---------|-----|----------|---------|
+| **App** | https://app.promptlycms.com | Cloudflare Workers | Authenticated app, dynamic content |
+| **Landing Page** | https://promptlycms.com | Cloudflare Pages | Marketing site, prerendered static HTML |
+
+**Cloudflare Project Names:**
+- Workers: `promptly`
+- Pages: `promptly-landing-pages`
+
+## Quick Deploy (Both Services)
+
 ```bash
-# Deploy the main app (Workers)
+# 1. Deploy the app to Workers
 bun run deploy
 
-# This runs: bun run build && wrangler deploy
+# 2. Pre-render landing page from production
+bun run prerender:prod
+
+# 3. Copy files to landing-pages directory
+cp build/client/index.html landing-pages/
+cp -r build/client/assets landing-pages/
+
+# 4. Deploy landing page to Cloudflare Pages
+bunx wrangler pages deploy landing-pages/ --project-name=promptly-landing-pages
 ```
 
-### After Deploying
+## App Deployment (Workers)
+
+### Pre-Deployment Checklist
+1. `bun run lint` - fix any errors
+2. `bun run typecheck` - fix any type errors
+3. `bun run test:e2e` - ensure tests pass (dev server must be running)
+
+### Deploy Command
+```bash
+bun run deploy
+# Runs: bun run build && wrangler deploy
+```
+
+### Post-Deployment Verification
 1. Test login flow at https://app.promptlycms.com/login
 2. Test Google SSO
 3. Check Cloudflare Worker logs for errors
 
+## Landing Page Deployment (Pages)
+
+The landing page is pre-rendered from the production app and deployed as static HTML.
+
+### Option A: Deploy from Production (Recommended)
+Use this when the app is already deployed to Workers:
+
+```bash
+# Pre-render from production
+bun run prerender:prod
+
+# Copy to landing-pages directory
+cp build/client/index.html landing-pages/
+cp -r build/client/assets landing-pages/
+
+# Deploy to Cloudflare Pages
+bunx wrangler pages deploy landing-pages/ --project-name=promptly-landing-pages
+```
+
+### Option B: Deploy from Local Build
+Use this when testing landing page changes locally:
+
+```bash
+# Build the app
+bun run build
+
+# Start local server (in one terminal)
+bunx wrangler dev
+
+# Pre-render from localhost (in another terminal)
+bun run prerender
+
+# Copy to landing-pages directory
+cp build/client/index.html landing-pages/
+cp -r build/client/assets landing-pages/
+
+# Deploy to Cloudflare Pages
+bunx wrangler pages deploy landing-pages/ --project-name=promptly-landing-pages
+```
+
+### Landing Page Files
+```
+landing-pages/
+├── index.html      # Prerendered HTML (gitignored)
+├── assets/         # JS/CSS bundles (gitignored)
+├── _headers        # Cloudflare Pages caching config (tracked)
+└── favicon.ico     # Site favicon (gitignored)
+```
+
+### Caching Configuration
+The `_headers` file configures aggressive edge caching:
+- `s-maxage=3600` - CDN caches for 1 hour
+- `stale-while-revalidate=86400` - Serve stale content while revalidating for 24 hours
+
 ## Database Migrations
+
 ```bash
 # Apply migrations to production
 bunx wrangler d1 migrations apply promptly --remote
@@ -588,6 +645,18 @@ bunx wrangler d1 migrations apply promptly --remote
 # Apply migrations to local dev
 bunx wrangler d1 migrations apply promptly --local
 ```
+
+## Environment Variables
+
+### Required for Workers
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `BETTER_AUTH_URL` | `https://app.promptlycms.com` | No trailing slash, no leading spaces |
+| `GOOGLE_CLIENT_ID` | From Google Console | OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | From Google Console | OAuth client secret |
+
+### OAuth Configuration (Google Console)
+- Authorized redirect URI: `https://app.promptlycms.com/api/auth/callback/google`
 
 ## Common Deployment Issues
 
@@ -603,29 +672,10 @@ bunx wrangler d1 migrations apply promptly --local
 - **Cause**: Usually means auth actually failed (check logs)
 - **Fix**: Check Better Auth logs for the real error (often password-related)
 
-## Landing Page Deployment (Manual)
+### Landing page shows old content
+- **Cause**: Pre-rendered from old deployment or cached
+- **Fix**: Re-run `bun run prerender:prod` after deploying app changes, then redeploy Pages
 
-The landing page is deployed separately to Cloudflare Pages. Manual process:
-
-```bash
-# Option A: From local build
-bun run build
-bunx wrangler dev  # Start local server on port 8787
-# In another terminal:
-bun run prerender
-cp build/client/index.html landing-pages/
-cp -r build/client/assets landing-pages/
-
-# Option B: From production (if app is already deployed)
-bun run prerender:prod
-cp build/client/index.html landing-pages/
-cp -r build/client/assets landing-pages/
-```
-
-Then deploy via Cloudflare Pages dashboard or push to trigger auto-deploy.
-
-**Files in `landing-pages/`:**
-- `index.html` - Prerendered landing page (gitignored)
-- `assets/` - JS/CSS bundles (gitignored)
-- `_headers` - Cloudflare Pages caching config (tracked in git)
-- `favicon.ico` - Site favicon (gitignored)
+### Wrangler pages deploy fails
+- **Cause**: Wrong project name or not authenticated
+- **Fix**: Run `bunx wrangler login` and verify project name is `promptly-landing-pages`
