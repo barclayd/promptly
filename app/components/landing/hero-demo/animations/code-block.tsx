@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type CodeBlockProps = {
   code: string;
@@ -142,10 +142,8 @@ export const CodeBlock = ({
           {/* Line numbers gutter - only render lines we've typed to */}
           <div className="flex-shrink-0 pr-3 mr-3 border-r border-zinc-800 text-zinc-600 select-none text-right">
             {Array.from({ length: visibleLineCount }, (_, lineIndex) => (
-              <div
-                key={lineIndex}
-                style={{ minWidth: `${lineNumberWidth}ch` }}
-              >
+              // biome-ignore lint/suspicious/noArrayIndexKey: Line numbers are static and ordered
+              <div key={lineIndex} style={{ minWidth: `${lineNumberWidth}ch` }}>
                 {lineIndex + 1}
               </div>
             ))}
@@ -154,6 +152,7 @@ export const CodeBlock = ({
           {/* Code content */}
           <code className="flex-1 overflow-x-auto">
             {displayedTokens.map((dt, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: Tokens are rendered in sequence
               <span key={i} className={getTokenColor(dt.token.type)}>
                 {dt.token.text.slice(0, dt.chars)}
               </span>
@@ -174,6 +173,7 @@ export const CodeBlock = ({
     >
       <code>
         {displayedTokens.map((dt, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: Tokens are rendered in sequence
           <span key={i} className={getTokenColor(dt.token.type)}>
             {dt.token.text.slice(0, dt.chars)}
           </span>

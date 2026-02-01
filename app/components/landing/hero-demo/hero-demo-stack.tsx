@@ -168,8 +168,7 @@ export const HeroDemoStack = ({ className }: HeroDemoStackProps) => {
   ];
 
   return (
-    <div
-      role="region"
+    <section
       aria-label="Product demo carousel"
       className={cn('flex flex-col items-center gap-6', className)}
       onMouseEnter={handleMouseEnter}
@@ -224,6 +223,6 @@ export const HeroDemoStack = ({ className }: HeroDemoStackProps) => {
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 };

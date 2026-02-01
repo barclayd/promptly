@@ -128,13 +128,16 @@ export const DemoEditorWindow = ({
           const text = segment.content.slice(0, charsToShow);
           // Split by newlines to handle paragraph breaks
           const parts = text.split('\n');
-          parts.forEach((part, pi) => {
-            if (pi > 0) {
-              elements.push(<br key={`br-${i}-${pi}`} />);
-              elements.push(<br key={`br2-${i}-${pi}`} />);
+          parts.forEach((part, partIndex) => {
+            if (partIndex > 0) {
+              // biome-ignore lint/suspicious/noArrayIndexKey: Part index combined with segment index creates stable unique key
+              elements.push(<br key={`br-${i}-${partIndex}`} />);
+              // biome-ignore lint/suspicious/noArrayIndexKey: Part index combined with segment index creates stable unique key
+              elements.push(<br key={`br2-${i}-${partIndex}`} />);
             }
             if (part) {
-              elements.push(<span key={`text-${i}-${pi}`}>{part}</span>);
+              // biome-ignore lint/suspicious/noArrayIndexKey: Part index combined with segment index creates stable unique key
+              elements.push(<span key={`text-${i}-${partIndex}`}>{part}</span>);
             }
           });
         }

@@ -62,6 +62,7 @@ export const TypingText = ({
     return (
       <span className={className}>
         {displayedText.split('').map((char, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: Characters are rendered in sequence and index is stable
           <span key={i}>{renderChar(char, i, i === displayedChars - 1)}</span>
         ))}
       </span>

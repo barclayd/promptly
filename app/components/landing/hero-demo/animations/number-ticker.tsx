@@ -22,6 +22,7 @@ export const NumberTicker = ({
   const startTimeRef = useRef<number | null>(null);
   const startValueRef = useRef(0);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: displayValue is intentionally captured at effect start to animate from current value
   useEffect(() => {
     startValueRef.current = displayValue;
     startTimeRef.current = null;
