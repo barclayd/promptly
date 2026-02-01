@@ -223,6 +223,25 @@ test('example test', async ({ authenticatedPage }) => {
 });
 ```
 
+## Waiting for Form Submissions
+**DO NOT use `waitForResponse` with URL pattern matching** - it's unreliable because:
+- React Router 7 form submissions use `?_data=...` query params, not `.data` suffix
+- The `actionTimeout` (15000ms) gets applied instead of default timeout
+
+**Instead, wait for UI state changes:**
+```typescript
+// Click submit button
+await submitButton.click();
+
+// Wait for dialog to close (indicates form submission completed)
+await expect(dialog).not.toBeVisible({ timeout: 30000 });
+
+// Wait for navigation to new page
+await page.waitForURL(/\/prompts\/[a-zA-Z0-9_-]+$/, { timeout: 30000 });
+```
+
+This pattern is more reliable because it tests what the user actually sees rather than implementation details.
+
 # Landing Page
 
 The landing page (`app/routes/landing.tsx`) is a marketing page with complex animations showcasing the product.

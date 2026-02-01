@@ -8,26 +8,36 @@ import { ROUTES } from '../helpers/test-data';
 test('can delete a prompt via File menu', async ({ authenticatedPage }) => {
   // Create a fresh prompt for this test to avoid affecting other tests
   await authenticatedPage.goto(ROUTES.home);
+  await authenticatedPage.waitForLoadState('networkidle');
 
   const createButton = authenticatedPage.getByRole('button', {
     name: 'Create',
   });
+  await createButton.waitFor({ state: 'visible', timeout: 10000 });
   await createButton.click();
 
   const dialog = authenticatedPage.getByRole('dialog');
-  await expect(dialog).toBeVisible();
+  await expect(dialog).toBeVisible({ timeout: 10000 });
 
   const promptName = `E2E Delete Test ${Date.now()}`;
   const nameInput = dialog.locator('input[name="name"]');
+  await nameInput.waitFor({ state: 'visible', timeout: 5000 });
   await nameInput.fill(promptName);
 
   const submitButton = dialog.getByRole('button', { name: /^create$/i });
+  await submitButton.waitFor({ state: 'visible', timeout: 5000 });
   await submitButton.click();
+
+  // Wait for dialog to close (indicates form submission completed)
+  await expect(dialog).not.toBeVisible({ timeout: 30000 });
 
   // Wait for redirect to new prompt
   await authenticatedPage.waitForURL(/\/prompts\/[a-zA-Z0-9_-]+$/, {
-    timeout: 15000,
+    timeout: 30000,
   });
+
+  // Wait for page to fully load after navigation
+  await authenticatedPage.waitForLoadState('networkidle');
 
   // Verify the prompt name is displayed
   await expect(authenticatedPage.locator('h1')).toContainText(promptName);
@@ -56,8 +66,11 @@ test('can delete a prompt via File menu', async ({ authenticatedPage }) => {
   const deleteButton = deleteDialog.getByRole('button', { name: 'Delete' });
   await deleteButton.click();
 
+  // Wait for dialog to close (indicates deletion completed)
+  await expect(deleteDialog).not.toBeVisible({ timeout: 30000 });
+
   // Wait for redirect to prompts page
-  await expect(authenticatedPage).toHaveURL(ROUTES.prompts, { timeout: 10000 });
+  await expect(authenticatedPage).toHaveURL(ROUTES.prompts, { timeout: 30000 });
 
   // Verify the prompt no longer appears in the main content area
   await authenticatedPage.waitForLoadState('networkidle');

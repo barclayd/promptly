@@ -39,10 +39,16 @@ test('can create a new prompt via sidebar button', async ({
   await submitButton.waitFor({ state: 'visible', timeout: 5000 });
   await submitButton.click();
 
+  // Wait for dialog to close (indicates form submission completed)
+  await expect(dialog).not.toBeVisible({ timeout: 30000 });
+
   // Wait for navigation to new prompt page
   await authenticatedPage.waitForURL(/\/prompts\/[a-zA-Z0-9_-]+$/, {
     timeout: 30000,
   });
+
+  // Wait for page to fully load after navigation
+  await authenticatedPage.waitForLoadState('networkidle');
 
   // Verify the prompt name is visible on the page (in the header)
   await expect(
@@ -82,10 +88,16 @@ test('can create a new prompt via prompts page card', async ({
   await submitButton.waitFor({ state: 'visible', timeout: 5000 });
   await submitButton.click();
 
+  // Wait for dialog to close (indicates form submission completed)
+  await expect(dialog).not.toBeVisible({ timeout: 30000 });
+
   // Wait for redirect
   await authenticatedPage.waitForURL(/\/prompts\/[a-zA-Z0-9_-]+$/, {
     timeout: 30000,
   });
+
+  // Wait for page to fully load after navigation
+  await authenticatedPage.waitForLoadState('networkidle');
 
   // Verify the prompt name is visible
   await expect(
