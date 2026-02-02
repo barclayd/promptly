@@ -1,6 +1,7 @@
 import { data } from 'react-router';
 import { orgContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
+import { invalidatePromptCache } from '~/lib/cache-invalidation.server';
 import { updatePromptSchema } from '~/lib/validations/prompt';
 import type { Route } from './+types/prompts.update';
 
@@ -53,6 +54,12 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     )
     .bind(name, description || '', Date.now(), promptId)
     .run();
+
+  // Invalidate API cache
+  const cache = context.cloudflare.env.PROMPTS_CACHE;
+  if (cache) {
+    context.cloudflare.ctx.waitUntil(invalidatePromptCache(cache, promptId));
+  }
 
   return { success: true };
 };

@@ -679,3 +679,287 @@ bunx wrangler d1 migrations apply promptly --local
 ### Wrangler pages deploy fails
 - **Cause**: Wrong project name or not authenticated
 - **Fix**: Run `bunx wrangler login` and verify project name is `promptly-landing-pages`
+
+# Promptly API Worker (Separate Repo)
+
+A dedicated Cloudflare Worker for serving prompts to 3rd party applications via API. This runs as a **separate service** from the main app for performance isolation.
+
+## Overview
+
+| Property | Value |
+|----------|-------|
+| **URL** | `https://api.promptlycms.com` |
+| **Platform** | Cloudflare Workers (separate from main app) |
+| **Database** | Same D1 database (`promptly`) |
+| **Caching** | KV namespace with 60-second TTL |
+| **Bundle Size** | ~20KB (no ORM, no framework) |
+
+## Endpoint
+
+```
+GET https://api.promptlycms.com/prompts/get?promptId=<id>&version=<optional-semver>
+Authorization: Bearer <api_key>
+```
+
+**Success Response (200):**
+```json
+{
+  "promptId": "xxx",
+  "promptName": "My Prompt",
+  "version": "1.0.0",
+  "systemMessage": "...",
+  "userMessage": "...",
+  "config": {}
+}
+```
+
+**Error Response (4xx):**
+```json
+{
+  "error": "Error message",
+  "code": "ERROR_CODE"
+}
+```
+
+Error codes: `INVALID_KEY`, `DISABLED`, `EXPIRED`, `FORBIDDEN`, `NO_ORG`
+
+## Database Schema (Reference)
+
+The API worker queries the existing Promptly D1 database directly (no ORM).
+
+### `apikey` table (Better Auth)
+```sql
+-- Better Auth stores API keys with SHA-256 hashing
+CREATE TABLE apikey (
+  id TEXT PRIMARY KEY,
+  key TEXT NOT NULL,           -- SHA-256 hash of the API key (NOT the raw key)
+  permissions TEXT,            -- JSON: {"prompt": ["read"]}
+  metadata TEXT,               -- JSON: {"organizationId": "xxx"}
+  enabled INTEGER DEFAULT 1,
+  expires_at INTEGER,          -- Unix timestamp (milliseconds)
+  -- other Better Auth fields omitted
+);
+CREATE INDEX idx_apikey_key ON apikey(key);
+```
+
+**Important**: The `key` column stores `SHA-256(rawApiKey)`, not the raw key. When verifying:
+```typescript
+const hashedKey = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawApiKey));
+// Convert to hex string, then query: SELECT * FROM apikey WHERE key = ?
+```
+
+### `prompt` table
+```sql
+CREATE TABLE prompt (
+  id TEXT PRIMARY KEY,         -- nanoid
+  name TEXT NOT NULL,
+  organization_id TEXT NOT NULL,
+  deleted_at INTEGER,          -- Soft delete timestamp
+  -- other fields omitted
+);
+```
+
+### `prompt_version` table
+```sql
+CREATE TABLE prompt_version (
+  id TEXT PRIMARY KEY,
+  prompt_id TEXT NOT NULL,
+  major INTEGER,               -- NULL for drafts
+  minor INTEGER,
+  patch INTEGER,
+  system_message TEXT,
+  user_message TEXT,
+  config TEXT DEFAULT '{}',    -- JSON string
+  published_at INTEGER,        -- NULL for drafts, timestamp for published
+  -- other fields omitted
+);
+```
+
+**Version Query Logic:**
+- If `version` param provided: exact match on `major.minor.patch`
+- If no version: get latest by `ORDER BY (published_at IS NULL), major DESC, minor DESC, patch DESC LIMIT 1`
+  - This prioritizes published versions over drafts, then sorts by semver
+
+## API Key Verification Flow
+
+1. Extract Bearer token from `Authorization` header
+2. Hash the token with SHA-256 (same as Better Auth storage)
+3. Check KV cache for `apikey:{hashedKey}`
+4. If cache miss, query D1: `SELECT * FROM apikey WHERE key = ?`
+5. Validate:
+   - `enabled = 1`
+   - `expires_at` is null or in the future
+   - `permissions` JSON contains `{"prompt": ["read"]}`
+   - `metadata` JSON contains `organizationId`
+6. Cache the validated key data in KV (60s TTL)
+7. Return `organizationId` for prompt access check
+
+## KV Caching Strategy
+
+| Key Pattern | Value | TTL |
+|-------------|-------|-----|
+| `apikey:{sha256Hash}` | `{organizationId, permissions, expiresAt, enabled}` | 60s |
+| `prompt:{promptId}` | `{id, name, organizationId}` | 60s |
+| `version:{promptId}:latest` | `{systemMessage, userMessage, config, version}` | 60s |
+| `version:{promptId}:{semver}` | `{systemMessage, userMessage, config, version}` | 60s |
+
+**Cache Logging**: All cache hits/misses are logged as JSON for observability:
+```json
+{"event": "cache", "type": "apikey", "hit": true, "key": "apikey:abc123...", "timestamp": 1234567890}
+```
+
+## Cache Invalidation (Main App Responsibility)
+
+The main Promptly app must invalidate KV cache when data changes. Add the same KV namespace binding to the main app's `wrangler.jsonc`:
+
+```jsonc
+"kv_namespaces": [
+  {
+    "binding": "PROMPTS_CACHE",
+    "id": "<SAME_KV_NAMESPACE_ID_AS_API_WORKER>"
+  }
+]
+```
+
+### When to Invalidate
+
+| Action | Keys to Delete |
+|--------|---------------|
+| Update prompt name | `prompt:{promptId}` |
+| Publish version | `version:{promptId}:latest` |
+| Delete prompt | `prompt:{promptId}`, `version:{promptId}:latest` |
+| Disable/delete API key | `apikey:{hashedKey}` |
+
+### Invalidation Helper
+
+```typescript
+// Add to main app: app/lib/cache-invalidation.server.ts
+export const invalidatePromptCache = async (
+  cache: KVNamespace,
+  promptId: string,
+) => {
+  await cache.delete(`prompt:${promptId}`);
+  await cache.delete(`version:${promptId}:latest`);
+  // Specific version keys expire naturally (60s TTL)
+};
+
+export const invalidateApiKeyCache = async (
+  cache: KVNamespace,
+  rawApiKey: string,
+) => {
+  const encoder = new TextEncoder();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(rawApiKey));
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashedKey = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+  await cache.delete(`apikey:${hashedKey}`);
+};
+```
+
+## Worker Configuration
+
+### `wrangler.jsonc`
+```jsonc
+{
+  "name": "promptly-api",
+  "main": "./src/index.ts",
+  "compatibility_date": "2025-10-08",
+  "compatibility_flags": ["nodejs_compat_v2"],
+  "observability": { "enabled": true },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "promptly",
+      "database_id": "eadc5f7c-e195-4bd0-bcb1-8e4d2950606b"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "CACHE",
+      "id": "<CREATE_WITH: bunx wrangler kv namespace create PROMPTS_CACHE>",
+      "preview_id": "<CREATE_WITH: bunx wrangler kv namespace create PROMPTS_CACHE --preview>"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "api.promptlycms.com/*",
+      "zone_name": "promptlycms.com"
+    }
+  ]
+}
+```
+
+### DNS Setup
+After deploying, add DNS record in Cloudflare:
+1. Go to Cloudflare Dashboard → DNS
+2. Add AAAA record: `api` → `100::` (proxied)
+3. The worker route pattern handles requests
+
+## File Structure
+
+```
+promptly-api/
+├── src/
+│   ├── index.ts           # Worker entry point
+│   ├── handler.ts         # Request routing
+│   ├── verify-api-key.ts  # API key verification
+│   ├── fetch-prompt.ts    # Prompt data fetching
+│   ├── cache.ts           # KV cache helpers
+│   └── types.ts           # TypeScript interfaces
+├── wrangler.jsonc
+├── tsconfig.json
+└── package.json
+```
+
+## Testing
+
+### Local Development
+```bash
+bunx wrangler dev
+# Test: curl "http://localhost:8787/prompts/get?promptId=XXX" -H "Authorization: Bearer promptly_xxx"
+```
+
+### Production Test
+```bash
+curl "https://api.promptlycms.com/prompts/get?promptId=<id>" \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Get Test Data
+To find valid test data, query the main app's D1 database:
+```bash
+# Get a prompt ID
+bunx wrangler d1 execute promptly --remote --command "SELECT id, name FROM prompt LIMIT 5"
+
+# Get an API key (you'll need the raw key from when it was created)
+bunx wrangler d1 execute promptly --remote --command "SELECT id, metadata FROM apikey WHERE enabled = 1 LIMIT 5"
+```
+
+## Performance Targets
+
+| Metric | Target |
+|--------|--------|
+| Cold start | <5ms |
+| Warm request (cache hit) | <10ms |
+| Warm request (cache miss) | <50ms |
+| Bundle size | <25KB |
+
+## CORS Configuration
+
+The API allows cross-origin requests:
+```
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: GET, OPTIONS
+Access-Control-Allow-Headers: Authorization, Content-Type
+Access-Control-Max-Age: 86400
+```
+
+## Error Handling
+
+| HTTP Status | When |
+|-------------|------|
+| 400 | Missing `promptId` parameter |
+| 401 | Missing/invalid Authorization header, invalid API key |
+| 403 | API key lacks permission, wrong organization |
+| 404 | Prompt or version not found |
+| 405 | Non-GET request to `/prompts/get` |
+| 500 | Unexpected error (logged) |
