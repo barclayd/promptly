@@ -150,7 +150,7 @@ export const CodeBlock = ({
           </div>
 
           {/* Code content */}
-          <code className="flex-1 overflow-x-auto">
+          <code className="flex-1 overflow-hidden">
             {displayedTokens.map((dt, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: Tokens are rendered in sequence
               <span key={i} className={getTokenColor(dt.token.type)}>
@@ -169,7 +169,7 @@ export const CodeBlock = ({
 
   return (
     <pre
-      className={`font-mono text-xs leading-relaxed bg-zinc-950 rounded-lg p-3 overflow-x-auto ${className || ''}`}
+      className={`font-mono text-xs leading-relaxed bg-zinc-950 rounded-lg p-3 overflow-hidden ${className || ''}`}
     >
       <code>
         {displayedTokens.map((dt, i) => (

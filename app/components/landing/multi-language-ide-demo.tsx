@@ -391,7 +391,7 @@ export const MultiLanguageIdeDemo = ({
             </div>
 
             {/* Code content */}
-            <code className="flex-1 overflow-x-auto">
+            <code className="flex-1 overflow-hidden">
               {displayedTokens.map((dt, i) => {
                 const key = `${dt.token.type}-${i}-${dt.token.text.slice(0, 8)}`;
                 return (
