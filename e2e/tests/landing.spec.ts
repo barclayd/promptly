@@ -85,7 +85,7 @@ test('FAQ accordion expands and collapses', async ({ page }) => {
 
   // Find the first FAQ trigger
   const firstFaq = page.getByRole('button', {
-    name: /how does promptly compare/i,
+    name: /what is promptly/i,
   });
   await expect(firstFaq).toBeVisible();
 
@@ -94,7 +94,7 @@ test('FAQ accordion expands and collapses', async ({ page }) => {
 
   // Content should be visible
   await expect(
-    page.getByText(/separates your prompt logic from your application code/i),
+    page.getByText(/prompt management platform that lets teams create/i),
   ).toBeVisible();
 
   // Click to collapse
@@ -102,7 +102,7 @@ test('FAQ accordion expands and collapses', async ({ page }) => {
 
   // Content should be hidden (accordion collapses)
   await expect(
-    page.getByText(/separates your prompt logic from your application code/i),
+    page.getByText(/prompt management platform that lets teams create/i),
   ).toBeHidden();
 });
 
