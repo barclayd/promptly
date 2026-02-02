@@ -1,6 +1,7 @@
 import { data } from 'react-router';
 import { orgContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
+import { cachePublishedVersion } from '~/lib/cache-invalidation.server';
 import type { Route } from './+types/prompts.publish';
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
@@ -107,6 +108,37 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     .prepare('UPDATE prompt SET updated_at = ? WHERE id = ?')
     .bind(Date.now(), promptId)
     .run();
+
+  // Fetch the published version content and cache it
+  const publishedVersion = await db
+    .prepare(
+      'SELECT system_message, user_message, config FROM prompt_version WHERE id = ?',
+    )
+    .bind(currentDraft.id)
+    .first<{
+      system_message: string | null;
+      user_message: string | null;
+      config: string;
+    }>();
+
+  const cache = context.cloudflare.env.PROMPTS_CACHE;
+  if (cache && publishedVersion) {
+    let config: Record<string, unknown> = {};
+    try {
+      config = JSON.parse(publishedVersion.config || '{}');
+    } catch {
+      // Keep empty config on parse error
+    }
+
+    context.cloudflare.ctx.waitUntil(
+      cachePublishedVersion(cache, promptId, `${major}.${minor}.${patch}`, {
+        systemMessage: publishedVersion.system_message ?? '',
+        userMessage: publishedVersion.user_message ?? '',
+        config,
+        version: `${major}.${minor}.${patch}`,
+      }),
+    );
+  }
 
   return { success: true, version: `${major}.${minor}.${patch}` };
 };

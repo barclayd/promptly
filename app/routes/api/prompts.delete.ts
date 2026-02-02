@@ -1,6 +1,7 @@
 import { data } from 'react-router';
 import { orgContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
+import { invalidatePromptAndVersions } from '~/lib/cache-invalidation.server';
 import { deletePromptSchema } from '~/lib/validations/prompt';
 import type { Route } from './+types/prompts.delete';
 
@@ -75,6 +76,14 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     .prepare('UPDATE prompt SET deleted_at = ? WHERE id = ?')
     .bind(Date.now(), promptId)
     .run();
+
+  // Invalidate API cache (prompt metadata + all versions)
+  const cache = context.cloudflare.env.PROMPTS_CACHE;
+  if (cache) {
+    context.cloudflare.ctx.waitUntil(
+      invalidatePromptAndVersions(cache, promptId),
+    );
+  }
 
   return { success: true };
 };

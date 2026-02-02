@@ -15,6 +15,12 @@
       "migrations_dir": "./migrations/drizzle"
     }
   ],
+  "kv_namespaces": [
+    {
+      "binding": "PROMPTS_CACHE",
+      "id": "fe422f717c1b4a8295656d6e494161a3"
+    }
+  ],
   "durable_objects": {
     "bindings": [
       {
