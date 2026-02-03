@@ -88,7 +88,7 @@ export const DemoIdeWindow = ({
     >
       <div
         ref={scrollContainerRef}
-        className="p-3 h-[255px] sm:h-[235px] lg:h-[215px] overflow-y-auto scrollbar-hide relative bg-zinc-950"
+        className="p-3 h-[255px] sm:h-[235px] lg:h-[215px] overflow-y-auto overflow-x-hidden scrollbar-hide relative bg-zinc-950"
       >
         {/* Code editor with line numbers */}
         {isActive && (
