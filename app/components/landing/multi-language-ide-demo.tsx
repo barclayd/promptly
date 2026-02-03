@@ -22,15 +22,18 @@ await sendEmail({
   body: text
 });`;
 
-const PYTHON_CODE = `import requests
+const PYTHON_CODE = `from promptly import Promptly
 
-response = requests.get(
-    f"https://app.promptlycms.com/api/prompts/get?promptId={prompt_id}",
-    headers={"Authorization": f"Bearer {api_key}"},
+client = Promptly(api_key)
+
+prompt = client.get(
+    "marketing/welcome-email",
+    company_name="Acme Inc",
+    user_name="Sarah",
+    plan_type="Pro"
 )
 
-data = response.json()
-prompts, config = data["prompts"], data["config"]`;
+send_email(user.email, prompt.text)`;
 
 const PAUSE_DURATION = 4000;
 const CHAR_DELAY = 28;
@@ -326,7 +329,7 @@ export const MultiLanguageIdeDemo = ({
   ];
 
   return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden">
+    <div className="w-full max-w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden">
       {/* Window chrome with tabs */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/80">
         <div className="flex gap-1.5">
@@ -369,12 +372,12 @@ export const MultiLanguageIdeDemo = ({
       <div
         ref={scrollContainerRef}
         className={cn(
-          'p-3 h-[240px] overflow-y-auto scrollbar-hide relative bg-zinc-950 transition-opacity duration-300',
+          'p-3 h-[240px] overflow-y-auto overflow-x-hidden scrollbar-hide relative bg-zinc-950 transition-opacity duration-300',
           isTransitioning && 'opacity-0',
         )}
       >
-        <pre className="font-mono text-xs leading-relaxed">
-          <div className="flex">
+        <pre className="font-mono text-xs leading-relaxed overflow-hidden w-full max-w-full">
+          <div className="flex w-full max-w-full overflow-hidden">
             {/* Line numbers gutter */}
             <div className="flex-shrink-0 pr-3 mr-3 border-r border-zinc-800 text-zinc-600 select-none text-right">
               {Array.from(
@@ -391,7 +394,7 @@ export const MultiLanguageIdeDemo = ({
             </div>
 
             {/* Code content */}
-            <code className="flex-1 overflow-x-auto">
+            <code className="w-0 flex-1 min-w-0 overflow-hidden break-all whitespace-pre-wrap">
               {displayedTokens.map((dt, i) => {
                 const key = `${dt.token.type}-${i}-${dt.token.text.slice(0, 8)}`;
                 return (

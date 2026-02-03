@@ -63,7 +63,7 @@ export const SolutionSection = () => {
   const [activeTab, setActiveTab] = useState('editors');
 
   return (
-    <section id="features" className="py-24 lg:py-32">
+    <section id="features" className="py-24 lg:py-32 overflow-hidden">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <AnimatedWrapper className="text-center mb-16">
           <Badge
@@ -74,7 +74,7 @@ export const SolutionSection = () => {
               The solution
             </span>
           </Badge>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
             Prompts deserve their own home
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -113,7 +113,7 @@ export const SolutionSection = () => {
                     >
                       {tab.badge}
                     </Badge>
-                    <h3 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                    <h3 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight leading-tight break-words hyphens-auto">
                       {tab.headline}
                     </h3>
                     <p className="text-lg text-muted-foreground leading-relaxed">
@@ -132,7 +132,7 @@ export const SolutionSection = () => {
                   </div>
 
                   {/* Right: Visual */}
-                  <div className="relative">
+                  <div className="relative w-full min-w-0 overflow-hidden">
                     <TabVisual
                       tab={tab.value}
                       isActive={activeTab === tab.value}

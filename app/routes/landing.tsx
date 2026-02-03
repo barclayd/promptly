@@ -68,7 +68,7 @@ export default function Landing({ loaderData }: Route.ComponentProps) {
   const { isAuthenticated } = loaderData;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Navigation isAuthenticated={isAuthenticated} />
       <main>
         <HeroSection />

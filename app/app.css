@@ -20,6 +20,7 @@ html.dark {
 html,
 body {
   @apply h-full bg-background;
+  overflow-x: hidden;
 }
 
 /* Hide scrollbar while maintaining scroll functionality */

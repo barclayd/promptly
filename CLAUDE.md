@@ -497,6 +497,42 @@ Key keyframes for landing page:
 - All timeouts are cleaned up on unmount
 - CSS transforms are GPU-accelerated (scale, rotate, translate)
 
+## Mobile Overflow Prevention
+
+The landing page uses multiple layers of overflow protection to prevent horizontal scrolling on mobile (especially iOS Safari):
+
+**Root-level protection** (`app/app.css`):
+```css
+html,
+body {
+  @apply h-full bg-background;
+  overflow-x: hidden;
+}
+```
+
+**Page-level protection** (`app/routes/landing.tsx`):
+```tsx
+<div className="min-h-screen bg-background overflow-x-hidden">
+```
+
+**Common overflow culprits to watch for:**
+1. **Large background blur elements** - Gradients with fixed widths (e.g., `w-[600px]`) can extend beyond viewport
+2. **Code blocks with `overflow-x-auto`** - Change to `overflow-hidden` for demo code that doesn't need scrolling
+3. **Absolute/fixed positioned elements** - Check that they're properly contained
+
+**Testing mobile overflow:**
+```js
+// Run in Chrome DevTools at 375px width
+const hasOverflow = document.documentElement.scrollWidth > document.documentElement.clientWidth;
+console.log('Has horizontal overflow:', hasOverflow,
+  'Difference:', document.documentElement.scrollWidth - document.documentElement.clientWidth);
+```
+
+**Verification checklist:**
+1. Test at 375px (iPhone) and 320px (smallest common mobile)
+2. Test both light and dark modes
+3. Scroll entire page - no horizontal scroll should be possible
+
 # Authentication
 
 ## Password Hashing
