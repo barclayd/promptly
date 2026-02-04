@@ -48,9 +48,21 @@ export const Navigation = ({ isAuthenticated = false }: NavigationProps) => {
         ref={scrollRef}
         className={cn(
           'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+          // Mobile: Enhanced liquid glass effect for readability
+          // Uses saturation boost (180%) to counteract blur muddiness per best practices
+          'max-md:bg-white/75 max-md:dark:bg-zinc-950/80',
+          'max-md:backdrop-blur-xl max-md:backdrop-saturate-[1.8]',
+          'max-md:border-b max-md:border-white/20 max-md:dark:border-white/10',
+          'max-md:shadow-[0_4px_30px_rgba(0,0,0,0.1)] max-md:dark:shadow-[0_4px_30px_rgba(0,0,0,0.3)]',
+          // Desktop: Glass effect only when scrolled
           isScrolled
-            ? 'bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-sm'
-            : 'bg-transparent',
+            ? [
+                'md:bg-white/80 md:dark:bg-zinc-950/80',
+                'md:backdrop-blur-xl md:backdrop-saturate-[1.8]',
+                'md:border-b md:border-white/20 md:dark:border-white/10',
+                'md:shadow-[0_4px_30px_rgba(0,0,0,0.1)] md:dark:shadow-[0_4px_30px_rgba(0,0,0,0.25)]',
+              ]
+            : 'md:bg-transparent',
         )}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
