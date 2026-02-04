@@ -111,43 +111,38 @@ export const StaticIdeWindow = () => {
       </div>
 
       {/* Code editor area */}
-      <div className="p-3 h-[200px] overflow-hidden bg-zinc-950">
+      <div className="p-3 h-[240px] overflow-y-auto overflow-x-hidden bg-zinc-950">
         <pre className="font-mono text-xs leading-relaxed">
-          <div className="flex">
-            {/* Line numbers gutter */}
-            <div className="flex-shrink-0 pr-3 mr-3 border-r border-zinc-800 text-zinc-600 select-none text-right">
-              {lineTokens.map((_, lineIndex) => {
-                const key = `line-${lineIndex}`;
-                return (
-                  <div key={key} style={{ minWidth: `${lineNumberWidth}ch` }}>
-                    {lineIndex + 1}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Code content */}
-            <code className="flex-1">
-              {lineTokens.map((line, lineIndex) => {
-                const key = `code-line-${lineIndex}`;
-                return (
-                  <div key={key}>
-                    {line.map((token, tokenIndex) => {
+          {/* Each line is a row with line number + code, so they stay aligned when wrapping */}
+          {lineTokens.map((line, lineIndex) => {
+            const key = `line-row-${lineIndex}`;
+            return (
+              <div key={key} className="flex">
+                {/* Line number */}
+                <span
+                  className="flex-shrink-0 pr-3 mr-3 border-r border-zinc-800 text-zinc-600 select-none text-right"
+                  style={{ minWidth: `${lineNumberWidth + 1}ch` }}
+                >
+                  {lineIndex + 1}
+                </span>
+                {/* Code content - wraps within its container */}
+                <code className="flex-1 whitespace-pre-wrap break-words">
+                  {line.length > 0 ? (
+                    line.map((token, tokenIndex) => {
                       const tokenKey = `${token.type}-${tokenIndex}-${token.text.slice(0, 8)}`;
                       return (
-                        <span
-                          key={tokenKey}
-                          className={getTokenColor(token.type)}
-                        >
+                        <span key={tokenKey} className={getTokenColor(token.type)}>
                           {token.text}
                         </span>
                       );
-                    })}
-                  </div>
-                );
-              })}
-            </code>
-          </div>
+                    })
+                  ) : (
+                    <span>&nbsp;</span>
+                  )}
+                </code>
+              </div>
+            );
+          })}
         </pre>
       </div>
 

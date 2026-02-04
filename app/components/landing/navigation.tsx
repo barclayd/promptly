@@ -186,7 +186,7 @@ export const Navigation = ({ isAuthenticated = false }: NavigationProps) => {
           </div>
 
           {/* Navigation Links */}
-          <div className="flex-1 flex flex-col justify-center px-6 -mt-16">
+          <div className="flex-1 flex flex-col justify-center px-6 pt-4">
             <nav className="space-y-2">
               {navLinks.map((link, index) => (
                 <a
