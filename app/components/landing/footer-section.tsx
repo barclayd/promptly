@@ -1,5 +1,4 @@
 import { IconBrandGithub, IconBrandX } from '@tabler/icons-react';
-import { Link } from 'react-router';
 import { Button } from '~/components/ui/button';
 
 const footerLinks = {
@@ -39,10 +38,10 @@ export const FooterSection = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" asChild className="shadow-lg shadow-primary/25">
-              <Link to="/sign-up">Start free</Link>
+              <a href="https://app.promptlycms.com/sign-up">Start free</a>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link to="/login">Log in</Link>
+              <a href="https://app.promptlycms.com/login">Log in</a>
             </Button>
           </div>
         </div>
@@ -53,14 +52,14 @@ export const FooterSection = () => {
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <Link to="/" className="flex items-center gap-2 mb-4">
+            <a href="/" className="flex items-center gap-2 mb-4">
               <div className="size-8 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
                 <span className="text-white font-bold text-sm">P</span>
               </div>
               <span className="font-semibold text-lg tracking-tight">
                 Promptly
               </span>
-            </Link>
+            </a>
             <p className="text-sm text-muted-foreground max-w-xs mb-4">
               The CMS for AI prompts. Manage, test, and deploy prompts without
               touching code.
