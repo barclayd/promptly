@@ -130,39 +130,66 @@ export const CodeBlock = ({
   const lineNumberWidth = String(totalLines).length;
 
   if (showLineNumbers) {
-    // Only render line numbers for lines that have been typed to
-    // This ensures the content height grows naturally as typing progresses
-    const visibleLineCount = displayedChars > 0 ? lineCount : 1;
+    // Build line-by-line tokens for rendering with aligned line numbers
+    // This ensures line numbers stay aligned with their code even when text wraps
+    const lineTokens: { token: Token; chars: number }[][] = [[]];
+    let currentLineIndex = 0;
+
+    for (const dt of displayedTokens) {
+      const textToShow = dt.token.text.slice(0, dt.chars);
+      const parts = textToShow.split('\n');
+
+      for (let i = 0; i < parts.length; i++) {
+        if (i > 0) {
+          currentLineIndex++;
+          lineTokens[currentLineIndex] = [];
+        }
+        if (parts[i]) {
+          lineTokens[currentLineIndex].push({
+            token: { ...dt.token, text: parts[i] },
+            chars: parts[i].length,
+          });
+        }
+      }
+    }
 
     return (
       <pre
         className={`font-mono text-xs leading-relaxed bg-zinc-950 ${className || ''}`}
       >
-        <div className="flex">
-          {/* Line numbers gutter - only render lines we've typed to */}
-          <div className="flex-shrink-0 pr-3 mr-3 border-r border-zinc-800 text-zinc-600 select-none text-right">
-            {Array.from({ length: visibleLineCount }, (_, lineIndex) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: Line numbers are static and ordered
-              <div key={lineIndex} style={{ minWidth: `${lineNumberWidth}ch` }}>
-                {lineIndex + 1}
-              </div>
-            ))}
-          </div>
-
-          {/* Code content */}
-          <code className="flex-1 overflow-hidden">
-            {displayedTokens.map((dt, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: Tokens are rendered in sequence
-              <span key={i} className={getTokenColor(dt.token.type)}>
-                {dt.token.text.slice(0, dt.chars)}
-              </span>
-            ))}
+        {/* Each line is a row with line number + code, so they stay aligned when wrapping */}
+        {lineTokens.map((lineContent, lineIndex) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: Line numbers are static and ordered
+          <div key={lineIndex} className="flex">
+            {/* Line number */}
             <span
-              className="inline-block w-0.5 h-[1.1em] bg-zinc-400 rounded-sm align-middle ml-0.5"
-              style={{ animation: 'blink 1s step-end infinite' }}
-            />
-          </code>
-        </div>
+              className="flex-shrink-0 pr-3 mr-3 border-r border-zinc-800 text-zinc-600 select-none text-right"
+              style={{ minWidth: `${lineNumberWidth + 1}ch` }}
+            >
+              {lineIndex + 1}
+            </span>
+            {/* Code content - wraps within its container */}
+            <code className="flex-1 whitespace-pre-wrap break-words">
+              {lineContent.length > 0 ? (
+                lineContent.map((dt, tokenIndex) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: Tokens are rendered in sequence
+                  <span key={tokenIndex} className={getTokenColor(dt.token.type)}>
+                    {dt.token.text}
+                  </span>
+                ))
+              ) : (
+                <span>&nbsp;</span>
+              )}
+              {/* Show cursor on the last line */}
+              {lineIndex === lineTokens.length - 1 && (
+                <span
+                  className="inline-block w-0.5 h-[1.1em] bg-zinc-400 rounded-sm align-middle ml-0.5"
+                  style={{ animation: 'blink 1s step-end infinite' }}
+                />
+              )}
+            </code>
+          </div>
+        ))}
       </pre>
     );
   }

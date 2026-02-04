@@ -1,5 +1,4 @@
 import { IconCheck } from '@tabler/icons-react';
-import { Link } from 'react-router';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import type { PricingTier } from '~/lib/landing-data';
@@ -72,7 +71,13 @@ export const PricingCard = ({
         className={cn('w-full', popular && 'shadow-lg shadow-primary/25')}
         asChild
       >
-        <Link to={name === 'Team' ? '/contact' : '/sign-up'}>{cta}</Link>
+        <a
+          href={
+            name === 'Team' ? '/contact' : 'https://app.promptlycms.com/sign-up'
+          }
+        >
+          {cta}
+        </a>
       </Button>
     </div>
   );

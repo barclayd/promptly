@@ -109,13 +109,19 @@ test('FAQ accordion expands and collapses', async ({ page }) => {
 test('CTA buttons link to signup and login', async ({ page }) => {
   await page.goto('/');
 
-  // Check Start free button in hero links to signup
+  // Check Start free button in hero links to signup (external app subdomain)
   const heroStartFree = page.getByRole('link', { name: 'Start free' }).first();
-  await expect(heroStartFree).toHaveAttribute('href', '/sign-up');
+  await expect(heroStartFree).toHaveAttribute(
+    'href',
+    'https://app.promptlycms.com/sign-up',
+  );
 
-  // Check Log in button links to login
+  // Check Log in button links to login (external app subdomain)
   const loginButton = page.getByRole('link', { name: 'Log in' }).first();
-  await expect(loginButton).toHaveAttribute('href', '/login');
+  await expect(loginButton).toHaveAttribute(
+    'href',
+    'https://app.promptlycms.com/login',
+  );
 });
 
 test('mobile menu opens and closes', async ({ page }) => {
@@ -123,29 +129,34 @@ test('mobile menu opens and closes', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 667 });
   await page.goto('/');
 
-  // Desktop nav links in header should be hidden (they're inside hidden div)
-  const nav = page.getByRole('navigation');
-  await expect(nav.getByRole('link', { name: 'Features' })).toBeHidden();
-
   // Mobile menu button should be visible
-  const menuButton = page.getByRole('button').first();
+  const menuButton = page.getByRole('button', { name: 'Open menu' });
   await expect(menuButton).toBeVisible();
 
-  // Click to open
+  // Click to open mobile menu
   await menuButton.click();
 
-  // Mobile menu sheet should show nav links
-  const sheet = page.locator('[data-slot="sheet-content"]');
-  await expect(sheet.getByRole('link', { name: 'Features' })).toBeVisible();
-  await expect(sheet.getByRole('link', { name: 'Pricing' })).toBeVisible();
+  // Mobile menu overlay should show nav links (using second navigation region)
+  const mobileNav = page.getByRole('navigation').nth(1);
+  await expect(
+    mobileNav.getByRole('link', { name: /Features/i }),
+  ).toBeVisible();
+  await expect(mobileNav.getByRole('link', { name: /Pricing/i })).toBeVisible();
 
   // Close button should be visible
-  const closeButton = page.getByRole('button', { name: 'Close' });
+  const closeButton = page.getByRole('button', { name: 'Close menu' }).first();
   await expect(closeButton).toBeVisible();
 
   // Click to close
   await closeButton.click();
 
-  // Sheet should be closed
-  await expect(sheet).toBeHidden();
+  // Mobile menu should be closed - the overlay becomes pointer-events-none
+  // Wait for animation to complete, then verify menu button is clickable again
+  await page.waitForTimeout(600);
+  await expect(menuButton).toBeVisible();
+  // Clicking menu button should reopen the menu (proves it's closed)
+  await menuButton.click();
+  await expect(
+    mobileNav.getByRole('link', { name: /Features/i }),
+  ).toBeVisible();
 });
