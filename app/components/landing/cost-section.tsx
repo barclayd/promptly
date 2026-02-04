@@ -69,7 +69,7 @@ export const CostSection = () => {
 
           {/* Right: Dashboard mockup */}
           <AnimatedWrapper direction="right" delay={200}>
-            <div className="relative">
+            <div className="relative overflow-hidden">
               <div className="rounded-2xl border border-border/50 bg-card shadow-2xl shadow-black/10 dark:shadow-black/30 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">

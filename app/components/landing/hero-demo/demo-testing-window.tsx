@@ -257,7 +257,7 @@ export const DemoTestingWindow = ({
         {/* Output preview mini window */}
         {showOutputPreview && (
           <div
-            className="absolute -bottom-2 -right-2 w-[180px] rounded-lg border border-zinc-700 bg-zinc-800/95 shadow-xl shadow-black/30 p-2.5 transform rotate-1 z-30"
+            className="absolute -bottom-2 right-0 w-[180px] rounded-lg border border-zinc-700 bg-zinc-800/95 shadow-xl shadow-black/30 p-2.5 transform rotate-1 z-30"
             style={{
               animation: 'output-preview-slide 0.3s ease-out forwards',
             }}

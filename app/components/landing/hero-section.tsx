@@ -13,7 +13,7 @@ export const HeroSection = () => {
       <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[min(600px,80vw)] h-[min(600px,80vw)] bg-indigo-500/20 rounded-full blur-[128px] dark:bg-indigo-500/10" />
         <div className="absolute bottom-0 right-1/4 w-[min(500px,70vw)] h-[min(500px,70vw)] bg-purple-500/20 rounded-full blur-[128px] dark:bg-purple-500/10" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(800px,100vw)] h-[min(800px,100vw)] bg-pink-500/10 rounded-full blur-[128px] dark:bg-pink-500/5" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(800px,100%)] h-[min(800px,100%)] bg-pink-500/10 rounded-full blur-[128px] dark:bg-pink-500/5" />
       </div>
 
       {/* Subtle grid pattern */}

@@ -21,7 +21,7 @@ export const HowItWorksStep = ({
   const { ref, isInView } = useInView({ threshold: 0.2, triggerOnce: true });
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative overflow-hidden">
       {/* Connector line (desktop only) - hidden on last step */}
       {!isLastStep && (
         <div className="hidden lg:block absolute top-12 left-full w-6 h-0.5 bg-gradient-to-r from-border to-transparent z-10">
@@ -54,7 +54,7 @@ export const HowItWorksStep = ({
         {/* Visual */}
         <div
           className={cn(
-            'mb-6 flex-1 opacity-0',
+            'mb-6 flex-1 opacity-0 max-w-full',
             isInView && 'animate-fade-in-up',
           )}
           style={{

@@ -18,7 +18,7 @@ export const DemoWindowFrame = ({
   return (
     <div
       className={cn(
-        'rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden',
+        'rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden max-w-full',
         className,
       )}
     >
