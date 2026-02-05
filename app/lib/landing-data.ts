@@ -243,7 +243,7 @@ export const faqs: FAQ[] = [
   {
     question: 'What AI providers do you support?',
     answer:
-      "Promptly is model-agnostic. We support all models from OpenAI (GPT-4, GPT-5 and others), all models Anthropic (Claude 4.5 Haiku, Sonnet and 4.5 Opus), Google Gemini, Grok other LLMs supported by Vercel's AI SDK.",
+      "Promptly is model-agnostic. We support all models from OpenAI (GPT-4, GPT-5 and others), all models Anthropic (Claude 4.5 Haiku, Sonnet and 4.6 Opus), Google Gemini, Grok other LLMs supported by Vercel's AI SDK.",
   },
   {
     question: 'Is my data secure?',

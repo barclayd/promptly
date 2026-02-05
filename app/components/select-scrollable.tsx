@@ -41,7 +41,6 @@ export const SelectScrollable = ({
           <SelectItem value="claude-opus-4.6">Claude Opus 4.6</SelectItem>
           <SelectItem value="claude-sonnet-4.5">Claude Sonnet 4.5</SelectItem>
           <SelectItem value="claude-haiku-4.5">Claude Haiku 4.5</SelectItem>
-          <SelectItem value="claude-opus-4.1">Claude Opus 4.1</SelectItem>
           <SelectItem value="claude-opus-4">Claude Opus 4</SelectItem>
           <SelectItem value="claude-sonnet-4">Claude Sonnet 4</SelectItem>
           <SelectItem value="claude-3.7-sonnet">Claude 3.7 Sonnet</SelectItem>

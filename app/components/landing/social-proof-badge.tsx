@@ -53,7 +53,7 @@ export const SocialProofBadge = ({ className }: { className?: string }) => {
         </div>
         <p className="text-sm text-muted-foreground">
           <NumberTicker
-            value={121}
+            value={122}
             from={0}
             delay={1000}
             duration={3000}
