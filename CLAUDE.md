@@ -586,17 +586,21 @@ The application is split across two Cloudflare services:
 ## Quick Deploy (Both Services)
 
 ```bash
-# 1. Deploy the app to Workers
-bun run deploy
+# 1. Build the app
+bun run build
 
-# 2. Pre-render landing page from production
-bun run prerender:prod
+# 2. Deploy the app to Workers
+wrangler deploy
 
-# 3. Copy files to landing-pages directory
+# 3. Pre-render landing page from local wrangler dev
+bunx wrangler dev  # in one terminal
+bun run prerender  # in another terminal
+
+# 4. Copy files to landing-pages directory
 cp build/client/index.html landing-pages/
 cp -r build/client/assets landing-pages/
 
-# 4. Deploy landing page to Cloudflare Pages
+# 5. Deploy landing page to Cloudflare Pages
 bunx wrangler pages deploy landing-pages/ --project-name=promptly-landing-pages
 ```
 
@@ -620,25 +624,9 @@ bun run deploy
 
 ## Landing Page Deployment (Pages)
 
-The landing page is pre-rendered from the production app and deployed as static HTML.
+The landing page is pre-rendered from a local wrangler dev server and deployed as static HTML.
 
-### Option A: Deploy from Production (Recommended)
-Use this when the app is already deployed to Workers:
-
-```bash
-# Pre-render from production
-bun run prerender:prod
-
-# Copy to landing-pages directory
-cp build/client/index.html landing-pages/
-cp -r build/client/assets landing-pages/
-
-# Deploy to Cloudflare Pages
-bunx wrangler pages deploy landing-pages/ --project-name=promptly-landing-pages
-```
-
-### Option B: Deploy from Local Build
-Use this when testing landing page changes locally:
+**IMPORTANT: Always pre-render from local wrangler dev, never from production.** The production URL (`promptlycms.com`) serves the Pages static site, so fetching from it is circular. Cloudflare edge features (like Rocket Loader) can also mangle script tags in the response, breaking the pre-rendered HTML.
 
 ```bash
 # Build the app
@@ -709,8 +697,12 @@ bunx wrangler d1 migrations apply promptly --local
 - **Fix**: Check Better Auth logs for the real error (often password-related)
 
 ### Landing page shows old content
-- **Cause**: Pre-rendered from old deployment or cached
-- **Fix**: Re-run `bun run prerender:prod` after deploying app changes, then redeploy Pages
+- **Cause**: Pre-rendered from old build or cached at edge
+- **Fix**: Rebuild, re-run `bun run prerender` from local wrangler dev, then redeploy Pages
+
+### Landing page blank / text invisible / dark mode broken
+- **Cause**: Pre-rendered HTML has broken `<script>` tags (e.g. Cloudflare Rocket Loader mangled the `type` attributes)
+- **Fix**: Ensure Rocket Loader is **disabled** in Cloudflare dashboard (Speed > Optimization). Re-prerender from local wrangler dev (never from production) and redeploy Pages
 
 ### Wrangler pages deploy fails
 - **Cause**: Wrong project name or not authenticated

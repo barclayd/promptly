@@ -24,7 +24,7 @@ export const Paper = ({
     {/* Paper surface */}
     <div
       className={cn(
-        'relative z-10 h-[250px] bg-white dark:bg-card rounded-[2px] flex justify-center items-center',
+        'relative z-10 h-[250px] bg-white dark:bg-card rounded-[2px] flex justify-center items-center overflow-hidden',
         className,
       )}
     >
