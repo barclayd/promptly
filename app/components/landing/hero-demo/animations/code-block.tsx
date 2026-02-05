@@ -120,11 +120,6 @@ export const CodeBlock = ({
     remainingChars -= charsToShow;
   }
 
-  // Get the displayed text for line number calculation
-  const displayedText = code.slice(0, displayedChars);
-  const lines = displayedText.split('\n');
-  const lineCount = lines.length;
-
   // Calculate total lines in the full code for line number width
   const totalLines = code.split('\n').length;
   const lineNumberWidth = String(totalLines).length;
@@ -172,8 +167,10 @@ export const CodeBlock = ({
             <code className="flex-1 whitespace-pre-wrap break-words">
               {lineContent.length > 0 ? (
                 lineContent.map((dt, tokenIndex) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: Tokens are rendered in sequence
-                  <span key={tokenIndex} className={getTokenColor(dt.token.type)}>
+                  <span
+                    key={`${dt.token.type}-${tokenIndex}`}
+                    className={getTokenColor(dt.token.type)}
+                  >
                     {dt.token.text}
                   </span>
                 ))

@@ -131,7 +131,10 @@ export const StaticIdeWindow = () => {
                     line.map((token, tokenIndex) => {
                       const tokenKey = `${token.type}-${tokenIndex}-${token.text.slice(0, 8)}`;
                       return (
-                        <span key={tokenKey} className={getTokenColor(token.type)}>
+                        <span
+                          key={tokenKey}
+                          className={getTokenColor(token.type)}
+                        >
                           {token.text}
                         </span>
                       );
