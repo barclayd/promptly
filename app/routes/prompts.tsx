@@ -160,7 +160,7 @@ export default function Prompts({ loaderData }: Route.ComponentProps) {
                               </div>
                             </div>
                             <h3 className="text-sm font-bold">{prompt.name}</h3>
-                            <p className="text-xs">{prompt.description}</p>
+                            <p className="text-xs line-clamp-4">{prompt.description}</p>
                           </div>
                         </Paper>
                       </NavLink>

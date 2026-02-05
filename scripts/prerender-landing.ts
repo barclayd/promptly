@@ -1,30 +1,23 @@
 /**
  * Pre-render the landing page as a static asset.
  *
- * This script fetches the landing page HTML from a running server
+ * This script fetches the landing page HTML from a local wrangler dev server
  * and saves it to build/client/index.html for direct CDN serving.
  *
  * Usage:
- *   bun run scripts/prerender-landing.ts [--local|--production]
+ *   bun run scripts/prerender-landing.ts
  *
  * Prerequisites:
- *   - Local: Run `bun run build && bunx wrangler dev` first (port 8787)
- *   - Production: Deploy first, then run with --production flag
- *
- * Options:
- *   --local       Fetch from localhost:8787 (wrangler dev) - default
- *   --production  Fetch from production URL
+ *   Run `bun run build && bunx wrangler dev` first (port 8787)
  *
  * After running, deploy with `bunx wrangler deploy` to upload the static asset.
  */
 
-// IMPORTANT: Use wrangler dev (8787) NOT Vite dev server (5173)
-// Vite serves development HTML with HMR scripts that won't work in production
-const LANDING_URL_LOCAL = 'http://localhost:8787/';
-const LANDING_URL_PROD = 'https://promptlycms.com/';
-
-const isProduction = process.argv.includes('--production');
-const targetUrl = isProduction ? LANDING_URL_PROD : LANDING_URL_LOCAL;
+// IMPORTANT: Always pre-render from local wrangler dev (8787).
+// - Do NOT use Vite dev server (5173) — it injects HMR scripts that break in production.
+// - Do NOT fetch from production — promptlycms.com serves the Pages static site,
+//   so fetching from it is circular and may capture Cloudflare edge modifications.
+const targetUrl = 'http://localhost:8787/';
 
 const main = async () => {
   console.log(`\n🚀 Pre-rendering landing page from: ${targetUrl}\n`);
