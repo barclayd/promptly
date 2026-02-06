@@ -568,6 +568,354 @@ To generate a new PBKDF2 hash, use Node.js with the Web Crypto API (see `passwor
 3. Check password hash format (should be `saltHex:hashHex`, ~97 chars)
 4. For OAuth: verify redirect URIs match exactly in Google Console
 
+# New User Signup Flow
+
+When a new user signs up, the following happens in sequence:
+
+1. **Form validation** — `signUpSchema` validates name, email, password, confirmPassword
+2. **User creation** — `auth.api.signUpEmail()` creates the user record in Better Auth
+3. **Stripe trial provisioning** (via `trial-stripe` plugin `databaseHooks.user.create.after`):
+   - Creates a **Stripe customer** with user's email, name, and `userId` metadata
+   - Creates a **Stripe subscription** on the Pro plan price with a 14-day trial (`trial_period_days: 14`)
+   - Trial auto-cancels if no payment method is added (`missing_payment_method: 'cancel'`)
+   - Stores the Stripe customer ID, subscription ID, price ID, and period timestamps in the local `subscription` table
+4. **Organization creation** — Creates a default workspace (`"<Name>'s Workspace"`)
+5. **Redirect** — User is redirected to `/dashboard` with session cookie
+
+**Key file:** `app/routes/auth/sign-up.tsx` (action function)
+
+The Stripe trial is created inside Better Auth's database hook, so it runs automatically for both email/password signups and social logins (Google).
+
+# Stripe Integration
+
+## Overview
+
+Stripe handles subscription billing via a custom Better Auth plugin (`trial-stripe`). Every new user gets a 14-day Pro trial with a real Stripe subscription - no payment method required upfront.
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `STRIPE_SECRET_KEY` | Stripe API secret key (test: `sk_test_...`, live: `sk_live_...`) |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret (`whsec_...`) |
+
+Both are set in `.env` for local dev and in Cloudflare dashboard for production.
+
+## Stripe Test Account
+
+| Resource | ID |
+|----------|----|
+| **Product** (Promptly Pro) | `prod_TvT5WGDqvZ9udw` |
+| **Price** ($29/mo) | `price_1Sxc9ULw9ky8dfhCmQI8Od59` |
+
+## Plugin Architecture
+
+The `trial-stripe` plugin is a custom Better Auth plugin at `app/plugins/trial-stripe/`.
+
+```
+app/plugins/trial-stripe/
+├── index.ts          # Server plugin: databaseHooks + endpoint registration
+├── client.ts         # Client plugin: typed authClient.subscription.* actions
+├── schema.ts         # subscription table schema (disableMigration: true)
+├── error-codes.ts    # Typed error codes via defineErrorCodes
+├── types.ts          # TypeScript interfaces
+└── routes/
+    ├── status.ts     # GET  /subscription/status
+    ├── upgrade.ts    # POST /subscription/upgrade
+    ├── cancel.ts     # POST /subscription/cancel
+    ├── portal.ts     # POST /subscription/portal
+    └── webhook.ts    # POST /subscription/webhook
+```
+
+**Registration:**
+- Server: `app/lib/auth.server.ts` — `trialStripe()` in the plugins array
+- Client: `app/lib/auth.client.ts` — `trialStripeClient()` in the plugins array
+
+All endpoints are served automatically via the existing `/api/auth/*` catch-all route (`app/routes/api/auth.ts`).
+
+## Plugin Configuration
+
+```typescript
+trialStripe({
+  stripeSecretKey: ctx.cloudflare.env.STRIPE_SECRET_KEY,
+  stripeWebhookSecret: ctx.cloudflare.env.STRIPE_WEBHOOK_SECRET,
+  trial: { days: 14, plan: 'pro' },
+  freePlan: {
+    name: 'free',
+    limits: { prompts: 3, teamMembers: 1, apiCalls: 5000 },
+  },
+  plans: [
+    {
+      name: 'pro',
+      priceId: 'price_1Sxc9ULw9ky8dfhCmQI8Od59',
+      limits: { prompts: -1, teamMembers: 5, apiCalls: 50000 },
+    },
+  ],
+})
+```
+
+`-1` means unlimited for that limit.
+
+## API Endpoints
+
+All endpoints are under `/api/auth/subscription/`:
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/subscription/status` | Session | Returns plan, status, trial days left, limits |
+| POST | `/subscription/upgrade` | Session | Creates Stripe Checkout session, returns `{ url }` |
+| POST | `/subscription/cancel` | Session | Sets `cancel_at_period_end: true` on Stripe sub |
+| POST | `/subscription/portal` | Session | Creates Stripe billing portal session, returns `{ url }` |
+| POST | `/subscription/webhook` | None | Handles Stripe webhook events |
+
+## Client Usage
+
+```typescript
+import { authClient } from '~/lib/auth.client';
+
+// Get subscription status
+const { data } = await authClient.subscription.status();
+// → { plan, status, isTrial, daysLeft, limits, cancelAtPeriodEnd }
+
+// Upgrade (redirects to Stripe Checkout)
+const { data } = await authClient.subscription.upgrade({
+  plan: 'pro',
+  successUrl: window.location.origin + '/dashboard?upgraded=true',
+  cancelUrl: window.location.origin + '/settings',
+});
+window.location.href = data.url;
+
+// Cancel subscription
+await authClient.subscription.cancel();
+
+// Open Stripe billing portal
+const { data } = await authClient.subscription.portal({
+  returnUrl: window.location.origin + '/settings',
+});
+window.location.href = data.url;
+```
+
+## Database Table
+
+**Table:** `subscription` (migration: `0011_add_subscription_table.sql`)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | TEXT PK | nanoid |
+| `user_id` | TEXT FK→user | One subscription per user |
+| `plan` | TEXT | `'free'`, `'pro'`, etc. |
+| `status` | TEXT | `'trialing'`, `'active'`, `'canceled'`, `'expired'`, `'past_due'` |
+| `trial_start` | INTEGER | Trial start timestamp (ms) |
+| `trial_end` | INTEGER | Trial end timestamp (ms) |
+| `stripe_customer_id` | TEXT | Stripe customer ID (`cus_...`) |
+| `stripe_subscription_id` | TEXT | Stripe subscription ID (`sub_...`) |
+| `stripe_price_id` | TEXT | Stripe price ID (`price_...`) |
+| `period_start` | INTEGER | Current billing period start (ms) |
+| `period_end` | INTEGER | Current billing period end (ms) |
+| `cancel_at_period_end` | INTEGER | 0 or 1 |
+| `created_at` | INTEGER | Record creation timestamp (ms) |
+| `updated_at` | INTEGER | Last update timestamp (ms) |
+
+## Webhook Events Handled
+
+| Stripe Event | Action |
+|-------------|--------|
+| `checkout.session.completed` | Set status to `active`, store Stripe IDs, map priceId to plan |
+| `customer.subscription.updated` | Sync status, period, plan, cancelAtPeriodEnd |
+| `customer.subscription.deleted` | Set status to `canceled`, revert to free plan |
+
+## Key Design Decisions
+
+- **Stripe customer + trial created on signup** — Every user gets a real Stripe subscription in `trialing` status. If no payment method is added, Stripe auto-cancels after the trial.
+- **Lazy trial expiration** — No cron job. The `/subscription/status` endpoint checks if `trialEnd < now` and updates to `expired` on read.
+- **Workers compatibility** — Stripe SDK uses `Stripe.createFetchHttpClient()` for HTTP and `Stripe.createSubtleCryptoProvider()` for webhook signature verification (async `crypto.subtle`).
+- **Stripe v20** — Subscription period dates are on `items.data[0].current_period_start/end` (not on the subscription object directly).
+
+## Local Development with Stripe CLI
+
+Forward Stripe webhooks to local dev server:
+
+```bash
+stripe listen --forward-to localhost:5173/api/auth/subscription/webhook
+```
+
+The CLI outputs a webhook signing secret (`whsec_...`) — put this in `STRIPE_WEBHOOK_SECRET` in `.env`.
+
+## Adding a New Plan
+
+1. Create product + price in Stripe Dashboard (or via API)
+2. Add to the `plans` array in `app/lib/auth.server.ts`:
+   ```typescript
+   { name: 'team', priceId: 'price_xxx', limits: { prompts: -1, teamMembers: -1, apiCalls: -1 } }
+   ```
+3. Optionally add `yearlyPriceId` for annual billing
+
+## Production Deployment Guide
+
+### Prerequisites
+
+Before deploying, ensure you have:
+- A Stripe account with live mode activated (identity verification complete)
+- Access to the Cloudflare dashboard for the `promptly` Worker
+- The Stripe CLI installed (for webhook secret retrieval)
+
+### Step 1: Create Live Stripe Product & Price
+
+The test product (`prod_TvT5WGDqvZ9udw`) only works with test API keys. You need live equivalents.
+
+**Option A — Stripe Dashboard:**
+1. Go to [Stripe Dashboard > Products](https://dashboard.stripe.com/products) (ensure **Live mode** toggle is on)
+2. Create product "Promptly Pro" with a recurring price of $29/month
+3. Copy the live price ID (`price_live_...`)
+
+**Option B — Stripe API:**
+```bash
+# Create product
+curl https://api.stripe.com/v1/products \
+  -u "sk_live_YOUR_KEY:" \
+  -d "name=Promptly Pro" \
+  -d "description=Professional plan for prompt management"
+
+# Create price (use the product ID from above)
+curl https://api.stripe.com/v1/prices \
+  -u "sk_live_YOUR_KEY:" \
+  -d "product=prod_LIVE_ID" \
+  -d "unit_amount=2900" \
+  -d "currency=usd" \
+  -d "recurring[interval]=month"
+```
+
+### Step 2: Update Price ID in Code
+
+Update `app/lib/auth.server.ts` with the live price ID:
+
+```typescript
+plans: [
+  {
+    name: 'pro',
+    priceId: 'price_LIVE_ID_HERE',  // ← Replace with live price ID
+    limits: { prompts: -1, teamMembers: 5, apiCalls: 50000 },
+  },
+],
+```
+
+**Important:** The price ID is hardcoded in the source. When switching between test and live environments, you must deploy with the correct price ID. Consider using an environment variable if you need to run test and live from the same branch.
+
+### Step 3: Create Stripe Webhook Endpoint
+
+1. Go to [Stripe Dashboard > Developers > Webhooks](https://dashboard.stripe.com/webhooks)
+2. Click **Add endpoint**
+3. Set endpoint URL: `https://app.promptlycms.com/api/auth/subscription/webhook`
+4. Select events to listen to:
+   - `checkout.session.completed`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+5. Click **Add endpoint**
+6. Copy the **Signing secret** (`whsec_...`) from the endpoint detail page
+
+### Step 4: Set Environment Variables in Cloudflare
+
+In the Cloudflare dashboard for the `promptly` Worker:
+
+1. Go to **Settings > Variables and Secrets**
+2. Add/update these secrets:
+
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `STRIPE_SECRET_KEY` | `sk_live_...` | Live secret key from Stripe Dashboard > API keys |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_...` | From Step 3 (the webhook endpoint signing secret) |
+
+**Do NOT use the Stripe CLI `whsec_` for production** — the CLI generates a temporary local forwarding secret. Production must use the signing secret from the Stripe Dashboard webhook endpoint.
+
+### Step 5: Apply Database Migration
+
+```bash
+bunx wrangler d1 migrations apply promptly --remote
+```
+
+This creates the `subscription` table in the production D1 database.
+
+### Step 6: Deploy
+
+```bash
+bun run build && wrangler deploy
+```
+
+### Step 7: Verify End-to-End
+
+**Test signup creates Stripe trial:**
+1. Sign up a new user at `https://app.promptlycms.com/sign-up`
+2. Check the [Stripe Dashboard > Customers](https://dashboard.stripe.com/customers) for the new customer
+3. Verify the customer has a subscription in `trialing` status with a 14-day trial
+
+**Test subscription status endpoint:**
+```bash
+# Login and get session cookie, then:
+curl https://app.promptlycms.com/api/auth/subscription/status \
+  -H "Cookie: <session_cookie>"
+# Should return: { plan: "pro", status: "trialing", isTrial: true, daysLeft: 14, ... }
+```
+
+**Test webhook delivery:**
+1. Go to Stripe Dashboard > Developers > Webhooks > your endpoint
+2. Click **Send test webhook** > select `checkout.session.completed` > Send
+3. Check the endpoint response shows `200` with `{ received: true }`
+4. Check Cloudflare Worker logs for any errors
+
+**Test upgrade flow (Stripe Checkout):**
+1. As a logged-in user, call the upgrade endpoint (or build UI for it)
+2. Verify redirect to Stripe Checkout page
+3. Use Stripe test card `4242 4242 4242 4242` to complete
+4. Verify subscription status changes to `active`
+
+### Webhook Security Notes
+
+- The webhook endpoint (`/api/auth/subscription/webhook`) has **no session middleware** — it's called directly by Stripe's servers
+- Better Auth's CSRF/origin check is **automatically skipped** for the webhook because Stripe sends no browser cookies. Requests without cookies bypass origin validation.
+- Webhook authenticity is verified via Stripe's signature verification (`stripe.webhooks.constructEventAsync` with `SubtleCryptoProvider` for Workers compatibility)
+- If you see `403 Forbidden` errors on webhook delivery, check Cloudflare Worker logs. If it's an origin check issue, add to `auth.server.ts`:
+  ```typescript
+  advanced: { disableCSRFCheck: true }
+  ```
+  This is a last resort — it disables CSRF checks globally. Investigate the root cause first.
+
+### Monitoring & Troubleshooting
+
+**Stripe Dashboard:**
+- [Webhook logs](https://dashboard.stripe.com/webhooks) — Check delivery status and response codes
+- [Events](https://dashboard.stripe.com/events) — See all Stripe events
+- [Customers](https://dashboard.stripe.com/customers) — Verify customer/subscription creation
+
+**Cloudflare Worker logs:**
+```bash
+wrangler tail
+# Or check: Cloudflare Dashboard > Workers > promptly > Logs
+```
+
+**Common production issues:**
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Signup hangs or is slow | Stripe API call in the `databaseHooks.user.create.after` adds latency | Expected ~1-2s. If Stripe is down, signup will fail. Consider wrapping in try/catch to allow signup without trial. |
+| Webhook returns 403 | Better Auth CSRF check rejecting Stripe request | Check if Stripe is unexpectedly sending cookies. See Webhook Security Notes above. |
+| Webhook returns 400 | Signature verification failed | Ensure `STRIPE_WEBHOOK_SECRET` matches the Dashboard endpoint secret (not the CLI secret). |
+| Subscription status shows `expired` but Stripe shows `trialing` | Lazy expiration updated local record | The local DB is the source of truth for the app. If out of sync, the next webhook event will correct it. |
+| `price_xxx not found` during signup | Wrong price ID in code | Ensure the price ID in `auth.server.ts` matches the live Stripe price. |
+| Customer created but no subscription | Stripe subscription creation failed | Check Cloudflare Worker logs. The price might be archived or the product inactive. |
+
+### Going Live Checklist
+
+- [ ] Live Stripe product and price created
+- [ ] Price ID updated in `app/lib/auth.server.ts`
+- [ ] `STRIPE_SECRET_KEY` set to `sk_live_...` in Cloudflare
+- [ ] Webhook endpoint created in Stripe Dashboard pointing to `https://app.promptlycms.com/api/auth/subscription/webhook`
+- [ ] `STRIPE_WEBHOOK_SECRET` set to the Dashboard webhook signing secret in Cloudflare
+- [ ] D1 migration applied remotely (`0011_add_subscription_table.sql`)
+- [ ] App deployed (`bun run build && wrangler deploy`)
+- [ ] Test signup creates Stripe customer + trialing subscription
+- [ ] Test webhook delivery returns 200
+- [ ] Cloudflare Worker logs show no errors during signup/webhook
+
 # Deployment
 
 ## Deployment Architecture
@@ -678,6 +1026,8 @@ bunx wrangler d1 migrations apply promptly --local
 | `BETTER_AUTH_URL` | `https://app.promptlycms.com` | No trailing slash, no leading spaces |
 | `GOOGLE_CLIENT_ID` | From Google Console | OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | From Google Console | OAuth client secret |
+| `STRIPE_SECRET_KEY` | From Stripe Dashboard | `sk_test_...` or `sk_live_...` |
+| `STRIPE_WEBHOOK_SECRET` | From Stripe CLI or Dashboard | `whsec_...` |
 
 ### OAuth Configuration (Google Console)
 - Authorized redirect URI: `https://app.promptlycms.com/api/auth/callback/google`

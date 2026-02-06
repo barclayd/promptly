@@ -4,6 +4,7 @@ import { CamelCasePlugin, Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
 import type { RouterContextProvider } from 'react-router';
 import { Resend } from 'resend';
+import { trialStripe } from '~/plugins/trial-stripe';
 import { hashPassword, verifyPassword } from './password.server';
 
 type Database = Record<string, string>;
@@ -47,6 +48,22 @@ export const getAuth = (ctx: Readonly<RouterContextProvider>) => {
           // Store prefix (9 chars) + 4 unique characters = 13 total
           charactersLength: 13,
         },
+      }),
+      trialStripe({
+        stripeSecretKey: ctx.cloudflare.env.STRIPE_SECRET_KEY,
+        stripeWebhookSecret: ctx.cloudflare.env.STRIPE_WEBHOOK_SECRET,
+        trial: { days: 14, plan: 'pro' },
+        freePlan: {
+          name: 'free',
+          limits: { prompts: 3, teamMembers: 1, apiCalls: 5000 },
+        },
+        plans: [
+          {
+            name: 'pro',
+            priceId: 'price_1Sxc9ULw9ky8dfhCmQI8Od59',
+            limits: { prompts: -1, teamMembers: 5, apiCalls: 50000 },
+          },
+        ],
       }),
       organization({
         async sendInvitationEmail(data) {

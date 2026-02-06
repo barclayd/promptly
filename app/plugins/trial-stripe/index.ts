@@ -1,4 +1,5 @@
 import type { BetterAuthPlugin } from 'better-auth';
+import Stripe from 'stripe';
 import { ERROR_CODES } from './error-codes';
 import { cancelEndpoint } from './routes/cancel';
 import { portalEndpoint } from './routes/portal';
@@ -9,6 +10,8 @@ import { subscriptionSchema } from './schema';
 import type { TrialStripePluginOptions } from './types';
 
 export const trialStripe = (options: TrialStripePluginOptions) => {
+  const trialPlan = options.plans.find((p) => p.name === options.trial.plan);
+
   return {
     id: 'trial-stripe',
     schema: subscriptionSchema,
@@ -24,8 +27,6 @@ export const trialStripe = (options: TrialStripePluginOptions) => {
 
                   const adapter = ctx.context.adapter;
                   const now = Date.now();
-                  const trialEnd =
-                    now + options.trial.days * 24 * 60 * 60 * 1000;
 
                   // Check for existing subscription (abuse prevention)
                   const existing = await adapter.findOne({
@@ -34,6 +35,48 @@ export const trialStripe = (options: TrialStripePluginOptions) => {
                   });
 
                   if (existing) return;
+
+                  const stripe = new Stripe(options.stripeSecretKey, {
+                    httpClient: Stripe.createFetchHttpClient(),
+                  });
+
+                  // Create Stripe customer
+                  const customer = await stripe.customers.create({
+                    email: user.email,
+                    name: user.name ?? undefined,
+                    metadata: { userId: user.id },
+                  });
+
+                  // Create Stripe subscription with trial
+                  let stripeSubscriptionId: string | null = null;
+                  let stripePriceId: string | null = null;
+                  let periodStart: number | null = null;
+                  let periodEnd: number | null = null;
+
+                  if (trialPlan) {
+                    const sub = await stripe.subscriptions.create({
+                      customer: customer.id,
+                      items: [{ price: trialPlan.priceId }],
+                      trial_period_days: options.trial.days,
+                      payment_settings: {
+                        save_default_payment_method: 'on_subscription',
+                      },
+                      trial_settings: {
+                        end_behavior: { missing_payment_method: 'cancel' },
+                      },
+                    });
+
+                    stripeSubscriptionId = sub.id;
+                    stripePriceId = trialPlan.priceId;
+                    const item = sub.items.data[0];
+                    if (item) {
+                      periodStart = item.current_period_start * 1000;
+                      periodEnd = item.current_period_end * 1000;
+                    }
+                  }
+
+                  const trialEnd =
+                    now + options.trial.days * 24 * 60 * 60 * 1000;
 
                   await adapter.create({
                     model: 'subscription',
@@ -44,11 +87,11 @@ export const trialStripe = (options: TrialStripePluginOptions) => {
                       status: 'trialing',
                       trialStart: now,
                       trialEnd,
-                      stripeCustomerId: null,
-                      stripeSubscriptionId: null,
-                      stripePriceId: null,
-                      periodStart: null,
-                      periodEnd: null,
+                      stripeCustomerId: customer.id,
+                      stripeSubscriptionId,
+                      stripePriceId,
+                      periodStart,
+                      periodEnd,
                       cancelAtPeriodEnd: 0,
                       createdAt: now,
                       updatedAt: now,
