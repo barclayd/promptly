@@ -139,9 +139,9 @@ export const LoginForm = ({ className, fetcher, ...props }: LoginFormProps) => {
           </fetcher.Form>
           <div className="bg-muted relative hidden md:block">
             <img
-              src="/placeholder.svg"
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+              src="https://images.keepfre.sh/app/images/promo.webp"
+              alt="Promo for PromptlyCMS"
+              className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.4] dark:grayscale"
             />
           </div>
         </CardContent>

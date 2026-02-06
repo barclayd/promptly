@@ -118,14 +118,6 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     cachedInputPrice: 0.1,
     outputPrice: 5.0,
   },
-  'claude-opus-4.1': {
-    id: 'claude-opus-4.1',
-    displayName: 'Claude Opus 4.1',
-    provider: 'anthropic',
-    inputPrice: 15.0,
-    cachedInputPrice: 1.5,
-    outputPrice: 75.0,
-  },
   'claude-opus-4': {
     id: 'claude-opus-4',
     displayName: 'Claude Opus 4',
