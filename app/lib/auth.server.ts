@@ -60,7 +60,7 @@ export const getAuth = (ctx: Readonly<RouterContextProvider>) => {
         plans: [
           {
             name: 'pro',
-            priceId: 'price_1Sxc9ULw9ky8dfhCmQI8Od59',
+            priceId: ctx.cloudflare.env.STRIPE_PRICE_ID,
             limits: { prompts: -1, teamMembers: 5, apiCalls: 50000 },
           },
         ],
