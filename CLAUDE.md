@@ -586,11 +586,13 @@ When a new user signs up, the following happens in sequence:
 
 The Stripe trial is created inside Better Auth's database hook, so it runs automatically for both email/password signups and social logins (Google).
 
+**Exception: Invited users skip Stripe trial.** The `databaseHooks.user.create.after` hook checks the `invitation` table for a pending invitation matching the new user's email. If one exists, the hook returns early — no Stripe customer, subscription, or `subscription` row is created. Invited users join their inviter's organization and share that org's plan instead.
+
 # Stripe Integration
 
 ## Overview
 
-Stripe handles subscription billing via a custom Better Auth plugin (`trial-stripe`). Every new user gets a 14-day Pro trial with a real Stripe subscription - no payment method required upfront.
+Stripe handles subscription billing via a custom Better Auth plugin (`trial-stripe`). Every new user who creates their own org gets a 14-day Pro trial with a real Stripe subscription - no payment method required upfront. Invited users (who join an existing org) are excluded from trial creation.
 
 ## Environment Variables
 
@@ -726,7 +728,7 @@ window.location.href = data.url;
 
 ## Key Design Decisions
 
-- **Stripe customer + trial created on signup** — Every user gets a real Stripe subscription in `trialing` status. If no payment method is added, Stripe auto-cancels after the trial.
+- **Stripe customer + trial created on signup (org creators only)** — Users who sign up directly get a real Stripe subscription in `trialing` status. Invited users are detected via a pending `invitation` record matching their email and skip trial creation entirely. If no payment method is added, Stripe auto-cancels after the trial.
 - **Lazy trial expiration** — No cron job. The `/subscription/status` endpoint checks if `trialEnd < now` and updates to `expired` on read.
 - **Workers compatibility** — Stripe SDK uses `Stripe.createFetchHttpClient()` for HTTP and `Stripe.createSubtleCryptoProvider()` for webhook signature verification (async `crypto.subtle`).
 - **Stripe v20** — Subscription period dates are on `items.data[0].current_period_start/end` (not on the subscription object directly).

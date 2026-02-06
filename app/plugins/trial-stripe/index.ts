@@ -36,6 +36,17 @@ export const trialStripe = (options: TrialStripePluginOptions) => {
 
                   if (existing) return;
 
+                  // Skip trial for invited users (they join an existing org's plan)
+                  const pendingInvitation = await adapter.findOne({
+                    model: 'invitation',
+                    where: [
+                      { field: 'email', value: user.email },
+                      { field: 'status', value: 'pending' },
+                    ],
+                  });
+
+                  if (pendingInvitation) return;
+
                   const stripe = new Stripe(options.stripeSecretKey, {
                     httpClient: Stripe.createFetchHttpClient(),
                   });
