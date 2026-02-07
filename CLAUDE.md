@@ -451,12 +451,12 @@ const { ref, isInView } = useInView({ threshold: 0.1, triggerOnce: true });
 
 **File:** `app/app.css`
 
-Key keyframes for landing page:
+Key keyframes:
 ```css
-@keyframes fade-in-up        /* Section entrance */
+@keyframes fade-in-up        /* Section/element entrance */
 @keyframes fade-in-left      /* Section entrance */
 @keyframes fade-in-right     /* Section entrance */
-@keyframes badge-pop         /* Variable badges: scale 0→1.15→1 */
+@keyframes badge-pop         /* Bouncy scale 0→1.15→1 entrance */
 @keyframes dropdown-slide    /* Dropdown: translateY(-8px)→0 */
 @keyframes confetti-fall     /* Particle trajectory */
 @keyframes label-enter       /* Label bounce in */
@@ -465,7 +465,79 @@ Key keyframes for landing page:
 @keyframes version-slide-in  /* Version history: translateY(20px)→0 with overshoot */
 @keyframes live-pulse        /* Pulsing glow for "live" badge */
 @keyframes step-activate     /* Step number scale bounce */
+@keyframes pulse-glow-red    /* Red pulsing box-shadow for urgency CTAs */
 ```
+
+### Reusable animation classes
+- `.animate-fade-in-up` — 0.6s ease-out, use with `opacity-0` initial state
+- `.animate-badge-pop` — Bouncy scale entrance. **Initial state is built into the class** (`transform: scale(0); opacity: 0;`), so do NOT add Tailwind `opacity-0` or `scale-0` alongside it
+- `.animate-pulse-glow-red` — Red pulsing glow for urgent CTAs (e.g., last-day trial warning)
+
+### Staggered entrance pattern for modals/dialogs
+
+Use this pattern for orchestrated modal entrances (see `trial-expiry-modal.tsx`, `upgrade-gate-modal.tsx`):
+
+```typescript
+// Helper to generate staggered animation delay styles
+const stagger = (base: number, i: number, step = 60) => ({
+  animationDelay: `${base + i * step}ms`,
+  animationFillMode: 'forwards' as const,
+});
+
+// Usage: elements start invisible, animate in with increasing delays
+<div className="opacity-0 animate-fade-in-up" style={stagger(80, 0)}>Title</div>
+<div className="opacity-0 animate-fade-in-up" style={stagger(160, 0)}>Description</div>
+{items.map((item, i) => (
+  <div className="opacity-0 animate-fade-in-up" style={stagger(400, i)}>...</div>
+))}
+```
+
+**Timing map example (trial expiry modal):**
+- 0ms — Icon badge-pop
+- 80ms — Title fade-in-up
+- 160ms — Description fade-in-up
+- 300ms — Date pill badge-pop
+- 400ms+ — Content items stagger (60ms each)
+- 700ms — CTA fade-in-up
+- 800ms — Secondary CTA fade-in-up
+
+### CSS animation gotcha: Tailwind utilities vs `animation-fill-mode: forwards`
+
+**CRITICAL**: Never combine Tailwind utility classes (`opacity-0`, `scale-0`) with CSS animations that use `forwards` fill mode if the animation changes the same property via `transform`. Tailwind utilities can override the animation's final state due to CSS specificity.
+
+**Wrong:**
+```tsx
+// Tailwind's opacity-0 overrides the animation's final opacity: 1
+<div className="opacity-0 scale-0 animate-badge-pop" style={stagger(0, 0)}>
+```
+
+**Right — for fade-in-up** (uses `opacity` property, which Tailwind's `opacity-0` matches):
+```tsx
+// Works because animate-fade-in-up animates opacity directly
+// and animationFillMode: 'forwards' holds the final state
+<div className="opacity-0 animate-fade-in-up" style={stagger(80, 0)}>
+```
+
+**Right — for badge-pop** (initial state baked into the CSS class):
+```tsx
+// .animate-badge-pop already sets transform: scale(0); opacity: 0;
+// No Tailwind utilities needed — just apply the class
+<div className="animate-badge-pop" style={stagger(0, 0)}>
+```
+
+**Why it works differently:** `animate-fade-in-up` animates `opacity` and `transform` as separate properties, and Tailwind's `opacity-0` gets overridden by the animation's `forwards` fill. But `animate-badge-pop` uses `transform: scale()` in its keyframes — if you also apply Tailwind's `scale-0` (which uses the separate `scale` CSS property, not `transform`), they don't interact and the animation can't override it.
+
+**Rule of thumb:** If a CSS animation class needs specific initial state, define that initial state **in the CSS class itself** (like `.animate-badge-pop` does), not via Tailwind utilities.
+
+### NumberTicker for tangible numbers
+
+The `NumberTicker` component (`~/components/landing/hero-demo/animations/number-ticker`) animates a number from 0 to a target value. Reuse it anywhere you want numbers to feel tangible:
+
+```tsx
+<NumberTicker value={283} duration={800} delay={460} />
+```
+
+Good for: loss counts in warning modals, usage statistics, pricing numbers.
 
 ## Making Changes Safely
 
