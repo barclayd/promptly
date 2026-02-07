@@ -1,4 +1,6 @@
-.# 01: Subscription Data in Root Loader
+# 01: Subscription Data in Root Loader
+
+> **STATUS: COMPLETED** -- Implemented in the org-level migration. See `app/root.tsx` and `app/lib/subscription.server.ts`.
 
 ## Summary
 Wire up subscription status data into the root loader so that `useSubscription()` works everywhere in the app. This is the **foundation** for every other subscription UI feature.
@@ -11,7 +13,14 @@ Wire up subscription status data into the root loader so that `useSubscription()
 - The root loader in `app/root.tsx` does NOT currently fetch subscription data
 - The `trial-stripe` plugin exposes `GET /api/auth/subscription/status`
 
-## Implementation
+## What Was Actually Implemented
+
+- Root loader fetches subscription via **direct D1 query** (not internal HTTP endpoint) using `getSubscriptionStatus(db, org.organizationId)`
+- Uses `orgContext` from middleware (not `activeOrganizationId` from session) -- this correctly ties subscription to the current organization
+- Wrapped in `try/catch` to handle public routes where org context is not set (returns `null` gracefully)
+- Returns `subscription` in loader data alongside `user`, `theme`, `serverLayoutCookie`
+
+## Original Implementation Plan
 
 ### What to Do
 1. In `app/root.tsx` loader, after fetching the session/user, call the subscription status endpoint
@@ -38,3 +47,9 @@ Since the subscription status endpoint requires an authenticated session, only f
 - Verify `useSubscription()` returns data on any authenticated page
 - Verify it returns `null` on unauthenticated pages (landing, login, signup)
 - Verify trial expiration is lazily updated on page load
+
+### Follow-Up Items
+- Add `memberRole` to root loader return (needed for role-based CTA gating across all billing UI features -- determines whether a user sees "Upgrade to Pro" vs "Request upgrade from admin")
+- Add `periodEnd` to `SubscriptionStatus` type (needed by billing page, cancelled state display, and usage dashboard to show current billing period)
+- Consider adding `canManageBilling: boolean` derived server-side to keep billing permission logic encapsulated in the loader rather than duplicated across client components
+- Consider `shouldRevalidate` optimization to skip subscription revalidation on non-billing routes (e.g., prompt editing) to reduce unnecessary D1 queries on navigation

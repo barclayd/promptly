@@ -1,7 +1,7 @@
 # 02: Trial Mode Badge (Sidebar)
 
 ## Summary
-A persistent, always-visible badge in the sidebar showing the user's current plan status. This is the lowest-friction awareness mechanism -- users always know where they stand without being interrupted.
+A persistent, always-visible badge in the sidebar showing the **organization's/workspace's** current plan status. This is the lowest-friction awareness mechanism -- users always know where their workspace stands without being interrupted.
 
 ## Priority: P0
 
@@ -31,13 +31,16 @@ In the sidebar (`app/components/sidebar-left.tsx`), near the bottom -- between t
 
 ### Interaction
 - Clicking the badge navigates to `/settings` (billing tab)
-- On hover: show a tooltip with more detail (e.g., "Pro Trial -- 7 days remaining. Click to manage plan.")
+- On hover: show a **role-aware tooltip**:
+  - **Admins/owners**: "Pro Trial -- 7 days remaining. Click to manage plan."
+  - **Regular members**: "Pro Trial -- 7 days remaining. Click to view plan details."
+- Consider showing workspace name in tooltip for multi-org context (e.g., "Acme's Workspace -- Pro Trial")
 
 ### Design Details
 - Use the existing `Badge` component from `app/components/ui/badge.tsx`
 - Pill shape, small text (text-xs), compact padding
 - Should look similar to Linear's plan badge -- subtle but readable
-- In collapsed sidebar mode, hide the text and show just the colored dot or icon
+- In collapsed sidebar mode, show a small badge with icon that expands on hover (like Linear's collapsed sidebar plan indicator) rather than hiding entirely
 
 ## CTA Copy
 - No CTA on the badge itself -- keep it informational
@@ -59,3 +62,9 @@ In the sidebar (`app/components/sidebar-left.tsx`), near the bottom -- between t
 - **Endowment effect**: Seeing "PRO TRIAL" reminds users they currently *have* Pro features, making the eventual loss more salient
 - **Constant low-key awareness**: Unlike banners that get dismissed, the badge is always there without being annoying
 - The amber color creates mild visual tension that resolves when they upgrade (badge turns to calm indigo/purple)
+
+## B2B Best Practices
+- **"Request upgrade" affordance for non-admin members**: When a non-admin clicks the badge, the billing page should show a "Request upgrade" button that sends a notification to the workspace admin. This creates bottom-up conversion pressure within teams.
+- **Value-realized context in tooltip**: During trial, consider enriching the tooltip with usage data: "Pro Trial -- 7 days remaining. Your team has created 12 prompts this week." This reinforces the value being received and makes the prospect of losing it more concrete.
+- **Progress/activation indicator during early trial**: In the first few days, the badge could subtly indicate activation progress (e.g., a small progress ring) to encourage feature exploration before the trial clock becomes the primary concern.
+- **Badge animation on phase transition**: When `daysLeft` crosses a threshold (e.g., from >7 to <=7), add a brief attention-drawing animation (subtle pulse or color transition) to signal the change without being disruptive.

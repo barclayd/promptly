@@ -1,7 +1,9 @@
 # 12: Cancellation Flow
 
 ## Summary
-A multi-step cancellation flow that collects feedback, offers targeted retention saves, and handles the actual cancellation. The goal is to retain users when possible while respecting their decision. Research shows targeted save offers improve retention by 63%.
+A multi-step cancellation flow that collects feedback, offers targeted retention saves, and handles the actual cancellation. The goal is to retain organizations when possible while respecting their decision. Research shows targeted save offers improve retention by 63%.
+
+> **Org-Level Action**: Cancellation is an organization-level action. Only org owners or admins can initiate cancellation, as it affects all members of the workspace.
 
 ## Priority: P1
 
@@ -9,6 +11,8 @@ A multi-step cancellation flow that collects feedback, offers targeted retention
 
 ## Entry Point
 "Cancel plan" link/button on the billing page (Feature #09). Should be visible but not prominent (text link, not primary button).
+
+> **Role Gating**: The cancel button must only be visible to org owners and admins. Regular members should not see the cancellation option at all.
 
 ## Flow: 3-Step Modal Sequence
 
@@ -90,6 +94,7 @@ After cancellation:
 - Show brief toast: "Your subscription has been cancelled. Pro features are active until [date]."
 - Revalidate subscription data
 - Redirect to billing page showing cancelled state (Feature #11)
+- **Notify other org members**: Send an in-app notification or email to all other org members informing them that cancellation has been scheduled and Pro features will remain active until [date]. This prevents surprises for team members.
 
 ## What NOT to Do (Anti-Patterns)
 - **Don't make cancellation hard to find** -- the "Cancel" option should be accessible on the billing page. Hiding it erodes trust.
@@ -104,6 +109,8 @@ For the "Too expensive" save offer, use Stripe Coupons:
 2. When user accepts, apply the coupon to their subscription via `stripe.subscriptions.update(subId, { coupon: 'RETENTION_30_3MO' })`
 3. Need a new endpoint: `POST /subscription/apply-retention-offer`
 
+> **Auth & Scoping**: The `/subscription/apply-retention-offer` endpoint must use `requireOrgAdmin()` and query/update by `organizationId`, not by individual user. Track which retention offers have been applied per org to handle multi-admin deduplication (prevent multiple admins from stacking offers).
+
 ## Pause Implementation
 For the "Not using enough" save offer:
 1. Use Stripe's `pause_collection` feature: `stripe.subscriptions.update(subId, { pause_collection: { behavior: 'void' } })`
@@ -111,11 +118,14 @@ For the "Not using enough" save offer:
 3. Need a new endpoint: `POST /subscription/pause`
 4. This is a **future enhancement** -- initially, just offer the feedback option
 
+> **Auth & Scoping**: The `/subscription/pause` endpoint must use `requireOrgAdmin()` and query/update by `organizationId`. Only one pause per org at a time.
+
 ## Data Collection
 Store all cancellation feedback for product insights:
 - Create a simple `cancellation_feedback` table or log to D1
-- Fields: `user_id`, `reason`, `feedback_text`, `offer_accepted`, `timestamp`
+- Fields: `user_id`, `organization_id`, `reason`, `feedback_text`, `offer_accepted`, `timestamp`
 - Or simpler: Post to a webhook endpoint (Slack, email) for real-time team visibility
+- Including `organization_id` allows correlating cancellation reasons with org-level usage patterns and team size
 
 ## CTA Copy Summary
 
@@ -150,3 +160,43 @@ Store all cancellation feedback for product insights:
 - **Matched offers**: Powtoon improved retention by 63% by matching the offer to the cancellation reason. Generic "please stay" is far less effective.
 - **"Keep Pro" as final CTA**: Placing the keep option as the primary (visually prominent) CTA on the confirmation step gives one last conversion opportunity.
 - **Period-end access**: Knowing they keep access until the period end reduces the pressure of the decision and increases the chance of reactivation later.
+
+## B2B Best Practices
+
+### "Downgrade to Free" as First-Class Alternative
+Instead of framing the choice as "Keep Pro" vs "Cancel," present "Downgrade to Free" as a first-class option. This keeps users in the ecosystem and preserves the relationship. Many users who downgrade eventually upgrade again when their needs grow. The confirmation step (Step 3) should frame the outcome as "Move to Free plan" rather than "Cancel subscription."
+
+### Surface Usage Data in Cancellation Flow
+In Step 3 (or as an insert before Step 2), surface concrete usage data to remind the user of their investment:
+- Prompts created
+- Versions published
+- Team members active
+- API calls made this period
+
+This leverages the endowment effect -- people value things more when they can see what they've built.
+
+### "Pause" as Universal Option
+Offer "Pause subscription" as a universal option across all cancellation reasons, not just for "Not using it enough." Users cancelling for any reason may benefit from a cooling-off period. Position it as: "Not ready to decide? Pause for up to 3 months instead."
+
+### "Schedule a Call" for High-Value Accounts
+For organizations with multiple team members or high API usage, add a "Schedule a call" option (via Calendly link or "Talk to the founder" CTA). High-value accounts warrant personal outreach and may have solvable concerns that a discount cannot address.
+
+### Post-Cancellation Win-Back Email Sequence
+Implement a structured email sequence after cancellation is confirmed:
+1. **Immediate**: Confirmation email with what to expect, when Pro features end, how to reactivate
+2. **7 days before downgrade**: "Your Pro features end on [date] -- here's what changes"
+3. **At downgrade**: "You're now on Free. Here's what you can still do. Upgrade anytime."
+4. **30 days after**: "We've added [new feature] since you left. Come take a look."
+
+### Segment Retention Offers by Usage Tier
+Rather than relying solely on the stated cancellation reason, cross-reference with actual org usage data to select the most effective retention offer. A power user who says "too expensive" may respond better to a feature pitch than a discount, while a low-usage user citing cost may genuinely need a cheaper tier.
+
+### Calm, Non-Confrontational Tone
+Adopt an Asana-style cancellation tone: "We have some options that might help" rather than "What if we could make it work?" Avoid language that feels like a negotiation or guilt trip. Users who feel respected during cancellation are more likely to return later and to recommend the product regardless.
+
+### Track Retention Offer Acceptance Rate
+Log which retention offers are shown, to whom, and whether they were accepted. This data is critical for optimizing the cancellation flow over time. Track:
+- Offer type shown (discount, pause, extension, etc.)
+- Acceptance/rejection rate per offer type
+- 30/60/90-day retention rate for users who accepted offers
+- Revenue saved per offer type
