@@ -7,6 +7,7 @@ import {
   type SidebarRightHandle,
 } from '~/components/sidebar-right';
 import { SiteHeader } from '~/components/site-header';
+import { TrialBanner } from '~/components/trial-banner';
 import {
   type LayoutStorage,
   ResizableHandle,
@@ -97,7 +98,10 @@ export default function PromptDetailLayout() {
       {isMobile ? (
         <div className="flex flex-1 flex-col min-h-svh overflow-x-hidden">
           <SidebarInset className="flex-1">
-            <SiteHeader promptId={params.promptId} />
+            <div className="sticky top-0 z-50">
+              <TrialBanner />
+              <SiteHeader promptId={params.promptId} />
+            </div>
             <Outlet
               key={params.promptId}
               context={{
@@ -134,6 +138,7 @@ export default function PromptDetailLayout() {
             className="h-full overflow-hidden"
           >
             <SidebarInset className="h-full flex flex-col">
+              <TrialBanner />
               <SiteHeader promptId={params.promptId} />
               <div className="flex-1 overflow-y-auto">
                 <Outlet

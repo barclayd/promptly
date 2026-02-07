@@ -50,14 +50,16 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   // (orgContext may not be set on public routes)
   let subscription = null;
   let memberRole = null;
+  let organizationId: string | null = null;
   try {
     const org = context.get(orgContext);
+    organizationId = org.organizationId;
     const db = context.cloudflare.env.promptly;
     const userId = session?.user?.id;
 
     const results = await Promise.all([
-      getSubscriptionStatus(db, org.organizationId),
-      userId ? getMemberRole(db, userId, org.organizationId) : null,
+      getSubscriptionStatus(db, organizationId),
+      userId ? getMemberRole(db, userId, organizationId) : null,
     ]);
 
     subscription = results[0];
@@ -72,6 +74,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     theme: getTheme(),
     subscription,
     memberRole,
+    organizationId,
   };
 };
 

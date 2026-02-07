@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router';
 import { SidebarLeft } from '~/components/sidebar-left';
 import { SiteHeader } from '~/components/site-header';
+import { TrialBanner } from '~/components/trial-banner';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 
 export default function AppLayout() {
@@ -15,7 +16,10 @@ export default function AppLayout() {
     >
       <SidebarLeft variant="inset" />
       <SidebarInset className="min-h-svh">
-        <SiteHeader />
+        <div className="sticky top-0 z-50">
+          <TrialBanner />
+          <SiteHeader />
+        </div>
         <Outlet />
       </SidebarInset>
     </SidebarProvider>
