@@ -69,6 +69,7 @@ export const webhookEndpoint = (options: TrialStripePluginOptions) =>
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.userId;
         const stripeSubscriptionId = session.subscription as string;
+        const organizationId = session.metadata?.organizationId ?? null;
 
         if (!userId || !stripeSubscriptionId) {
           return ctx.json({ received: true });
@@ -103,6 +104,7 @@ export const webhookEndpoint = (options: TrialStripePluginOptions) =>
               periodStart,
               periodEnd,
               cancelAtPeriodEnd: 0,
+              ...(organizationId ? { organizationId } : {}),
               updatedAt: now,
             },
           });
@@ -112,6 +114,7 @@ export const webhookEndpoint = (options: TrialStripePluginOptions) =>
             data: {
               id: ctx.context.generateId({ model: 'subscription' }),
               userId,
+              organizationId,
               status: 'active',
               plan: planName,
               stripeCustomerId: session.customer as string,

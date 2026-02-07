@@ -13,10 +13,11 @@ import {
   useTheme,
 } from 'remix-themes';
 import { Toaster } from '~/components/ui/sonner';
-import { sessionContext } from '~/context';
+import { orgContext, sessionContext } from '~/context';
 import { RecentsProvider } from '~/context/recents-context';
 import { SearchProvider } from '~/context/search-context';
 import { parseCookie } from '~/lib/cookies';
+import { getSubscriptionStatus } from '~/lib/subscription.server';
 import { authMiddleware } from '~/middleware/auth';
 import { orgMiddleware } from '~/middleware/org';
 import { themeSessionResolver } from '~/sessions.server';
@@ -41,10 +42,23 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   // Get theme from cookie session
   const { getTheme } = await themeSessionResolver(request);
 
+  // Fetch subscription status for the active org (orgContext may not be set on public routes)
+  let subscription = null;
+  try {
+    const org = context.get(orgContext);
+    subscription = await getSubscriptionStatus(
+      context.cloudflare.env.promptly,
+      org.organizationId,
+    );
+  } catch {
+    // No org context (public route or unauthenticated) — subscription stays null
+  }
+
   return {
     serverLayoutCookie: layoutCookie ?? null,
     user: session?.user ?? null,
     theme: getTheme(),
+    subscription,
   };
 };
 

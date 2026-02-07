@@ -13,6 +13,14 @@ export const subscriptionSchema = {
           onDelete: 'cascade',
         },
       },
+      organizationId: {
+        type: 'string',
+        required: false,
+        references: {
+          model: 'organization',
+          field: 'id',
+        },
+      },
       plan: {
         type: 'string',
         required: true,

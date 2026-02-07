@@ -1,6 +1,7 @@
 import { createAuthEndpoint } from '@better-auth/core/api';
 import { sessionMiddleware } from 'better-auth/api';
-import type { SubscriptionRecord, TrialStripePluginOptions } from '../types';
+import type { TrialStripePluginOptions } from '../types';
+import { findSubscription } from '../utils';
 
 export const statusEndpoint = (options: TrialStripePluginOptions) =>
   createAuthEndpoint(
@@ -20,13 +21,12 @@ export const statusEndpoint = (options: TrialStripePluginOptions) =>
       },
     },
     async (ctx) => {
-      const userId = ctx.context.session.user.id;
+      const activeOrgId =
+        ctx.context.session.session.activeOrganizationId ?? null;
 
-      const subscription =
-        await ctx.context.adapter.findOne<SubscriptionRecord>({
-          model: 'subscription',
-          where: [{ field: 'userId', value: userId }],
-        });
+      const subscription = await findSubscription(ctx.context.adapter, {
+        organizationId: activeOrgId,
+      });
 
       if (!subscription) {
         return ctx.json({
