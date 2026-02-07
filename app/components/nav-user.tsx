@@ -11,7 +11,8 @@ import {
   IconSun,
   IconUserCircle,
 } from '@tabler/icons-react';
-import { NavLink, useFetcher } from 'react-router';
+import { useState } from 'react';
+import { useFetcher } from 'react-router';
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 import {
   DropdownMenu,
@@ -35,13 +36,14 @@ import {
 } from '~/components/ui/sidebar';
 import { type ThemeValue, useTheme } from '~/hooks/use-dark-mode';
 import { useSubscription } from '~/hooks/use-subscription';
+import { UpgradeGateModal } from './upgrade-gate-modal';
 
 const getUserInitials = (name: string) => {
   const initials = name.split(' ');
   return initials.map((initial) => initial[0]).join('');
 };
 
-export function NavUser({
+export const NavUser = ({
   user,
 }: {
   user: {
@@ -49,11 +51,12 @@ export function NavUser({
     email: string;
     avatar: string;
   };
-}) {
+}) => {
   const { isMobile } = useSidebar();
   const fetcher = useFetcher();
   const { theme, isDark, setTheme } = useTheme();
   const { subscription } = useSubscription();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const showUpgrade =
     !subscription ||
@@ -109,14 +112,12 @@ export function NavUser({
             {showUpgrade && (
               <>
                 <DropdownMenuGroup>
-                  <DropdownMenuItem asChild>
-                    <NavLink
-                      to="/settings"
-                      className="text-violet-700 dark:text-violet-300 [&_svg]:!text-violet-500 dark:[&_svg]:!text-violet-400"
-                    >
-                      <IconSparkles />
-                      Upgrade to Pro
-                    </NavLink>
+                  <DropdownMenuItem
+                    className="text-violet-700 dark:text-violet-300 [&_svg]:!text-violet-500 dark:[&_svg]:!text-violet-400"
+                    onSelect={() => setShowUpgradeModal(true)}
+                  >
+                    <IconSparkles />
+                    Upgrade to Pro
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
@@ -172,7 +173,12 @@ export function NavUser({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <UpgradeGateModal
+          open={showUpgradeModal}
+          onOpenChange={setShowUpgradeModal}
+          resource="general"
+        />
       </SidebarMenuItem>
     </SidebarMenu>
   );
-}
+};

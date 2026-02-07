@@ -5,7 +5,7 @@ import {
   IconClock,
   IconSparkles,
 } from '@tabler/icons-react';
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { NavLink } from 'react-router';
 import {
   Tooltip,
@@ -16,6 +16,7 @@ import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useSubscription } from '~/hooks/use-subscription';
 import type { SubscriptionStatus } from '~/plugins/trial-stripe/types';
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from './ui/sidebar';
+import { UpgradeGateModal } from './upgrade-gate-modal';
 
 interface BadgeConfig {
   label: string;
@@ -145,37 +146,53 @@ const getBadgeConfig = (
 export const SubscriptionBadge = () => {
   const { subscription } = useSubscription();
   const { canManageBilling } = useCanManageBilling();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const config = getBadgeConfig(subscription);
+  const isUpgradeAction = config.subtext === 'Upgrade';
 
   const tooltipText = canManageBilling
     ? `${config.tooltipBase}. Click to manage plan.`
     : `${config.tooltipBase}. Click to view plan details.`;
+
+  const badgeContent = (
+    <>
+      <span
+        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold tracking-wide uppercase transition-colors duration-200 [&>svg]:size-3 ${config.colorClasses}`}
+      >
+        {config.icon}
+        {config.label}
+      </span>
+      {config.subtext && (
+        <span
+          className={`inline-flex items-center gap-0.5 truncate text-xs ${config.subtextClasses}`}
+        >
+          {config.subtext}
+          {isUpgradeAction && <IconChevronRight className="size-3" />}
+        </span>
+      )}
+    </>
+  );
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <Tooltip>
           <TooltipTrigger asChild>
-            <SidebarMenuButton asChild>
-              <NavLink to="/settings" className="flex items-center gap-2">
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold tracking-wide uppercase transition-colors duration-200 [&>svg]:size-3 ${config.colorClasses}`}
-                >
-                  {config.icon}
-                  {config.label}
-                </span>
-                {config.subtext && (
-                  <span
-                    className={`inline-flex items-center gap-0.5 truncate text-xs ${config.subtextClasses}`}
-                  >
-                    {config.subtext}
-                    {config.subtext === 'Upgrade' && (
-                      <IconChevronRight className="size-3" />
-                    )}
-                  </span>
-                )}
-              </NavLink>
+            <SidebarMenuButton
+              asChild={!isUpgradeAction}
+              onClick={
+                isUpgradeAction ? () => setShowUpgradeModal(true) : undefined
+              }
+              className={isUpgradeAction ? 'flex items-center gap-2' : ''}
+            >
+              {isUpgradeAction ? (
+                badgeContent
+              ) : (
+                <NavLink to="/settings" className="flex items-center gap-2">
+                  {badgeContent}
+                </NavLink>
+              )}
             </SidebarMenuButton>
           </TooltipTrigger>
           <TooltipContent side="top" align="start">
@@ -183,6 +200,13 @@ export const SubscriptionBadge = () => {
           </TooltipContent>
         </Tooltip>
       </SidebarMenuItem>
+      {isUpgradeAction && (
+        <UpgradeGateModal
+          open={showUpgradeModal}
+          onOpenChange={setShowUpgradeModal}
+          resource="general"
+        />
+      )}
     </SidebarMenu>
   );
 };
