@@ -74,6 +74,34 @@ export const getSubscriptionStatus = async (
   };
 };
 
+export interface ResourceCounts {
+  promptCount: number;
+  memberCount: number;
+}
+
+export const getResourceCounts = async (
+  db: D1Database,
+  organizationId: string,
+): Promise<ResourceCounts> => {
+  const [promptResult, memberResult] = await Promise.all([
+    db
+      .prepare(
+        'SELECT COUNT(*) as count FROM prompt WHERE organization_id = ? AND deleted_at IS NULL',
+      )
+      .bind(organizationId)
+      .first<{ count: number }>(),
+    db
+      .prepare('SELECT COUNT(*) as count FROM member WHERE organization_id = ?')
+      .bind(organizationId)
+      .first<{ count: number }>(),
+  ]);
+
+  return {
+    promptCount: promptResult?.count ?? 0,
+    memberCount: memberResult?.count ?? 0,
+  };
+};
+
 export type MemberRole = 'owner' | 'admin' | 'member' | null;
 
 export const getMemberRole = async (

@@ -20,6 +20,7 @@ import { SearchProvider } from '~/context/search-context';
 import { parseCookie } from '~/lib/cookies';
 import {
   getMemberRole,
+  getResourceCounts,
   getSubscriptionStatus,
 } from '~/lib/subscription.server';
 import { authMiddleware } from '~/middleware/auth';
@@ -50,6 +51,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   // (orgContext may not be set on public routes)
   let subscription = null;
   let memberRole = null;
+  let resourceCounts = null;
   let organizationId: string | null = null;
   try {
     const org = context.get(orgContext);
@@ -60,10 +62,12 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     const results = await Promise.all([
       getSubscriptionStatus(db, organizationId),
       userId ? getMemberRole(db, userId, organizationId) : null,
+      getResourceCounts(db, organizationId),
     ]);
 
     subscription = results[0];
     memberRole = results[1];
+    resourceCounts = results[2];
   } catch {
     // No org context (public route or unauthenticated) — defaults stay null
   }
@@ -74,6 +78,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     theme: getTheme(),
     subscription,
     memberRole,
+    resourceCounts,
     organizationId,
   };
 };
@@ -86,11 +91,12 @@ export const shouldRevalidate = ({
   // This ensures lazy trial expiration runs on page transitions
   if (!formAction) return defaultShouldRevalidate;
 
-  // Only revalidate after actions that could change subscription/role data
+  // Only revalidate after actions that could change subscription/role/resource data
   if (
     formAction.includes('/subscription/') ||
     formAction.includes('/api/auth/') ||
-    formAction.includes('/team/')
+    formAction.includes('/team/') ||
+    formAction.includes('/api/prompts/')
   ) {
     return true;
   }

@@ -3,6 +3,7 @@ import { data, redirect } from 'react-router';
 import { z } from 'zod';
 import { orgContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
+import { getSubscriptionStatus } from '~/lib/subscription.server';
 import type { Route } from './+types/prompts.create';
 
 type Organization = {
@@ -62,6 +63,29 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   }
 
   const db = context.cloudflare.env.promptly;
+
+  // Check prompt limit
+  const subscription = await getSubscriptionStatus(db, orgId);
+  if (subscription.limits.prompts !== -1) {
+    const countResult = await db
+      .prepare(
+        'SELECT COUNT(*) as count FROM prompt WHERE organization_id = ? AND deleted_at IS NULL',
+      )
+      .bind(orgId)
+      .first<{ count: number }>();
+    const currentCount = countResult?.count ?? 0;
+    if (currentCount >= subscription.limits.prompts) {
+      return data(
+        {
+          limitExceeded: true,
+          resource: 'prompts' as const,
+          current: currentCount,
+          limit: subscription.limits.prompts,
+        },
+        { status: 403 },
+      );
+    }
+  }
 
   let folderId: string | undefined;
 
