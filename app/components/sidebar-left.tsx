@@ -19,6 +19,7 @@ import { NavDocuments } from '~/components/nav-documents';
 import { NavMain } from '~/components/nav-main';
 import { NavSecondary } from '~/components/nav-secondary';
 import { NavUser } from '~/components/nav-user';
+import { SubscriptionBadge } from '~/components/subscription-badge';
 import {
   Sidebar,
   SidebarContent,
@@ -161,6 +162,7 @@ export const SidebarLeft = ({
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
+        <SubscriptionBadge />
         <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>

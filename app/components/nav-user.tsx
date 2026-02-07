@@ -7,11 +7,11 @@ import {
   IconLogout,
   IconMoon,
   IconNotification,
+  IconSparkles,
   IconSun,
   IconUserCircle,
 } from '@tabler/icons-react';
-import { useFetcher } from 'react-router';
-
+import { NavLink, useFetcher } from 'react-router';
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 import {
   DropdownMenu,
@@ -34,6 +34,7 @@ import {
   useSidebar,
 } from '~/components/ui/sidebar';
 import { type ThemeValue, useTheme } from '~/hooks/use-dark-mode';
+import { useSubscription } from '~/hooks/use-subscription';
 
 const getUserInitials = (name: string) => {
   const initials = name.split(' ');
@@ -52,6 +53,13 @@ export function NavUser({
   const { isMobile } = useSidebar();
   const fetcher = useFetcher();
   const { theme, isDark, setTheme } = useTheme();
+  const { subscription } = useSubscription();
+
+  const showUpgrade =
+    !subscription ||
+    subscription.status === 'expired' ||
+    subscription.status === 'canceled' ||
+    subscription.status === 'trialing';
 
   return (
     <SidebarMenu>
@@ -98,6 +106,22 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {showUpgrade && (
+              <>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem asChild>
+                    <NavLink
+                      to="/settings"
+                      className="text-violet-700 dark:text-violet-300 [&_svg]:!text-violet-500 dark:[&_svg]:!text-violet-400"
+                    >
+                      <IconSparkles />
+                      Upgrade to Pro
+                    </NavLink>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <IconUserCircle />
