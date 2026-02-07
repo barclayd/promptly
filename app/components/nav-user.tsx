@@ -12,7 +12,7 @@ import {
   IconUserCircle,
 } from '@tabler/icons-react';
 import { useState } from 'react';
-import { useFetcher } from 'react-router';
+import { NavLink, useFetcher } from 'react-router';
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 import {
   DropdownMenu,
@@ -128,9 +128,11 @@ export const NavUser = ({
                 <IconUserCircle />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard />
-                Billing
+              <DropdownMenuItem asChild>
+                <NavLink to="/settings?tab=billing">
+                  <IconCreditCard />
+                  Billing
+                </NavLink>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <IconNotification />

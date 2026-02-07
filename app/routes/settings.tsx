@@ -1,9 +1,13 @@
 import { IconKey } from '@tabler/icons-react';
+import { useSearchParams } from 'react-router';
 import { ApiKeysEmptyState } from '~/components/api-keys-empty-state';
 import { ApiKeysTable } from '~/components/api-keys-table';
+import { BillingSection } from '~/components/billing/billing-section';
 import { CreateApiKeyDialog } from '~/components/create-api-key-dialog';
 import { Button } from '~/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { orgContext, userContext } from '~/context';
+import { useSubscription } from '~/hooks/use-subscription';
 import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/settings';
 
@@ -88,10 +92,61 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   };
 };
 
+const ApiKeysContent = ({
+  apiKeys,
+}: {
+  apiKeys: Route.ComponentProps['loaderData']['apiKeys'];
+}) => {
+  const hasApiKeys = apiKeys.length > 0;
+
+  return hasApiKeys ? (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-medium text-foreground">API Keys</div>
+        <CreateApiKeyDialog>
+          <Button variant="outline" size="sm" className="gap-2">
+            <IconKey className="size-4" />
+            Add API Key
+          </Button>
+        </CreateApiKeyDialog>
+      </div>
+      <ApiKeysTable apiKeys={apiKeys} />
+    </div>
+  ) : (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <ApiKeysEmptyState />
+    </div>
+  );
+};
+
 const Settings = ({ loaderData }: Route.ComponentProps) => {
   const { apiKeys } = loaderData;
+  const { subscription } = useSubscription();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const hasApiKeys = apiKeys.length > 0;
+  const hasBillingTab =
+    subscription != null &&
+    (subscription.status === 'trialing' ||
+      subscription.status === 'active' ||
+      subscription.status === 'past_due');
+
+  const activeTab = hasBillingTab
+    ? (searchParams.get('tab') ?? 'api-keys')
+    : 'api-keys';
+
+  const handleTabChange = (value: string) => {
+    setSearchParams(
+      (prev) => {
+        if (value === 'api-keys') {
+          prev.delete('tab');
+        } else {
+          prev.set('tab', value);
+        }
+        return prev;
+      },
+      { replace: true },
+    );
+  };
 
   return (
     <div className="flex flex-1 flex-col">
@@ -108,31 +163,27 @@ const Settings = ({ loaderData }: Route.ComponentProps) => {
                   Manage your Promptly account
                 </p>
               </div>
-              {hasApiKeys && (
-                <CreateApiKeyDialog>
-                  <Button className="gap-2 shadow-sm">
-                    <IconKey className="size-4" />
-                    Add API Key
-                  </Button>
-                </CreateApiKeyDialog>
-              )}
             </div>
 
-            {/* API Keys Section */}
-            <div className="space-y-8">
-              {hasApiKeys ? (
-                <div className="space-y-3">
-                  <div className="text-sm font-medium text-foreground">
-                    API Keys
-                  </div>
-                  <ApiKeysTable apiKeys={apiKeys} />
-                </div>
-              ) : (
-                <div className="flex min-h-[60vh] items-center justify-center">
-                  <ApiKeysEmptyState />
-                </div>
-              )}
-            </div>
+            {/* Content */}
+            {hasBillingTab ? (
+              <Tabs value={activeTab} onValueChange={handleTabChange}>
+                <TabsList>
+                  <TabsTrigger value="api-keys">API Keys</TabsTrigger>
+                  <TabsTrigger value="billing">Billing</TabsTrigger>
+                </TabsList>
+                <TabsContent value="api-keys" className="mt-6">
+                  <ApiKeysContent apiKeys={apiKeys} />
+                </TabsContent>
+                <TabsContent value="billing" className="mt-6">
+                  <BillingSection />
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <div className="space-y-8">
+                <ApiKeysContent apiKeys={apiKeys} />
+              </div>
+            )}
           </div>
         </div>
       </div>

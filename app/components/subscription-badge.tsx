@@ -189,7 +189,10 @@ export const SubscriptionBadge = () => {
               {isUpgradeAction ? (
                 badgeContent
               ) : (
-                <NavLink to="/settings" className="flex items-center gap-2">
+                <NavLink
+                  to="/settings?tab=billing"
+                  className="flex items-center gap-2"
+                >
                   {badgeContent}
                 </NavLink>
               )}
