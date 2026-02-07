@@ -1,3 +1,4 @@
+import type { ShouldRevalidateFunctionArgs } from 'react-router';
 import {
   isRouteErrorResponse,
   Links,
@@ -72,6 +73,27 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     subscription,
     memberRole,
   };
+};
+
+export const shouldRevalidate = ({
+  formAction,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs): boolean => {
+  // No form action = normal navigation → use default (revalidate)
+  // This ensures lazy trial expiration runs on page transitions
+  if (!formAction) return defaultShouldRevalidate;
+
+  // Only revalidate after actions that could change subscription/role data
+  if (
+    formAction.includes('/subscription/') ||
+    formAction.includes('/api/auth/') ||
+    formAction.includes('/team/')
+  ) {
+    return true;
+  }
+
+  // Skip revalidation for all other actions (prompt saves, tests, etc.)
+  return false;
 };
 
 export const links: Route.LinksFunction = () => [

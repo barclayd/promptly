@@ -19,6 +19,10 @@ Wire up subscription status data into the root loader so that `useSubscription()
 - Uses `orgContext` from middleware (not `activeOrganizationId` from session) -- this correctly ties subscription to the current organization
 - Wrapped in `try/catch` to handle public routes where org context is not set (returns `null` gracefully)
 - Returns `subscription` in loader data alongside `user`, `theme`, `serverLayoutCookie`
+- `memberRole` fetched concurrently via `getMemberRole()` in `Promise.all`
+- `periodEnd` added to `SubscriptionStatus` type, D1 query, and status endpoint
+- `canManageBilling` implemented as client-side hook `useCanManageBilling()` at `app/hooks/use-can-manage-billing.ts`
+- `shouldRevalidate` optimization added to skip root loader revalidation after fetcher/form actions that don't affect subscription or role data (prompt saves, test runs, etc.), while keeping default revalidation for navigation to preserve lazy trial expiration
 
 ## Original Implementation Plan
 
@@ -47,9 +51,3 @@ Since the subscription status endpoint requires an authenticated session, only f
 - Verify `useSubscription()` returns data on any authenticated page
 - Verify it returns `null` on unauthenticated pages (landing, login, signup)
 - Verify trial expiration is lazily updated on page load
-
-### Follow-Up Items
-- Add `memberRole` to root loader return (needed for role-based CTA gating across all billing UI features -- determines whether a user sees "Upgrade to Pro" vs "Request upgrade from admin")
-- Add `periodEnd` to `SubscriptionStatus` type (needed by billing page, cancelled state display, and usage dashboard to show current billing period)
-- Consider adding `canManageBilling: boolean` derived server-side to keep billing permission logic encapsulated in the loader rather than duplicated across client components
-- Consider `shouldRevalidate` optimization to skip subscription revalidation on non-billing routes (e.g., prompt editing) to reduce unnecessary D1 queries on navigation
