@@ -18,6 +18,7 @@ import { cn } from '~/lib/utils';
 interface PhaseConfig {
   icon: React.ReactNode;
   copy: string;
+  mobileCopy: string;
   adminCta: string | null;
   memberCopy: string | null;
   dismissible: boolean;
@@ -36,8 +37,9 @@ const getPhaseConfig = (
     return {
       icon: <IconAlertCircleFilled className="size-4 shrink-0" />,
       copy: `Your Pro trial ends ${dayWord}. You'll move to the Free plan (3 prompts, 1 team member).`,
-      adminCta: 'Upgrade to Pro',
-      memberCopy: canManageBilling ? null : 'Contact your admin to upgrade',
+      mobileCopy: `Trial ends ${dayWord}.`,
+      adminCta: 'Upgrade now',
+      memberCopy: canManageBilling ? null : 'Contact your admin',
       dismissible: false,
       containerClasses:
         'bg-red-50 text-red-900 border-b border-red-200 dark:bg-red-950/50 dark:text-red-100 dark:border-red-800',
@@ -51,6 +53,7 @@ const getPhaseConfig = (
     return {
       icon: <IconAlertTriangle className="size-4 shrink-0" />,
       copy: `Your Pro trial ends in ${daysLeft} days. Upgrade to keep unlimited prompts and team access.`,
+      mobileCopy: `Trial ends in ${daysLeft} days.`,
       adminCta: 'Upgrade to Pro',
       memberCopy: canManageBilling ? null : 'Contact your admin',
       dismissible: true,
@@ -67,6 +70,7 @@ const getPhaseConfig = (
   return {
     icon: <IconInfoCircle className="size-4 shrink-0" />,
     copy: `Your Pro trial ends in ${daysLeft} days.`,
+    mobileCopy: `Trial ends in ${daysLeft} days.`,
     adminCta: 'View plans',
     memberCopy: null,
     dismissible: true,
@@ -106,38 +110,37 @@ export const TrialBanner = () => {
   return (
     <div
       className={cn(
-        'relative flex w-full items-center justify-center px-4 py-2 text-sm animate-in fade-in duration-300',
+        'relative flex w-full items-center justify-center gap-2 px-8 py-1.5 text-xs sm:text-sm animate-in fade-in duration-300',
         config.containerClasses,
       )}
     >
-      <div className="flex items-center gap-2">
-        {config.icon}
-        <p className="text-center">
-          <span>{config.copy}</span>
-          {canManageBilling && config.adminCta && (
-            <>
-              {' '}
-              <NavLink to="/settings" className={config.ctaClasses}>
-                {config.adminCta}
-              </NavLink>
-            </>
-          )}
-          {config.memberCopy && (
-            <span className="ml-1 opacity-75">{config.memberCopy}</span>
-          )}
-        </p>
-      </div>
+      {config.icon}
+      <p>
+        <span className="sm:hidden">{config.mobileCopy}</span>
+        <span className="hidden sm:inline">{config.copy}</span>
+        {canManageBilling && config.adminCta && (
+          <>
+            {' '}
+            <NavLink to="/settings" className={config.ctaClasses}>
+              {config.adminCta}
+            </NavLink>
+          </>
+        )}
+        {config.memberCopy && (
+          <span className="ml-1 opacity-75">{config.memberCopy}</span>
+        )}
+      </p>
       {config.dismissible && (
         <button
           type="button"
           onClick={handleDismiss}
           className={cn(
-            'absolute right-3 rounded-sm p-0.5 transition-colors',
+            'absolute right-2 top-1/2 -translate-y-1/2 rounded-sm p-0.5 transition-colors',
             config.dismissClasses,
           )}
           aria-label="Dismiss trial banner"
         >
-          <IconX className="size-4" />
+          <IconX className="size-3.5" />
         </button>
       )}
     </div>
