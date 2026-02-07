@@ -1,4 +1,4 @@
-# 01: Subscription Data in Root Loader
+.# 01: Subscription Data in Root Loader
 
 ## Summary
 Wire up subscription status data into the root loader so that `useSubscription()` works everywhere in the app. This is the **foundation** for every other subscription UI feature.

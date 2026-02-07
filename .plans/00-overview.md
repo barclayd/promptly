@@ -24,9 +24,6 @@ Each feature below has its own detailed plan file. Implement in the listed prior
 
 ## Architecture Notes
 
-### Shared Infrastructure (Feature #01)
-All features depend on subscription data being available in the root loader. The `useSubscription()` hook already exists but the root loader doesn't populate it yet. This is the first thing to implement.
-
 ### Existing Backend (Already Done)
 The `trial-stripe` plugin provides all API endpoints:
 - `GET /api/auth/subscription/status` -- plan, status, isTrial, daysLeft, limits, cancelAtPeriodEnd
