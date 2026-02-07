@@ -13,6 +13,7 @@ const FREE_STATUS: SubscriptionStatus = {
   daysLeft: null,
   limits: PLAN_LIMITS.free,
   cancelAtPeriodEnd: false,
+  periodEnd: null,
 };
 
 interface SubscriptionRow {
@@ -20,6 +21,7 @@ interface SubscriptionRow {
   plan: string;
   status: string;
   trial_end: number | null;
+  period_end: number | null;
   cancel_at_period_end: number;
 }
 
@@ -29,7 +31,7 @@ export const getSubscriptionStatus = async (
 ): Promise<SubscriptionStatus> => {
   const row = await db
     .prepare(
-      'SELECT id, plan, status, trial_end, cancel_at_period_end FROM subscription WHERE organization_id = ? LIMIT 1',
+      'SELECT id, plan, status, trial_end, period_end, cancel_at_period_end FROM subscription WHERE organization_id = ? LIMIT 1',
     )
     .bind(organizationId)
     .first<SubscriptionRow>();
@@ -68,5 +70,24 @@ export const getSubscriptionStatus = async (
     daysLeft,
     limits,
     cancelAtPeriodEnd: row.cancel_at_period_end === 1,
+    periodEnd: row.period_end ?? null,
   };
+};
+
+export type MemberRole = 'owner' | 'admin' | 'member' | null;
+
+export const getMemberRole = async (
+  db: D1Database,
+  userId: string,
+  organizationId: string,
+): Promise<MemberRole> => {
+  const row = await db
+    .prepare(
+      'SELECT role FROM member WHERE user_id = ? AND organization_id = ? LIMIT 1',
+    )
+    .bind(userId, organizationId)
+    .first<{ role: string }>();
+
+  if (!row) return null;
+  return row.role as MemberRole;
 };

@@ -36,6 +36,7 @@ export const statusEndpoint = (options: TrialStripePluginOptions) =>
           daysLeft: null,
           limits: options.freePlan.limits,
           cancelAtPeriodEnd: false,
+          periodEnd: null,
         });
       }
 
@@ -64,6 +65,7 @@ export const statusEndpoint = (options: TrialStripePluginOptions) =>
           daysLeft: null,
           limits: options.freePlan.limits,
           cancelAtPeriodEnd: false,
+          periodEnd: null,
         });
       }
 
@@ -88,6 +90,7 @@ export const statusEndpoint = (options: TrialStripePluginOptions) =>
         daysLeft,
         limits,
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd === 1,
+        periodEnd: subscription.periodEnd ?? null,
       });
     },
   );

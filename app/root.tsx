@@ -17,7 +17,10 @@ import { orgContext, sessionContext } from '~/context';
 import { RecentsProvider } from '~/context/recents-context';
 import { SearchProvider } from '~/context/search-context';
 import { parseCookie } from '~/lib/cookies';
-import { getSubscriptionStatus } from '~/lib/subscription.server';
+import {
+  getMemberRole,
+  getSubscriptionStatus,
+} from '~/lib/subscription.server';
 import { authMiddleware } from '~/middleware/auth';
 import { orgMiddleware } from '~/middleware/org';
 import { themeSessionResolver } from '~/sessions.server';
@@ -42,16 +45,24 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   // Get theme from cookie session
   const { getTheme } = await themeSessionResolver(request);
 
-  // Fetch subscription status for the active org (orgContext may not be set on public routes)
+  // Fetch subscription status and member role for the active org
+  // (orgContext may not be set on public routes)
   let subscription = null;
+  let memberRole = null;
   try {
     const org = context.get(orgContext);
-    subscription = await getSubscriptionStatus(
-      context.cloudflare.env.promptly,
-      org.organizationId,
-    );
+    const db = context.cloudflare.env.promptly;
+    const userId = session?.user?.id;
+
+    const results = await Promise.all([
+      getSubscriptionStatus(db, org.organizationId),
+      userId ? getMemberRole(db, userId, org.organizationId) : null,
+    ]);
+
+    subscription = results[0];
+    memberRole = results[1];
   } catch {
-    // No org context (public route or unauthenticated) — subscription stays null
+    // No org context (public route or unauthenticated) — defaults stay null
   }
 
   return {
@@ -59,6 +70,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     user: session?.user ?? null,
     theme: getTheme(),
     subscription,
+    memberRole,
   };
 };
 

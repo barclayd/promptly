@@ -51,6 +51,7 @@ export interface SubscriptionStatus {
   daysLeft: number | null;
   limits: PlanLimits;
   cancelAtPeriodEnd: boolean;
+  periodEnd: number | null;
 }
 
 export interface SubscriptionRecord {
