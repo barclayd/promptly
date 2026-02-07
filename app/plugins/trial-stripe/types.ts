@@ -48,6 +48,7 @@ export interface SubscriptionStatus {
   plan: string;
   status: SubscriptionStatusValue;
   isTrial: boolean;
+  hadTrial: boolean;
   daysLeft: number | null;
   limits: PlanLimits;
   cancelAtPeriodEnd: boolean;

@@ -10,6 +10,7 @@ const FREE_STATUS: SubscriptionStatus = {
   plan: 'free',
   status: 'expired',
   isTrial: false,
+  hadTrial: false,
   daysLeft: null,
   limits: PLAN_LIMITS.free,
   cancelAtPeriodEnd: false,
@@ -49,7 +50,7 @@ export const getSubscriptionStatus = async (
       .bind('expired', 'free', now, row.id)
       .run();
 
-    return FREE_STATUS;
+    return { ...FREE_STATUS, hadTrial: true };
   }
 
   const isTrial = row.status === 'trialing';
@@ -67,6 +68,7 @@ export const getSubscriptionStatus = async (
     plan: row.plan,
     status: row.status as SubscriptionStatus['status'],
     isTrial,
+    hadTrial: true,
     daysLeft,
     limits,
     cancelAtPeriodEnd: row.cancel_at_period_end === 1,

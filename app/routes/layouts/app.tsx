@@ -4,9 +4,12 @@ import { MidTrialNudgeDrawer } from '~/components/mid-trial-nudge-drawer';
 import { SidebarLeft } from '~/components/sidebar-left';
 import { SiteHeader } from '~/components/site-header';
 import { TrialBanner } from '~/components/trial-banner';
+import { TrialExpiredBanner } from '~/components/trial-expired-banner';
+import { TrialExpiredModal } from '~/components/trial-expired-modal';
 import { TrialExpiryModal } from '~/components/trial-expiry-modal';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 import { useMidTrialNudge } from '~/hooks/use-mid-trial-nudge';
+import { useTrialExpired } from '~/hooks/use-trial-expired';
 import { useTrialExpiryModal } from '~/hooks/use-trial-expiry-modal';
 
 export default function AppLayout() {
@@ -23,6 +26,14 @@ export default function AppLayout() {
   } = useTrialExpiryModal();
   const [expiryModalOpen, setExpiryModalOpen] = useState(false);
 
+  const {
+    showModal: expiredModalVisible,
+    showBanner: expiredBannerVisible,
+    promptCount: expiredPromptCount,
+    memberCount: expiredMemberCount,
+  } = useTrialExpired();
+  const [expiredModalOpen, setExpiredModalOpen] = useState(false);
+
   useEffect(() => {
     if (!visible) return;
     const timer = setTimeout(() => setNudgeOpen(true), 2000);
@@ -34,6 +45,12 @@ export default function AppLayout() {
     const timer = setTimeout(() => setExpiryModalOpen(true), 2500);
     return () => clearTimeout(timer);
   }, [expiryVisible]);
+
+  useEffect(() => {
+    if (!expiredModalVisible) return;
+    const timer = setTimeout(() => setExpiredModalOpen(true), 2000);
+    return () => clearTimeout(timer);
+  }, [expiredModalVisible]);
 
   return (
     <SidebarProvider
@@ -48,6 +65,7 @@ export default function AppLayout() {
       <SidebarInset className="min-h-svh">
         <div className="sticky top-0 z-50">
           <TrialBanner />
+          <TrialExpiredBanner visible={expiredBannerVisible} />
           <SiteHeader />
         </div>
         <Outlet />
@@ -74,6 +92,14 @@ export default function AppLayout() {
             memberCount={memberCount}
           />
         )}
+      {expiredModalVisible && (
+        <TrialExpiredModal
+          open={expiredModalOpen}
+          onOpenChange={setExpiredModalOpen}
+          promptCount={expiredPromptCount}
+          memberCount={expiredMemberCount}
+        />
+      )}
     </SidebarProvider>
   );
 }
