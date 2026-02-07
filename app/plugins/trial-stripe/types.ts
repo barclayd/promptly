@@ -56,6 +56,7 @@ export interface SubscriptionStatus {
 export interface SubscriptionRecord {
   id: string;
   userId: string;
+  organizationId: string | null;
   plan: string;
   status: SubscriptionStatusValue;
   trialStart: number | null;

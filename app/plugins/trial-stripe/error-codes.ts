@@ -11,4 +11,5 @@ export const ERROR_CODES = defineErrorCodes({
   CANNOT_CANCEL: 'Cannot cancel subscription',
   NO_STRIPE_CUSTOMER: 'No Stripe customer found',
   UNAUTHORIZED: 'Unauthorized',
+  FORBIDDEN: 'Only org owners or admins can manage billing',
 });

@@ -49,13 +49,29 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
     // Create a default organization for the new user
     if (setCookie) {
-      await auth.api.createOrganization({
+      const org = await auth.api.createOrganization({
         body: {
           name: `${result.data.name}'s Workspace`,
           slug: nanoid(10),
         },
         headers: { Cookie: setCookie },
       });
+
+      // Backfill organization_id on the subscription created by the signup hook
+      if (org?.id) {
+        const session = await auth.api.getSession({
+          headers: { Cookie: setCookie },
+        });
+        if (session?.user?.id) {
+          const db = context.cloudflare.env.promptly;
+          await db
+            .prepare(
+              'UPDATE subscription SET organization_id = ? WHERE user_id = ? AND organization_id IS NULL',
+            )
+            .bind(org.id, session.user.id)
+            .run();
+        }
+      }
     }
 
     return redirect('/dashboard', {

@@ -4,7 +4,8 @@ import { APIError } from 'better-call';
 import Stripe from 'stripe';
 import { z } from 'zod';
 import { ERROR_CODES } from '../error-codes';
-import type { SubscriptionRecord, TrialStripePluginOptions } from '../types';
+import type { TrialStripePluginOptions } from '../types';
+import { findSubscription, requireOrgAdmin } from '../utils';
 
 export const portalEndpoint = (options: TrialStripePluginOptions) =>
   createAuthEndpoint(
@@ -26,12 +27,17 @@ export const portalEndpoint = (options: TrialStripePluginOptions) =>
     },
     async (ctx) => {
       const userId = ctx.context.session.user.id;
+      const activeOrgId =
+        ctx.context.session.session.activeOrganizationId ?? null;
 
-      const subscription =
-        await ctx.context.adapter.findOne<SubscriptionRecord>({
-          model: 'subscription',
-          where: [{ field: 'userId', value: userId }],
-        });
+      await requireOrgAdmin(ctx.context.adapter, {
+        userId,
+        organizationId: activeOrgId,
+      });
+
+      const subscription = await findSubscription(ctx.context.adapter, {
+        organizationId: activeOrgId,
+      });
 
       if (!subscription?.stripeCustomerId) {
         throw new APIError('BAD_REQUEST', {

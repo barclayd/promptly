@@ -1,6 +1,6 @@
 import { useRevalidator, useRouteLoaderData } from 'react-router';
-import type { loader as rootLoader } from '~/root';
 import type { SubscriptionStatus } from '~/plugins/trial-stripe/types';
+import type { loader as rootLoader } from '~/root';
 
 export const useSubscription = () => {
   const rootData = useRouteLoaderData<typeof rootLoader>('root');

@@ -4,7 +4,8 @@ import { APIError } from 'better-call';
 import Stripe from 'stripe';
 import { z } from 'zod';
 import { ERROR_CODES } from '../error-codes';
-import type { SubscriptionRecord, TrialStripePluginOptions } from '../types';
+import type { TrialStripePluginOptions } from '../types';
+import { findSubscription, requireOrgAdmin } from '../utils';
 
 export const upgradeEndpoint = (options: TrialStripePluginOptions) =>
   createAuthEndpoint(
@@ -31,6 +32,13 @@ export const upgradeEndpoint = (options: TrialStripePluginOptions) =>
       const { plan, billingPeriod, successUrl, cancelUrl } = ctx.body;
       const userId = ctx.context.session.user.id;
       const userEmail = ctx.context.session.user.email;
+      const activeOrgId =
+        ctx.context.session.session.activeOrganizationId ?? null;
+
+      await requireOrgAdmin(ctx.context.adapter, {
+        userId,
+        organizationId: activeOrgId,
+      });
 
       const planConfig = options.plans.find((p) => p.name === plan);
       if (!planConfig) {
@@ -39,11 +47,9 @@ export const upgradeEndpoint = (options: TrialStripePluginOptions) =>
         });
       }
 
-      const subscription =
-        await ctx.context.adapter.findOne<SubscriptionRecord>({
-          model: 'subscription',
-          where: [{ field: 'userId', value: userId }],
-        });
+      const subscription = await findSubscription(ctx.context.adapter, {
+        organizationId: activeOrgId,
+      });
 
       if (
         subscription?.status === 'active' &&
@@ -92,7 +98,11 @@ export const upgradeEndpoint = (options: TrialStripePluginOptions) =>
           line_items: [{ price: priceId, quantity: 1 }],
           success_url: successUrl,
           cancel_url: cancelUrl,
-          metadata: { userId, plan },
+          metadata: {
+            userId,
+            plan,
+            ...(activeOrgId ? { organizationId: activeOrgId } : {}),
+          },
         });
 
         return ctx.json({ url: session.url });

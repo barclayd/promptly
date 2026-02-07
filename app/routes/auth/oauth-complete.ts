@@ -22,6 +22,15 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
       body: { organizationId: orgsResponse[0].id },
       headers: request.headers,
     });
+
+    // Backfill organization_id on subscription if missing (OAuth users)
+    const db = context.cloudflare.env.promptly;
+    await db
+      .prepare(
+        'UPDATE subscription SET organization_id = ? WHERE user_id = ? AND organization_id IS NULL',
+      )
+      .bind(orgsResponse[0].id, session.user.id)
+      .run();
   }
 
   return redirect('/dashboard');
