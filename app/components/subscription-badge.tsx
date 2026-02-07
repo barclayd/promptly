@@ -43,8 +43,8 @@ const getBadgeConfig = (
       label: 'FREE',
       subtext: 'Upgrade',
       colorClasses:
-        'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
-      subtextClasses: 'text-violet-600 dark:text-violet-400 font-medium',
+        'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
+      subtextClasses: 'text-indigo-600 dark:text-indigo-400 font-medium',
       icon: <IconSparkles />,
       tooltipBase: 'Free plan — upgrade to unlock unlimited prompts',
     };
@@ -113,8 +113,8 @@ const getBadgeConfig = (
       label: 'FREE',
       subtext: 'Upgrade',
       colorClasses:
-        'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
-      subtextClasses: 'text-violet-600 dark:text-violet-400 font-medium',
+        'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
+      subtextClasses: 'text-indigo-600 dark:text-indigo-400 font-medium',
       icon: <IconSparkles />,
       tooltipBase: 'Free plan — upgrade to unlock unlimited prompts',
     };
@@ -136,8 +136,8 @@ const getBadgeConfig = (
     label: 'FREE',
     subtext: 'Upgrade',
     colorClasses:
-      'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
-    subtextClasses: 'text-violet-600 dark:text-violet-400 font-medium',
+      'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
+    subtextClasses: 'text-indigo-600 dark:text-indigo-400 font-medium',
     icon: <IconSparkles />,
     tooltipBase: 'Free plan — upgrade to unlock unlimited prompts',
   };

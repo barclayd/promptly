@@ -65,7 +65,10 @@ export default function AppLayout() {
       <SidebarInset className="min-h-svh">
         <div className="sticky top-0 z-50">
           <TrialBanner />
-          <TrialExpiredBanner visible={expiredBannerVisible} />
+          <TrialExpiredBanner
+            visible={expiredBannerVisible}
+            onReactivate={() => setExpiredModalOpen(true)}
+          />
           <SiteHeader />
         </div>
         <Outlet />
@@ -92,7 +95,7 @@ export default function AppLayout() {
             memberCount={memberCount}
           />
         )}
-      {expiredModalVisible && (
+      {(expiredModalVisible || expiredBannerVisible) && (
         <TrialExpiredModal
           open={expiredModalOpen}
           onOpenChange={setExpiredModalOpen}

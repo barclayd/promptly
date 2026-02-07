@@ -29,6 +29,7 @@ type PromptDetailLoaderData = {
   inputData: unknown;
   inputDataRootName: string | null;
   isViewingOldVersion?: boolean;
+  isReadOnlyDueToLimit?: boolean;
 };
 
 const LAYOUT_COOKIE_NAME = 'panel-layout';
@@ -70,6 +71,8 @@ export default function PromptDetailLayout() {
   const inputData = promptDetailData?.inputData ?? {};
   const inputDataRootName = promptDetailData?.inputDataRootName ?? null;
   const isViewingOldVersion = promptDetailData?.isViewingOldVersion ?? false;
+  const isReadOnlyDueToLimit = promptDetailData?.isReadOnlyDueToLimit ?? false;
+  const isReadonly = isViewingOldVersion || isReadOnlyDueToLimit;
 
   // Ref for external control of SidebarRight (trigger test, get streaming state)
   const sidebarRightRef = useRef<SidebarRightHandle>(null);
@@ -120,7 +123,7 @@ export default function PromptDetailLayout() {
               temperature={temperature}
               inputData={inputData}
               inputDataRootName={inputDataRootName}
-              isReadonly={isViewingOldVersion}
+              isReadonly={isReadonly}
             />
           </div>
         </div>
@@ -167,7 +170,7 @@ export default function PromptDetailLayout() {
               temperature={temperature}
               inputData={inputData}
               inputDataRootName={inputDataRootName}
-              isReadonly={isViewingOldVersion}
+              isReadonly={isReadonly}
             />
           </ResizablePanel>
         </ResizablePanelGroup>

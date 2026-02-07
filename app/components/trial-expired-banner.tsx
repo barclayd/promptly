@@ -1,15 +1,18 @@
 import { IconInfoCircle, IconX } from '@tabler/icons-react';
 import { useState } from 'react';
-import { NavLink } from 'react-router';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useOrganizationId } from '~/hooks/use-organization-id';
 import { dismissExpiredBanner } from '~/hooks/use-trial-expired';
 
 interface TrialExpiredBannerProps {
   visible: boolean;
+  onReactivate?: () => void;
 }
 
-export const TrialExpiredBanner = ({ visible }: TrialExpiredBannerProps) => {
+export const TrialExpiredBanner = ({
+  visible,
+  onReactivate,
+}: TrialExpiredBannerProps) => {
   const { canManageBilling } = useCanManageBilling();
   const organizationId = useOrganizationId();
   const [isDismissed, setIsDismissed] = useState(false);
@@ -35,12 +38,13 @@ export const TrialExpiredBanner = ({ visible }: TrialExpiredBannerProps) => {
         {canManageBilling && (
           <>
             {' '}
-            <NavLink
-              to="/settings"
+            <button
+              type="button"
+              onClick={onReactivate}
               className="text-indigo-600 underline underline-offset-2 font-medium hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
             >
               Reactivate Pro
-            </NavLink>
+            </button>
           </>
         )}
         {!canManageBilling && (

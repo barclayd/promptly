@@ -13,7 +13,9 @@ import { useDebouncedCallback } from 'use-debounce';
 import { PromptEditorMenubar } from '~/components/prompt-editor-menubar';
 import { PromptReview } from '~/components/prompt-review';
 import { PublishPromptDialog } from '~/components/publish-prompt-dialog';
+import { ReadOnlyPlanBanner } from '~/components/read-only-plan-banner';
 import { RemoteCursorsOverlay } from '~/components/remote-cursors-overlay';
+import { TrialExpiredModal } from '~/components/trial-expired-modal';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
@@ -24,9 +26,11 @@ import {
   type PresenceEventCallbacks,
   usePresence,
 } from '~/hooks/use-presence';
+import { useResourceLimits } from '~/hooks/use-resource-limits';
 import { useUndoRedo } from '~/hooks/use-undo-redo';
 import { getAuth } from '~/lib/auth.server';
 import type { SchemaField } from '~/lib/schema-types';
+import { getSubscriptionStatus } from '~/lib/subscription.server';
 import { usePromptEditorStore } from '~/stores/prompt-editor-store';
 import type { Route } from './+types/prompts.promptId';
 
@@ -115,6 +119,23 @@ export const loader = async ({
 
   if (!prompt) {
     throw new Response('Prompt not found', { status: 404 });
+  }
+
+  // Check if this prompt is read-only due to plan limits
+  let isReadOnlyDueToLimit = false;
+  const subscription = await getSubscriptionStatus(db, org.organizationId);
+  if (subscription.status === 'expired' && subscription.hadTrial) {
+    const editablePrompts = await db
+      .prepare(
+        'SELECT id FROM prompt WHERE organization_id = ? AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 3',
+      )
+      .bind(org.organizationId)
+      .all<{ id: string }>();
+
+    const editableIds = new Set(
+      editablePrompts.results?.map((p) => p.id) ?? [],
+    );
+    isReadOnlyDueToLimit = !editableIds.has(promptId);
   }
 
   const folder = await db
@@ -314,6 +335,7 @@ export const loader = async ({
     versionNotFound,
     requestedVersion,
     isOwner,
+    isReadOnlyDueToLimit,
   };
 };
 
@@ -346,6 +368,27 @@ export const action = async ({
 
   if (!promptOwnership) {
     return data({ error: 'Prompt not found' }, { status: 404 });
+  }
+
+  // Guard: reject saves on read-only prompts (plan limit)
+  const subscription = await getSubscriptionStatus(db, org.organizationId);
+  if (subscription.status === 'expired' && subscription.hadTrial) {
+    const editablePrompts = await db
+      .prepare(
+        'SELECT id FROM prompt WHERE organization_id = ? AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 3',
+      )
+      .bind(org.organizationId)
+      .all<{ id: string }>();
+
+    const editableIds = new Set(
+      editablePrompts.results?.map((p) => p.id) ?? [],
+    );
+    if (!editableIds.has(promptId)) {
+      return data(
+        { error: 'This prompt is read-only on the Free plan' },
+        { status: 403 },
+      );
+    }
   }
 
   const formData = await request.formData();
@@ -474,14 +517,23 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { isViewingOldVersion, versionNotFound, requestedVersion } = loaderData;
+  const {
+    isViewingOldVersion,
+    versionNotFound,
+    requestedVersion,
+    isReadOnlyDueToLimit,
+  } = loaderData;
+  const isReadOnly = isViewingOldVersion || isReadOnlyDueToLimit;
+
+  const [planLimitModalOpen, setPlanLimitModalOpen] = useState(false);
+  const { promptCount, memberCount } = useResourceLimits();
 
   // Initialize undo/redo keyboard listener
   useUndoRedo();
 
   // Connect to presence/collaboration system
   const { sendContentUpdate, subscribeToEvents, sendCursorUpdate, cursors } =
-    usePresence(isViewingOldVersion ? undefined : loaderData.prompt.id);
+    usePresence(isReadOnly ? undefined : loaderData.prompt.id);
 
   // Track cursor state for each textarea
   const [remoteCursors, setRemoteCursors] = useState<CursorPosition[]>([]);
@@ -509,7 +561,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   // Note: Using useEffect here is acceptable because this is for external state sync (WebSocket)
   // and not for DOM-related side effects which the CLAUDE.md guidelines warn against
   useEffect(() => {
-    if (!subscribeToEvents || isViewingOldVersion) return;
+    if (!subscribeToEvents || isReadOnly) return;
 
     const callbacks: PresenceEventCallbacks = {
       onContentSync: (field, value, version) => {
@@ -572,7 +624,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
     return subscribeToEvents(callbacks);
   }, [
     subscribeToEvents,
-    isViewingOldVersion,
+    isReadOnly,
     setSystemMessageFromRemote,
     setUserMessageFromRemote,
     sendCursorUpdate,
@@ -774,8 +826,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
     schemasEqual,
   ]);
 
-  const canPublish =
-    loaderData.hasDraft && hasContentChanges && !isViewingOldVersion;
+  const canPublish = loaderData.hasDraft && hasContentChanges && !isReadOnly;
 
   // Handle navigating back to latest version
   const handleBackToLatest = useCallback(() => {
@@ -888,9 +939,12 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
           </Button>
         </div>
       )}
+      {isReadOnlyDueToLimit && (
+        <ReadOnlyPlanBanner onReactivate={() => setPlanLimitModalOpen(true)} />
+      )}
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-          {!isViewingOldVersion && (
+          {!isReadOnly && (
             <div className="hidden md:flex px-4 lg:px-6 items-center justify-between gap-2">
               <PromptEditorMenubar
                 prompt={loaderData.prompt}
@@ -925,7 +979,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
             <PromptReview
               title="System Prompt"
               value={systemMessage}
-              onChange={isViewingOldVersion ? undefined : handleSystemChange}
+              onChange={isReadOnly ? undefined : handleSystemChange}
               isDirty={isSystemDirty}
               isPendingSave={isPendingSystemSaveRef.current}
               isSaving={false}
@@ -936,10 +990,10 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
                 systemTextareaRef.current = el;
               }}
               onSelectionChange={
-                isViewingOldVersion ? undefined : handleSystemSelectionChange
+                isReadOnly ? undefined : handleSystemSelectionChange
               }
               cursorOverlay={
-                !isViewingOldVersion && (
+                !isReadOnly && (
                   <RemoteCursorsOverlay
                     cursors={remoteCursors}
                     textareaRef={systemTextareaRef.current}
@@ -947,12 +1001,12 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
                   />
                 )
               }
-              disabled={isViewingOldVersion}
+              disabled={isReadOnly}
             />
             <PromptReview
               title="User Prompt"
               value={userMessage}
-              onChange={isViewingOldVersion ? undefined : handleUserChange}
+              onChange={isReadOnly ? undefined : handleUserChange}
               isDirty={isUserDirty}
               isPendingSave={isPendingUserSaveRef.current}
               isSaving={false}
@@ -963,10 +1017,10 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
                 userTextareaRef.current = el;
               }}
               onSelectionChange={
-                isViewingOldVersion ? undefined : handleUserSelectionChange
+                isReadOnly ? undefined : handleUserSelectionChange
               }
               cursorOverlay={
-                !isViewingOldVersion && (
+                !isReadOnly && (
                   <RemoteCursorsOverlay
                     cursors={remoteCursors}
                     textareaRef={userTextareaRef.current}
@@ -974,9 +1028,9 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
                   />
                 )
               }
-              disabled={isViewingOldVersion}
+              disabled={isReadOnly}
             />
-            {!isViewingOldVersion && (
+            {!isReadOnly && (
               <div className="mt-4 md:hidden">
                 <PublishPromptDialog
                   promptId={loaderData.prompt.id}
@@ -997,6 +1051,14 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
           </div>
         </div>
       </div>
+      {isReadOnlyDueToLimit && (
+        <TrialExpiredModal
+          open={planLimitModalOpen}
+          onOpenChange={setPlanLimitModalOpen}
+          promptCount={promptCount}
+          memberCount={memberCount}
+        />
+      )}
     </div>
   );
 }

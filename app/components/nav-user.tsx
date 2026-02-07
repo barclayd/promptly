@@ -113,7 +113,7 @@ export const NavUser = ({
               <>
                 <DropdownMenuGroup>
                   <DropdownMenuItem
-                    className="text-violet-700 dark:text-violet-300 [&_svg]:!text-violet-500 dark:[&_svg]:!text-violet-400"
+                    className="text-indigo-700 dark:text-indigo-300 [&_svg]:!text-indigo-500 dark:[&_svg]:!text-indigo-400"
                     onSelect={() => setShowUpgradeModal(true)}
                   >
                     <IconSparkles />
