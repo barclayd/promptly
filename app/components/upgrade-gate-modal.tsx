@@ -2,7 +2,6 @@
 
 import {
   IconCheck,
-  IconCrown,
   IconFileText,
   IconSparkles,
   IconUsers,
@@ -12,6 +11,7 @@ import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useResourceLimits } from '~/hooks/use-resource-limits';
 import { authClient } from '~/lib/auth.client';
 import { cn } from '~/lib/utils';
+import { ArrowUpIcon } from './ui/arrow-up-icon';
 import { Button } from './ui/button';
 import {
   Dialog,
@@ -243,7 +243,7 @@ export const UpgradeGateModal = ({
                   </>
                 ) : (
                   <>
-                    <IconCrown className="size-4" />
+                    <ArrowUpIcon size={16} />
                     {ctaLabel}
                   </>
                 )}

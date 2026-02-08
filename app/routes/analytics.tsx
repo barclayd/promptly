@@ -1,9 +1,4 @@
-import {
-  IconChartBar,
-  IconCrown,
-  IconFileText,
-  IconUsers,
-} from '@tabler/icons-react';
+import { IconChartBar, IconFileText, IconUsers } from '@tabler/icons-react';
 import { useState, useSyncExternalStore } from 'react';
 import {
   Label,
@@ -12,6 +7,7 @@ import {
   RadialBar,
   RadialBarChart,
 } from 'recharts';
+import { ArrowUpIcon } from '~/components/ui/arrow-up-icon';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import type { ChartConfig } from '~/components/ui/chart';
@@ -176,7 +172,7 @@ const PromptsMeter = ({
                 className="gap-1.5"
                 onClick={onUpgradeClick}
               >
-                <IconCrown className="size-3.5" />
+                <ArrowUpIcon size={14} />
                 Upgrade to create unlimited prompts
               </Button>
             ) : (
@@ -336,7 +332,7 @@ const TeamMeter = ({
                 className="gap-1.5"
                 onClick={onUpgradeClick}
               >
-                <IconCrown className="size-3.5" />
+                <ArrowUpIcon size={14} />
                 Upgrade to invite more team members
               </Button>
             ) : (

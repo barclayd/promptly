@@ -5,7 +5,6 @@ import {
   IconArrowDown,
   IconCheck,
   IconClock,
-  IconCrown,
   IconExternalLink,
   IconSparkles,
 } from '@tabler/icons-react';
@@ -16,6 +15,7 @@ import { useSubscription } from '~/hooks/use-subscription';
 import { authClient } from '~/lib/auth.client';
 import { cn } from '~/lib/utils';
 import type { SubscriptionStatus } from '~/plugins/trial-stripe/types';
+import { ArrowUpIcon } from '../ui/arrow-up-icon';
 import { Button } from '../ui/button';
 import {
   Card,
@@ -269,7 +269,7 @@ const CancelPlanDialog = ({
             style={stagger(720, 0)}
             onClick={() => onOpenChange(false)}
           >
-            <IconCrown className="size-4" />
+            <ArrowUpIcon size={16} />
             Keep Pro
           </Button>
           <button
@@ -444,7 +444,7 @@ export const CurrentPlanCard = () => {
                       </>
                     ) : (
                       <>
-                        <IconCrown className="size-4" />
+                        <ArrowUpIcon size={16} />
                         Upgrade to Pro
                       </>
                     )}

@@ -5,7 +5,6 @@ import {
   IconAlertTriangle,
   IconArrowRight,
   IconClock,
-  IconCrown,
 } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
@@ -17,6 +16,7 @@ import {
 import { authClient } from '~/lib/auth.client';
 import { cn } from '~/lib/utils';
 import { NumberTicker } from './landing/hero-demo/animations/number-ticker';
+import { ArrowUpIcon } from './ui/arrow-up-icon';
 import { Button } from './ui/button';
 import {
   Dialog,
@@ -462,7 +462,7 @@ export const TrialExpiryModal = ({
                   </>
                 ) : (
                   <>
-                    <IconCrown className="size-4" />
+                    <ArrowUpIcon size={16} />
                     Upgrade to Pro — $29/mo
                   </>
                 )}

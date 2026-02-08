@@ -1,12 +1,13 @@
 'use client';
 
-import { IconCrown, IconShieldCheckFilled } from '@tabler/icons-react';
+import { IconShieldCheckFilled } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useOrganizationId } from '~/hooks/use-organization-id';
 import { markExpiredModalShown } from '~/hooks/use-trial-expired';
 import { authClient } from '~/lib/auth.client';
 import { cn } from '~/lib/utils';
+import { ArrowUpIcon } from './ui/arrow-up-icon';
 import { Button } from './ui/button';
 import {
   Dialog,
@@ -231,7 +232,7 @@ export const TrialExpiredModal = ({
                   </>
                 ) : (
                   <>
-                    <IconCrown className="size-4" />
+                    <ArrowUpIcon size={16} />
                     Reactivate Pro — $29/mo
                   </>
                 )}

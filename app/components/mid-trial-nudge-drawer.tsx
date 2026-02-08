@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  IconCrown,
-  IconFileText,
-  IconHourglass,
-  IconX,
-} from '@tabler/icons-react';
+import { IconFileText, IconHourglass, IconX } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import {
@@ -15,6 +10,7 @@ import {
 import { useOrganizationId } from '~/hooks/use-organization-id';
 import { authClient } from '~/lib/auth.client';
 import { NumberTicker } from './landing/hero-demo/animations/number-ticker';
+import { ArrowUpIcon } from './ui/arrow-up-icon';
 import { Button } from './ui/button';
 import {
   Drawer,
@@ -86,7 +82,7 @@ export const MidTrialNudgeDrawer = ({
           <div className="relative flex flex-col items-center text-center gap-3">
             {/* Gradient icon container */}
             <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 ring-1 ring-indigo-500/10 dark:from-indigo-500/15 dark:to-purple-500/15 dark:ring-indigo-500/15">
-              <IconCrown className="size-6 text-indigo-500 dark:text-indigo-400" />
+              <ArrowUpIcon size={24} />
             </div>
 
             {/* Gradient headline */}
@@ -133,7 +129,7 @@ export const MidTrialNudgeDrawer = ({
                   </>
                 ) : (
                   <>
-                    <IconCrown className="size-4" />
+                    <ArrowUpIcon size={16} />
                     Upgrade to Pro — $29/mo
                   </>
                 )}

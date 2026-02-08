@@ -1,11 +1,12 @@
 'use client';
 
-import { IconCheck, IconCrown, IconSparkles, IconX } from '@tabler/icons-react';
+import { IconCheck, IconSparkles, IconX } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useSubscription } from '~/hooks/use-subscription';
 import { authClient } from '~/lib/auth.client';
 import { cn } from '~/lib/utils';
+import { ArrowUpIcon } from '../ui/arrow-up-icon';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
@@ -126,7 +127,7 @@ export const PlanComparison = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
-              <IconCrown className="size-4 text-indigo-500" />
+              <ArrowUpIcon size={16} className="text-indigo-500" />
               Pro
             </CardTitle>
             {currentPlan === 'pro' && isActive && (
@@ -171,7 +172,7 @@ export const PlanComparison = () => {
                   </>
                 ) : (
                   <>
-                    <IconCrown className="size-4" />
+                    <ArrowUpIcon size={16} />
                     Upgrade to Pro
                   </>
                 )}
