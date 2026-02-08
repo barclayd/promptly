@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useOrganizationId } from '~/hooks/use-organization-id';
 import { dismissExpiredBanner } from '~/hooks/use-trial-expired';
+import { NotifyAdminButton } from './notify-admin-button';
 
 interface TrialExpiredBannerProps {
   visible: boolean;
@@ -48,7 +49,7 @@ export const TrialExpiredBanner = ({
           </>
         )}
         {!canManageBilling && (
-          <span className="ml-1 opacity-75">Contact your admin</span>
+          <NotifyAdminButton variant="inline" context="trial_expired" />
         )}
       </p>
       <button

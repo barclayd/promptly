@@ -6,6 +6,7 @@ import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useSubscription } from '~/hooks/use-subscription';
 import { authClient } from '~/lib/auth.client';
 import { cn } from '~/lib/utils';
+import { NotifyAdminButton } from '../notify-admin-button';
 import { ArrowUpIcon } from '../ui/arrow-up-icon';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -180,11 +181,7 @@ export const PlanComparison = () => {
             </div>
           ) : (
             <div className="mt-5">
-              <div className="rounded-lg bg-muted/50 px-3 py-2 text-center">
-                <p className="text-xs text-muted-foreground">
-                  Ask your workspace admin to upgrade.
-                </p>
-              </div>
+              <NotifyAdminButton variant="compact" context="plan_comparison" />
             </div>
           )}
         </CardContent>

@@ -15,6 +15,7 @@ import {
 } from '~/hooks/use-usage-threshold-nudge';
 import { authClient } from '~/lib/auth.client';
 import { NumberTicker } from './landing/hero-demo/animations/number-ticker';
+import { NotifyAdminButton } from './notify-admin-button';
 import { ArrowUpIcon } from './ui/arrow-up-icon';
 import { Button } from './ui/button';
 import {
@@ -160,11 +161,7 @@ export const UsageThresholdDrawer = ({
               </span>
             </div>
           ) : (
-            <div className="text-center py-3 px-4 rounded-xl bg-muted/50 ring-1 ring-border/50">
-              <p className="text-sm text-muted-foreground">
-                Ask your workspace admin to upgrade to Pro.
-              </p>
-            </div>
+            <NotifyAdminButton variant="block" context="usage_threshold" />
           )}
           <DrawerClose asChild>
             <button

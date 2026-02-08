@@ -14,6 +14,7 @@ import {
   useTrialBannerVisible,
 } from '~/hooks/use-trial-banner-visible';
 import { cn } from '~/lib/utils';
+import { NotifyAdminButton } from './notify-admin-button';
 
 interface PhaseConfig {
   icon: React.ReactNode;
@@ -127,7 +128,11 @@ export const TrialBanner = () => {
           </>
         )}
         {config.memberCopy && (
-          <span className="ml-1 opacity-75">{config.memberCopy}</span>
+          <NotifyAdminButton
+            variant="inline"
+            context="trial_expiry"
+            linkClassName={config.ctaClasses}
+          />
         )}
       </p>
       {config.dismissible && (

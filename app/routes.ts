@@ -32,6 +32,7 @@ export default [
     './routes/api/settings.delete-api-key.ts',
   ),
   route('api/search-prompts', './routes/api/search-prompts.ts'),
+  route('api/request-upgrade', './routes/api/request-upgrade.ts'),
   route(
     'team/accept-invitation/:id',
     './routes/team.accept-invitation.$id.tsx',

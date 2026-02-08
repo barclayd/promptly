@@ -7,6 +7,7 @@ import { useOrganizationId } from '~/hooks/use-organization-id';
 import { markExpiredModalShown } from '~/hooks/use-trial-expired';
 import { authClient } from '~/lib/auth.client';
 import { cn } from '~/lib/utils';
+import { NotifyAdminButton } from './notify-admin-button';
 import { ArrowUpIcon } from './ui/arrow-up-icon';
 import { Button } from './ui/button';
 import {
@@ -242,14 +243,12 @@ export const TrialExpiredModal = ({
               </span>
             </div>
           ) : (
-            <div
-              className="text-center py-3 px-4 rounded-xl bg-muted/50 ring-1 ring-border/50 opacity-0 animate-fade-in-up"
+            <NotifyAdminButton
+              variant="block"
+              context="trial_expired"
+              className="opacity-0 animate-fade-in-up"
               style={stagger(680, 0)}
-            >
-              <p className="text-sm text-muted-foreground">
-                Ask your workspace admin to reactivate Pro.
-              </p>
-            </div>
+            />
           )}
           <button
             type="button"
