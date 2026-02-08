@@ -1,8 +1,23 @@
 import { IconArrowRight, IconMenu2, IconX } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { Link } from 'react-router';
 import { Button } from '~/components/ui/button';
 import { cn } from '~/lib/utils';
+
+const subscribeScroll = (callback: () => void) => {
+  // Body is the scroll container (html has overflow-x: hidden + h-full)
+  document.body.addEventListener('scroll', callback, { passive: true });
+  window.addEventListener('scroll', callback, { passive: true });
+  return () => {
+    document.body.removeEventListener('scroll', callback);
+    window.removeEventListener('scroll', callback);
+  };
+};
+
+const getScrolled = () =>
+  window.scrollY > 20 || document.body.scrollTop > 20;
+
+const getScrolledServer = () => false;
 
 const navLinks = [
   {
@@ -23,55 +38,45 @@ type NavigationProps = {
 };
 
 export const Navigation = ({ isAuthenticated = false }: NavigationProps) => {
-  const [isScrolled, setIsScrolled] = useState(false);
+  const isScrolled = useSyncExternalStore(
+    subscribeScroll,
+    getScrolled,
+    getScrolledServer,
+  );
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  // Ref callback for scroll listener - no useEffect
-  const scrollRef = (node: HTMLElement | null) => {
-    if (!node) return;
-
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Check initial state
-
-    return () => window.removeEventListener('scroll', handleScroll);
-  };
 
   const closeMobileMenu = () => setMobileOpen(false);
 
   return (
     <>
       <header
-        ref={scrollRef}
         className={cn(
           'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-          // Mobile: Enhanced liquid glass effect for readability
-          // Uses saturation boost (180%) to counteract blur muddiness per best practices
-          'max-md:bg-white/75 max-md:dark:bg-zinc-950/80',
-          'max-md:backdrop-blur-xl max-md:backdrop-saturate-[1.8]',
-          'max-md:border-b max-md:border-white/20 max-md:dark:border-white/10',
-          'max-md:shadow-[0_4px_30px_rgba(0,0,0,0.1)] max-md:dark:shadow-[0_4px_30px_rgba(0,0,0,0.3)]',
-          // Desktop: Glass effect only when scrolled
+          // Glass effect only when scrolled (same behavior on mobile and desktop)
           isScrolled
             ? [
-                'md:bg-white/80 md:dark:bg-zinc-950/80',
-                'md:backdrop-blur-xl md:backdrop-saturate-[1.8]',
-                'md:border-b md:border-white/20 md:dark:border-white/10',
-                'md:shadow-[0_4px_30px_rgba(0,0,0,0.1)] md:dark:shadow-[0_4px_30px_rgba(0,0,0,0.25)]',
+                'bg-white/75 dark:bg-zinc-950/80',
+                'backdrop-blur-xl backdrop-saturate-[1.8]',
+                'border-b border-white/20 dark:border-white/10',
+                'shadow-[0_4px_30px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_30px_rgba(0,0,0,0.25)]',
               ]
-            : 'md:bg-transparent',
+            : 'bg-transparent',
         )}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <nav className="flex h-16 items-center justify-between">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 group">
-              <div className="relative size-8 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:shadow-indigo-500/40 transition-shadow">
-                <span className="text-white font-bold text-sm">P</span>
-              </div>
+              <img
+                src="https://images.keepfre.sh/app/icons/promptly/promptly-light.webp"
+                alt=""
+                className="size-8 dark:hidden"
+              />
+              <img
+                src="https://images.keepfre.sh/app/icons/promptly/promptly.webp"
+                alt=""
+                className="size-8 hidden dark:block"
+              />
               <span className="font-semibold text-lg tracking-tight">
                 Promptly
               </span>
@@ -175,9 +180,16 @@ export const Navigation = ({ isAuthenticated = false }: NavigationProps) => {
                   : 'opacity-0 -translate-x-4',
               )}
             >
-              <div className="relative size-8 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-                <span className="text-white font-bold text-sm">P</span>
-              </div>
+              <img
+                src="https://images.keepfre.sh/app/icons/promptly/promptly-light.webp"
+                alt=""
+                className="size-8 dark:hidden"
+              />
+              <img
+                src="https://images.keepfre.sh/app/icons/promptly/promptly.webp"
+                alt=""
+                className="size-8 hidden dark:block"
+              />
               <span className="font-semibold text-lg tracking-tight">
                 Promptly
               </span>

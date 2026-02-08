@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { authClient } from '~/lib/auth.client';
+import { NotifyAdminButton } from './notify-admin-button';
 
 interface FailedPaymentBannerProps {
   visible: boolean;
@@ -67,13 +68,11 @@ export const FailedPaymentBanner = ({ visible }: FailedPaymentBannerProps) => {
           </>
         ) : (
           <>
-            <span className="sm:hidden">
-              Payment issue. Contact your admin.
-            </span>
+            <span className="sm:hidden">Payment issue.</span>
             <span className="hidden sm:inline">
-              Your workspace has a payment issue. Contact your admin to resolve
-              it.
+              Your workspace has a payment issue.
             </span>
+            <NotifyAdminButton variant="inline" context="payment_failed" />
           </>
         )}
       </p>

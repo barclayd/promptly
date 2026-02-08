@@ -1,5 +1,6 @@
 import { IconLock } from '@tabler/icons-react';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
+import { NotifyAdminButton } from './notify-admin-button';
 
 interface ReadOnlyPlanBannerProps {
   onReactivate?: () => void;
@@ -37,9 +38,7 @@ export const ReadOnlyPlanBanner = ({
             </span>
           </button>
         ) : (
-          <span className="text-sm text-amber-700/80 dark:text-amber-300/70">
-            Ask your workspace admin to reactivate Pro.
-          </span>
+          <NotifyAdminButton variant="compact" context="read_only" />
         )}
       </div>
     </div>

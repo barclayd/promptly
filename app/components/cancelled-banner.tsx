@@ -5,6 +5,7 @@ import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { dismissCancelledBanner } from '~/hooks/use-cancelled-banner';
 import { useOrganizationId } from '~/hooks/use-organization-id';
 import { authClient } from '~/lib/auth.client';
+import { NotifyAdminButton } from './notify-admin-button';
 
 const formatDate = (timestamp: number | null): string => {
   if (!timestamp) return '';
@@ -80,7 +81,7 @@ export const CancelledBanner = ({
           </>
         )}
         {!canManageBilling && (
-          <span className="ml-1 opacity-75">Contact your admin</span>
+          <NotifyAdminButton variant="inline" context="cancelled" />
         )}
       </p>
       {canDismiss && (

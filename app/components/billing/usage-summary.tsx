@@ -11,6 +11,7 @@ import { Card, CardContent } from '~/components/ui/card';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useResourceLimits } from '~/hooks/use-resource-limits';
 import { cn } from '~/lib/utils';
+import { NotifyAdminButton } from '../notify-admin-button';
 
 const getBarColor = (percentage: number): string => {
   if (percentage >= 0.8) return 'bg-red-500';
@@ -94,13 +95,18 @@ export const UsageSummary = () => {
           limit={memberLimit}
         />
         <div className="flex flex-col gap-1.5 pt-1">
-          {showContextual && (
-            <p className="text-xs text-amber-500">
-              {canManageBilling
-                ? 'Upgrade to unlock higher limits'
-                : 'Contact your admin for more capacity'}
-            </p>
-          )}
+          {showContextual &&
+            (canManageBilling ? (
+              <p className="text-xs text-amber-500">
+                Upgrade to unlock higher limits
+              </p>
+            ) : (
+              <NotifyAdminButton
+                variant="inline"
+                context="usage_limit"
+                className="ml-0 text-xs text-amber-500"
+              />
+            ))}
           <div className="flex justify-end">
             <Link
               to="/analytics"

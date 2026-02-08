@@ -46,6 +46,8 @@
     "@radix-ui/react-toggle": "^1.1.10",
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@react-email/components": "^1.0.7",
+    "@react-email/render": "^2.0.4",
     "@react-router/serve": "7.13.0",
     "@remix-run/node-fetch-server": "0.13.0",
     "@tabler/icons-react": "^3.36.1",

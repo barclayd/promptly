@@ -21,6 +21,7 @@ import {
 import { authClient } from '~/lib/auth.client';
 import { cn } from '~/lib/utils';
 import { NumberTicker } from './landing/hero-demo/animations/number-ticker';
+import { NotifyAdminButton } from './notify-admin-button';
 import { ArrowUpIcon } from './ui/arrow-up-icon';
 import { Button } from './ui/button';
 import {
@@ -405,14 +406,12 @@ export const WinbackModal = ({
               </span>
             </div>
           ) : (
-            <div
-              className="text-center py-3 px-4 rounded-xl bg-muted/50 ring-1 ring-border/50 opacity-0 animate-fade-in-up"
+            <NotifyAdminButton
+              variant="block"
+              context="winback"
+              className="opacity-0 animate-fade-in-up"
               style={stagger(700, 0)}
-            >
-              <p className="text-sm text-muted-foreground">
-                Ask your workspace admin about upgrading.
-              </p>
-            </div>
+            />
           )}
 
           {/* Secondary CTA */}

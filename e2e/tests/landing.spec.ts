@@ -12,7 +12,7 @@ test('landing page displays for unauthenticated users', async ({ page }) => {
 
   // Should see the navigation (in header)
   const nav = page.getByRole('navigation');
-  await expect(nav.getByRole('link', { name: 'P Promptly' })).toBeVisible();
+  await expect(nav.getByRole('link', { name: 'Promptly' })).toBeVisible();
   await expect(
     page.getByRole('link', { name: 'Start free' }).first(),
   ).toBeVisible();

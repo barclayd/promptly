@@ -8,7 +8,6 @@ import {
   IconFileText,
   IconFolder,
   IconHelp,
-  IconInnerShadowTop,
   IconSearch,
   IconSettings,
   IconUsers,
@@ -148,8 +147,17 @@ export const SidebarLeft = ({
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <NavLink to="/dashboard">
-                <IconInnerShadowTop className="!size-5" />
+              <NavLink to="/dashboard" className="flex items-center gap-2">
+                <img
+                  src="https://images.keepfre.sh/app/icons/promptly/promptly-light.webp"
+                  alt=""
+                  className="!size-7 dark:hidden"
+                />
+                <img
+                  src="https://images.keepfre.sh/app/icons/promptly/promptly.webp"
+                  alt=""
+                  className="!size-7 hidden dark:block"
+                />
                 <span className="text-base font-semibold">Promptly</span>
               </NavLink>
             </SidebarMenuButton>

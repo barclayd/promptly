@@ -11,6 +11,7 @@ import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useResourceLimits } from '~/hooks/use-resource-limits';
 import { authClient } from '~/lib/auth.client';
 import { cn } from '~/lib/utils';
+import { NotifyAdminButton } from './notify-admin-button';
 import { ArrowUpIcon } from './ui/arrow-up-icon';
 import { Button } from './ui/button';
 import {
@@ -253,11 +254,7 @@ export const UpgradeGateModal = ({
               </span>
             </div>
           ) : (
-            <div className="text-center py-2 px-3 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">
-                Ask your workspace admin to upgrade to Pro.
-              </p>
-            </div>
+            <NotifyAdminButton variant="block" context="prompt_limit" />
           )}
           <Button
             variant="ghost"
