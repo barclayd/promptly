@@ -1,4 +1,5 @@
 import { render } from '@react-email/render';
+import { InvitationEmail } from '../app/emails/invitation';
 import { UpgradeConfirmedEmail } from '../app/emails/upgrade-confirmed';
 import { UpgradeRequestEmail } from '../app/emails/upgrade-request';
 
@@ -27,9 +28,21 @@ const upgradeConfirmedHtml = await render(
   }),
 );
 
+const invitationHtml = await render(
+  InvitationEmail({
+    inviterName: 'Daniel Barclay',
+    inviterEmail: 'daniel@acme.com',
+    organizationName: 'Acme Corp',
+    role: 'member',
+    inviteLink: 'https://app.promptlycms.com/invite/abc123',
+  }),
+);
+
 await Bun.write('/tmp/email-upgrade-request.html', upgradeRequestHtml);
 await Bun.write('/tmp/email-upgrade-confirmed.html', upgradeConfirmedHtml);
+await Bun.write('/tmp/email-invitation.html', invitationHtml);
 
 console.log('Wrote email previews:');
 console.log('  /tmp/email-upgrade-request.html');
 console.log('  /tmp/email-upgrade-confirmed.html');
+console.log('  /tmp/email-invitation.html');

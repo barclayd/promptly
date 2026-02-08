@@ -3,6 +3,7 @@ import {
   Container,
   Head,
   Html,
+  Img,
   Preview,
   Section,
   Text,
@@ -21,6 +22,13 @@ export const EmailLayout = ({ preview, children }: EmailLayoutProps) => (
       <Container style={container}>
         {/* Header */}
         <Section style={header}>
+          <Img
+            src="https://images.keepfre.sh/app/icons/promptly/promptly.png"
+            alt="Promptly"
+            width={80}
+            height={80}
+            style={headerLogo}
+          />
           <Text style={headerText}>Promptly</Text>
         </Section>
 
@@ -57,6 +65,11 @@ const header: React.CSSProperties = {
   padding: '32px',
   textAlign: 'center' as const,
   borderRadius: '12px 12px 0 0',
+};
+
+const headerLogo: React.CSSProperties = {
+  margin: '0 auto 12px',
+  display: 'block',
 };
 
 const headerText: React.CSSProperties = {
