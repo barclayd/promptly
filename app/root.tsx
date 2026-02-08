@@ -105,8 +105,27 @@ export const shouldRevalidate = ({
   return false;
 };
 
+const CDN = 'https://images.keepfre.sh/app/icons/promptly/';
+
 export const links: Route.LinksFunction = () => [
-  { rel: 'icon', href: '/favicon.ico' },
+  {
+    rel: 'icon',
+    href: `${CDN}light-favicon.ico`,
+    sizes: '32x32',
+    media: '(prefers-color-scheme: light)',
+  },
+  {
+    rel: 'icon',
+    href: `${CDN}favicon.ico`,
+    sizes: '32x32',
+    media: '(prefers-color-scheme: dark)',
+  },
+  {
+    rel: 'apple-touch-icon',
+    href: `${CDN}apple-touch-icon.png`,
+    sizes: '180x180',
+  },
+  { rel: 'manifest', href: `${CDN}site.webmanifest` },
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
   {
     rel: 'preconnect',

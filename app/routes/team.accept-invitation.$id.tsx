@@ -1,4 +1,4 @@
-import { IconCheck, IconInnerShadowTop, IconX } from '@tabler/icons-react';
+import { IconCheck, IconX } from '@tabler/icons-react';
 import { data, Form, redirect, useNavigation } from 'react-router';
 import { Button } from '~/components/ui/button';
 import { getAuth } from '~/lib/auth.server';
@@ -177,7 +177,16 @@ const AcceptInvitation = ({ loaderData, actionData }: Route.ComponentProps) => {
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <div className="flex items-center gap-2 text-foreground">
-            <IconInnerShadowTop className="size-8" />
+            <img
+              src="https://images.keepfre.sh/app/icons/promptly/promptly-light.webp"
+              alt=""
+              className="size-8 dark:hidden"
+            />
+            <img
+              src="https://images.keepfre.sh/app/icons/promptly/promptly.webp"
+              alt=""
+              className="size-8 hidden dark:block"
+            />
             <span className="text-xl font-semibold">Promptly</span>
           </div>
         </div>

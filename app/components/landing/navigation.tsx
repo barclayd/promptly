@@ -69,9 +69,16 @@ export const Navigation = ({ isAuthenticated = false }: NavigationProps) => {
           <nav className="flex h-16 items-center justify-between">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 group">
-              <div className="relative size-8 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:shadow-indigo-500/40 transition-shadow">
-                <span className="text-white font-bold text-sm">P</span>
-              </div>
+              <img
+                src="https://images.keepfre.sh/app/icons/promptly/promptly-light.webp"
+                alt=""
+                className="size-8 dark:hidden"
+              />
+              <img
+                src="https://images.keepfre.sh/app/icons/promptly/promptly.webp"
+                alt=""
+                className="size-8 hidden dark:block"
+              />
               <span className="font-semibold text-lg tracking-tight">
                 Promptly
               </span>
@@ -175,9 +182,16 @@ export const Navigation = ({ isAuthenticated = false }: NavigationProps) => {
                   : 'opacity-0 -translate-x-4',
               )}
             >
-              <div className="relative size-8 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-                <span className="text-white font-bold text-sm">P</span>
-              </div>
+              <img
+                src="https://images.keepfre.sh/app/icons/promptly/promptly-light.webp"
+                alt=""
+                className="size-8 dark:hidden"
+              />
+              <img
+                src="https://images.keepfre.sh/app/icons/promptly/promptly.webp"
+                alt=""
+                className="size-8 hidden dark:block"
+              />
               <span className="font-semibold text-lg tracking-tight">
                 Promptly
               </span>
