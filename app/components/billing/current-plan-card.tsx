@@ -435,11 +435,12 @@ export const CurrentPlanCard = () => {
               </div>
             )}
             {status === 'past_due' && (
-              <div className="flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-900/10 px-4 py-3">
-                <IconAlertTriangle className="size-4 text-red-500 shrink-0" />
-                <span className="text-sm text-red-700 dark:text-red-300">
-                  Your payment method needs to be updated to avoid service
-                  interruption.
+              <div className="flex items-center justify-between rounded-lg bg-red-50 dark:bg-red-900/10 px-4 py-3">
+                <span className="text-sm text-muted-foreground">
+                  Last payment
+                </span>
+                <span className="text-sm font-medium text-red-600 dark:text-red-400">
+                  Failed
                 </span>
               </div>
             )}

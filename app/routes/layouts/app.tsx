@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router';
 import { CancelledBanner } from '~/components/cancelled-banner';
+import { FailedPaymentBanner } from '~/components/failed-payment-banner';
 import { MidTrialNudgeDrawer } from '~/components/mid-trial-nudge-drawer';
 import { SidebarLeft } from '~/components/sidebar-left';
 import { SiteHeader } from '~/components/site-header';
@@ -12,6 +13,7 @@ import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 import { UsageThresholdDrawer } from '~/components/usage-threshold-drawer';
 import { useCancelledBanner } from '~/hooks/use-cancelled-banner';
 import { useMidTrialNudge } from '~/hooks/use-mid-trial-nudge';
+import { useSubscription } from '~/hooks/use-subscription';
 import { useTrialExpired } from '~/hooks/use-trial-expired';
 import { useTrialExpiryModal } from '~/hooks/use-trial-expiry-modal';
 import { useUsageThresholdNudge } from '~/hooks/use-usage-threshold-nudge';
@@ -43,6 +45,9 @@ export default function AppLayout() {
     periodEnd: cancelledPeriodEnd,
     canDismiss: cancelledCanDismiss,
   } = useCancelledBanner();
+
+  const { subscription } = useSubscription();
+  const isPastDue = subscription?.status === 'past_due';
 
   const {
     visible: thresholdVisible,
@@ -91,6 +96,7 @@ export default function AppLayout() {
       <SidebarLeft variant="inset" />
       <SidebarInset className="min-h-svh">
         <div className="sticky top-0 z-50">
+          <FailedPaymentBanner visible={isPastDue} />
           <TrialBanner />
           <TrialExpiredBanner
             visible={expiredBannerVisible}
