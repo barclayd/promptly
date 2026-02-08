@@ -5,16 +5,18 @@ import { ROUTES } from '../helpers/test-data';
 // We avoid describe blocks to reduce cognitive load and nesting.
 // See: https://kentcdodds.com/blog/avoid-nesting-when-youre-testing
 
-test('analytics page shows coming soon message', async ({
-  authenticatedPage,
-}) => {
+test('analytics page shows usage dashboard', async ({ authenticatedPage }) => {
   await authenticatedPage.goto(ROUTES.analytics);
   await authenticatedPage.waitForLoadState('networkidle');
   await expect(authenticatedPage).toHaveURL(ROUTES.analytics);
 
-  // Verify placeholder message is visible
+  // Verify usage dashboard heading and meters are visible
   await expect(
-    authenticatedPage.getByText(/analytics coming soon/i),
+    authenticatedPage.getByRole('heading', { name: /analytics/i }),
+  ).toBeVisible();
+  await expect(authenticatedPage.getByText(/prompts/i).first()).toBeVisible();
+  await expect(
+    authenticatedPage.getByText(/team members/i).first(),
   ).toBeVisible();
 });
 

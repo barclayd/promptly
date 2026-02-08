@@ -1,10 +1,14 @@
-import { IconUserPlus } from '@tabler/icons-react';
+import { IconTrendingUp, IconUserPlus } from '@tabler/icons-react';
+import { useState } from 'react';
 import { InviteMemberDialog } from '~/components/invite-member-dialog';
 import { PendingInvitationsTable } from '~/components/pending-invitations-table';
 import { TeamEmptyState } from '~/components/team-empty-state';
 import { TeamMembersTable } from '~/components/team-members-table';
 import { Button } from '~/components/ui/button';
+import { UpgradeGateModal } from '~/components/upgrade-gate-modal';
 import { orgContext, userContext } from '~/context';
+import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
+import { useSubscription } from '~/hooks/use-subscription';
 import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/team';
 
@@ -148,11 +152,23 @@ const Team = ({ loaderData }: Route.ComponentProps) => {
     pendingInvitations,
   } = loaderData;
 
+  const { subscription } = useSubscription();
+  const { canManageBilling } = useCanManageBilling();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
   const hasOtherMembers = otherMembers.length > 0;
   const hasPendingInvitations = pendingInvitations.length > 0;
 
   // Show empty state only if no other members AND no pending invitations
   const showEmptyState = !hasOtherMembers && !hasPendingInvitations;
+
+  // Show upgrade button for admin/owner when not on active Pro
+  const showUpgradeButton =
+    canManageBilling &&
+    (!subscription ||
+      subscription.status === 'expired' ||
+      subscription.status === 'canceled' ||
+      subscription.status === 'trialing');
 
   return (
     <div className="flex flex-1 flex-col">
@@ -168,12 +184,24 @@ const Team = ({ loaderData }: Route.ComponentProps) => {
                 </p>
               </div>
               {!showEmptyState && (
-                <InviteMemberDialog>
-                  <Button className="gap-2 shadow-sm">
-                    <IconUserPlus className="size-4" />
-                    Invite Members
-                  </Button>
-                </InviteMemberDialog>
+                <div className="flex items-center gap-2">
+                  {showUpgradeButton && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowUpgradeModal(true)}
+                      className="gap-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50 dark:text-indigo-400 dark:border-indigo-500/30 dark:hover:bg-indigo-500/10"
+                    >
+                      <IconTrendingUp className="size-4" />
+                      Upgrade
+                    </Button>
+                  )}
+                  <InviteMemberDialog>
+                    <Button className="gap-2 shadow-sm">
+                      <IconUserPlus className="size-4" />
+                      Invite Members
+                    </Button>
+                  </InviteMemberDialog>
+                </div>
               )}
             </div>
 
@@ -206,6 +234,11 @@ const Team = ({ loaderData }: Route.ComponentProps) => {
           </div>
         </div>
       </div>
+      <UpgradeGateModal
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+        resource="team"
+      />
     </div>
   );
 };

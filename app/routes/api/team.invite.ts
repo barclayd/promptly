@@ -2,6 +2,7 @@ import { data, redirect } from 'react-router';
 import { z } from 'zod';
 import { orgContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
+import { getSubscriptionStatus } from '~/lib/subscription.server';
 import { inviteMemberSchema } from '~/lib/validations/team';
 import type { Route } from './+types/team.invite';
 
@@ -39,6 +40,28 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       { errors: { _form: ['No organization found'] } },
       { status: 400 },
     );
+  }
+
+  // Check team member limit
+  const db = context.cloudflare.env.promptly;
+  const subscription = await getSubscriptionStatus(db, org.organizationId);
+  if (subscription.limits.teamMembers !== -1) {
+    const countResult = await db
+      .prepare('SELECT COUNT(*) as count FROM member WHERE organization_id = ?')
+      .bind(org.organizationId)
+      .first<{ count: number }>();
+    const currentCount = countResult?.count ?? 0;
+    if (currentCount >= subscription.limits.teamMembers) {
+      return data(
+        {
+          limitExceeded: true,
+          resource: 'team' as const,
+          current: currentCount,
+          limit: subscription.limits.teamMembers,
+        },
+        { status: 403 },
+      );
+    }
   }
 
   try {

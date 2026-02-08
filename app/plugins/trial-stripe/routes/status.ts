@@ -33,9 +33,11 @@ export const statusEndpoint = (options: TrialStripePluginOptions) =>
           plan: options.freePlan.name,
           status: 'expired' as const,
           isTrial: false,
+          hadTrial: false,
           daysLeft: null,
           limits: options.freePlan.limits,
           cancelAtPeriodEnd: false,
+          periodEnd: null,
         });
       }
 
@@ -61,9 +63,11 @@ export const statusEndpoint = (options: TrialStripePluginOptions) =>
           plan: options.freePlan.name,
           status: 'expired' as const,
           isTrial: false,
+          hadTrial: true,
           daysLeft: null,
           limits: options.freePlan.limits,
           cancelAtPeriodEnd: false,
+          periodEnd: null,
         });
       }
 
@@ -85,9 +89,11 @@ export const statusEndpoint = (options: TrialStripePluginOptions) =>
         plan: subscription.plan,
         status: subscription.status,
         isTrial,
+        hadTrial: true,
         daysLeft,
         limits,
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd === 1,
+        periodEnd: subscription.periodEnd ?? null,
       });
     },
   );

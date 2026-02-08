@@ -7,6 +7,7 @@ import {
   type SidebarRightHandle,
 } from '~/components/sidebar-right';
 import { SiteHeader } from '~/components/site-header';
+import { TrialBanner } from '~/components/trial-banner';
 import {
   type LayoutStorage,
   ResizableHandle,
@@ -28,6 +29,7 @@ type PromptDetailLoaderData = {
   inputData: unknown;
   inputDataRootName: string | null;
   isViewingOldVersion?: boolean;
+  isReadOnlyDueToLimit?: boolean;
 };
 
 const LAYOUT_COOKIE_NAME = 'panel-layout';
@@ -69,6 +71,8 @@ export default function PromptDetailLayout() {
   const inputData = promptDetailData?.inputData ?? {};
   const inputDataRootName = promptDetailData?.inputDataRootName ?? null;
   const isViewingOldVersion = promptDetailData?.isViewingOldVersion ?? false;
+  const isReadOnlyDueToLimit = promptDetailData?.isReadOnlyDueToLimit ?? false;
+  const isReadonly = isViewingOldVersion || isReadOnlyDueToLimit;
 
   // Ref for external control of SidebarRight (trigger test, get streaming state)
   const sidebarRightRef = useRef<SidebarRightHandle>(null);
@@ -97,7 +101,10 @@ export default function PromptDetailLayout() {
       {isMobile ? (
         <div className="flex flex-1 flex-col min-h-svh overflow-x-hidden">
           <SidebarInset className="flex-1">
-            <SiteHeader promptId={params.promptId} />
+            <div className="sticky top-0 z-50">
+              <TrialBanner />
+              <SiteHeader promptId={params.promptId} />
+            </div>
             <Outlet
               key={params.promptId}
               context={{
@@ -116,7 +123,7 @@ export default function PromptDetailLayout() {
               temperature={temperature}
               inputData={inputData}
               inputDataRootName={inputDataRootName}
-              isReadonly={isViewingOldVersion}
+              isReadonly={isReadonly}
             />
           </div>
         </div>
@@ -134,6 +141,7 @@ export default function PromptDetailLayout() {
             className="h-full overflow-hidden"
           >
             <SidebarInset className="h-full flex flex-col">
+              <TrialBanner />
               <SiteHeader promptId={params.promptId} />
               <div className="flex-1 overflow-y-auto">
                 <Outlet
@@ -162,7 +170,7 @@ export default function PromptDetailLayout() {
               temperature={temperature}
               inputData={inputData}
               inputDataRootName={inputDataRootName}
-              isReadonly={isViewingOldVersion}
+              isReadonly={isReadonly}
             />
           </ResizablePanel>
         </ResizablePanelGroup>

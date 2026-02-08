@@ -24,16 +24,18 @@ Research shows a 3-phase approach maximizes conversion while maintaining trust:
 #### Phase 1: Calm (Days 14-8)
 - **Shown**: Only during the first week of trial
 - **Style**: Subtle blue/neutral background, thin (36px height)
-- **Copy**: `You have X days left on your Pro trial.`
-- **CTA**: `Learn more` (links to billing page)
+- **Copy**: `Your workspace has X days left on your Pro trial.`
+- **CTA (admins/owners)**: `Learn more` (links to billing page)
+- **CTA (regular members)**: `Learn more` (links to billing page, read-only view)
 - **Dismissible**: Yes (dismiss for session, reappears next visit)
 - **Rationale**: Awareness only -- users are still exploring the product. Don't push.
 
 #### Phase 2: Warning (Days 7-3)
 - **Shown**: Second week of trial
 - **Style**: Amber/yellow background, slightly taller (44px)
-- **Copy**: `Your Pro trial ends in X days. Upgrade to keep unlimited prompts.`
-- **CTA**: `Upgrade to Pro` (primary button style)
+- **Copy**: `Your workspace's Pro trial ends in X days. Upgrade to keep unlimited prompts.`
+- **CTA (admins/owners)**: `Upgrade to Pro` (primary button style)
+- **CTA (regular members)**: `Request upgrade` (sends notification to org admin)
 - **Dismissible**: Yes (reappears next session)
 - **Rationale**: User has had time to experience value. Start making the loss tangible.
 
@@ -41,18 +43,19 @@ Research shows a 3-phase approach maximizes conversion while maintaining trust:
 - **Shown**: Final 48 hours
 - **Style**: Red/destructive background (44px)
 - **Copy variants**:
-  - 2 days: `Your trial ends in 2 days. You'll move to the Free plan with 3 prompts and 1 team member.`
-  - 1 day: `Your trial ends tomorrow. Your team will move to the Free plan.`
-  - Last day: `Your Pro trial ends today.`
-- **CTA**: `Upgrade to Pro`
+  - 2 days: `Your workspace's trial ends in 2 days. Your workspace will move to the Free plan with 3 prompts and 1 team member.`
+  - 1 day: `Your workspace's trial ends tomorrow. Your workspace will move to the Free plan.`
+  - Last day: `Your workspace's Pro trial ends today.`
+- **CTA (admins/owners)**: `Upgrade to Pro`
+- **CTA (regular members)**: `Ask your admin to upgrade` (sends notification to org admin)
 - **Dismissible**: No
 - **Rationale**: Maximum urgency. Loss framing with specific consequences.
 
 ### When NOT to Show
-- User has `status: 'active'` (already paid)
-- User has `status: 'expired'` (show Feature #07 banner instead)
-- User has `status: 'canceled'` with `cancelAtPeriodEnd: true` (show Feature #11 banner instead)
-- User has no subscription (invited user on someone else's plan)
+- Organization has `status: 'active'` (already paid)
+- Organization has `status: 'expired'` (show Feature #07 banner instead)
+- Organization has `status: 'canceled'` with `cancelAtPeriodEnd: true` (show Feature #11 banner instead)
+- Organization has no subscription record (this can happen if the org was created before Stripe integration or in edge cases -- treat as free plan, do not show trial banner)
 
 ## CTA Copy Rationale
 - **"Upgrade to Pro"** is the clearest, most tested CTA across developer tools (Vercel, Linear, Supabase all use it)
@@ -74,6 +77,8 @@ Phase 2 (warning): Dismiss persists for current session, reappears next session
 Phase 3 (urgent): Not dismissible
 ```
 
+> **Important -- org-scoped dismiss keys**: All dismiss state keys stored in `sessionStorage` or `localStorage` must include the `${orgId}` as a suffix (e.g., `trial-banner-dismissed-${orgId}`). Users who belong to multiple orgs must see the banner independently per workspace.
+
 ## Key Implementation Notes
 - Use `useSubscription()` hook
 - Calculate phase from `daysLeft` value
@@ -87,8 +92,27 @@ Phase 3 (urgent): Not dismissible
 ## Files to Modify
 - `app/routes/layouts/app.tsx` -- Add `<TrialBanner />` above `<SiteHeader />`
 
+## CRITICAL: Role-Based CTA Visibility
+
+The banner CTA **must** adapt based on the current user's role within the organization:
+
+| Role | Phase 1 CTA | Phase 2 CTA | Phase 3 CTA |
+|------|-------------|-------------|-------------|
+| Owner/Admin | `Learn more` | `Upgrade to Pro` | `Upgrade to Pro` |
+| Member | `Learn more` | `Request upgrade` | `Ask your admin to upgrade` |
+
+Use the `useCanManageBilling()` hook (shared with all billing UI) to determine which variant to render. The "Request upgrade" flow should send a notification (in-app or email) to the org owner/admin, creating bottom-up conversion pressure within teams.
+
 ## Conversion Research
 - Countdown banners with specific dates/days convert 9% better than vague "ending soon" messaging
 - Loss-framed copy ("You'll move to Free") converts 21% better than gain-framed ("Upgrade for more features")
 - 3-phase escalation prevents banner fatigue while maintaining urgency when it matters
 - Non-dismissible banners in the final 48 hours increase conversion by ~15% vs always-dismissible
+
+## B2B Best Practices
+- **"Request Upgrade" flow for non-admin members**: This is critical for B2B conversion. Team members who hit friction points should be able to signal the need to their admin with a single click. This creates organic bottom-up conversion pressure that is far more effective than top-down marketing.
+- **Personalized value metrics in banner copy**: Where possible, enrich banner copy with real usage data: "Your team created 24 prompts this week -- upgrade to keep them all." This reinforces the value already realized and makes the loss more tangible.
+- **Discount/incentive in Phase 3**: Consider offering a limited-time discount in the final-day Phase 3 banner for admin users (e.g., "Upgrade today and get 20% off your first month"). This creates a secondary urgency mechanism beyond just the trial ending.
+- **Hybrid behavioral + calendar triggers**: The 3-phase model is calendar-based. Layer in behavioral triggers too -- e.g., if the org hits 3/3 prompts used during Phase 1, escalate to Phase 2 copy early. Behavioral friction is a stronger conversion signal than time alone.
+- **Expandable "what you'll lose" comparison in Phase 3**: Add an expandable section or tooltip in Phase 3 that shows a brief comparison of what the org currently has on Pro vs. what they'll have on Free. Concrete comparisons outperform vague statements.
+- **Email complement**: Reference a companion email plan for org admins (trial mid-point summary, 3-day warning, expiry notification). In-app banners are seen only by active users; admins who haven't logged in recently need email nudges.

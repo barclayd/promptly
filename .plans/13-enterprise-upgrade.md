@@ -66,7 +66,7 @@ Form data sent via email or stored in D1 for follow-up.
 Option A is zero-effort and captures the same intent. Upgrade to a form when enterprise inquiries are frequent enough to warrant it.
 
 ## In-App Upsell Trigger
-When a Pro user hits Pro limits (5 team members, 50,000 API calls), the upgrade gate modal (Feature #04) should include an enterprise mention:
+When a Pro workspace hits Pro limits (5 team members, 50,000 API calls), the upgrade gate modal (Feature #04) should include an enterprise mention:
 
 ```
 "Need more than 5 team members?"
@@ -75,10 +75,21 @@ When a Pro user hits Pro limits (5 team members, 50,000 API calls), the upgrade 
 
 This is a subtle addition to the existing upgrade gate -- just an extra line of text and a link at the bottom of the modal.
 
+## Enterprise Card Visibility
+The Enterprise card on the billing page should be visible to all org members (it serves as pricing anchoring for everyone). However, CTA behavior varies by role:
+- **Owners/Admins**: "Talk to us" opens the contact form/mailto directly
+- **Regular members**: "Talk to us" could still be available (members may champion enterprise internally), but consider adding "or ask your workspace admin" subtext
+
+## Contact Form Pre-Fill
+The contact form (Option B) should pre-fill from the active org context:
+- **Company name**: Pre-fill with current organization name
+- **Email**: Pre-fill with current user's email
+- **Organization usage stats**: Show current usage next to enterprise features for urgency (e.g., "Your workspace: 5/5 members, 42,000/50,000 API calls")
+
 ## Key Implementation Notes
 - Enterprise card is purely informational -- no Stripe integration needed
 - Feature list should include items that differentiate from Pro (SSO, SAML, etc.) even if they don't exist yet -- this is aspirational
-- "Coming soon" badges on unbuilt features are fine and signal an active roadmap
+- Use "Coming soon" badges **only for features genuinely on the roadmap**. Do not badge features with no intent to build -- this erodes trust if users follow up
 
 ## Files to Modify
 - `app/routes/settings.tsx` -- Add enterprise card to plan comparison in billing section
@@ -89,3 +100,50 @@ This is a subtle addition to the existing upgrade gate -- just an extra line of 
 - **Aspirational signaling**: Listing SSO, SAML, and SLA signals that Promptly is a serious, enterprise-ready product -- even to users who don't need enterprise features.
 - **Lead generation**: Every enterprise inquiry is a high-value sales lead. Even a mailto link captures intent.
 - **Decoy effect**: Enterprise as the "aspirational but out of reach" option makes Pro feel like the smart, practical choice.
+
+## B2B Best Practices
+
+### Interactive Pricing Instead of Blank "Custom Pricing"
+"Custom pricing" with no context is a conversion friction point. Consider one of these alternatives:
+- **"Starting at $X/seat/month"** range to set expectations
+- **Interactive pricing calculator** where users input team size and see an estimate
+- **"From $199/month for teams of 10+"** -- a concrete anchor is better than no anchor
+
+### Social Proof on Enterprise Tier
+Add social proof elements to the enterprise card:
+- Company logos (even 2-3) or "Trusted by X teams"
+- "Join teams from [industry] using Promptly Enterprise"
+- Testimonial snippet if available
+
+### Feature Comparison Table Format
+Instead of a bullet list per plan, use a full comparison table with Free | Pro | Enterprise columns. This format:
+- Makes feature differences instantly scannable
+- Highlights the value gap between tiers
+- Is the industry standard (Notion, Linear, Vercel all use this format)
+- Can include checkmarks, limits, and "Unlimited" badges
+
+### Additional Contact Form Fields
+When upgrading to Option B (form modal), include:
+- **Primary use case** (dropdown: Prompt management, Multi-team collaboration, API distribution, Compliance/audit)
+- **Current tooling** (text input: "What are you using today?")
+- **Timeline** (dropdown: Evaluating now, Next quarter, Next 6 months)
+
+These fields qualify leads and help prioritize follow-up.
+
+### In-App Triggers Beyond Limit-Hitting
+Don't wait for users to hit hard limits. Proactively surface enterprise messaging on these signals:
+- **Team growth**: When the 4th or 5th member is added (approaching the 5-member Pro limit)
+- **API usage spike**: When API usage crosses 80% of the Pro limit
+- **Repeated billing page visits**: 3+ visits to billing in a month suggests evaluation activity
+- **10+ published versions**: High publishing velocity suggests a mature, serious use case
+
+### Dedicated `/enterprise` Landing Page (Future Enhancement)
+As a future addition, create a dedicated `/enterprise` page that the "Talk to us" CTA can link to. This page would include:
+- Full feature breakdown
+- Security/compliance details
+- Case studies
+- Contact form with richer qualification fields
+- FAQ specific to enterprise buyers
+
+### Consider a "Team" Tier
+For teams of 5-20 members, there's a gap between Pro ($29/mo, 5 members) and Enterprise (custom). A "Team" tier at ~$99-149/mo with 20 members, higher API limits, and priority support could capture this segment without requiring a sales conversation. This is the fastest-growing segment in B2B SaaS.

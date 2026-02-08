@@ -10,9 +10,11 @@ const FREE_STATUS: SubscriptionStatus = {
   plan: 'free',
   status: 'expired',
   isTrial: false,
+  hadTrial: false,
   daysLeft: null,
   limits: PLAN_LIMITS.free,
   cancelAtPeriodEnd: false,
+  periodEnd: null,
 };
 
 interface SubscriptionRow {
@@ -20,6 +22,7 @@ interface SubscriptionRow {
   plan: string;
   status: string;
   trial_end: number | null;
+  period_end: number | null;
   cancel_at_period_end: number;
 }
 
@@ -29,7 +32,7 @@ export const getSubscriptionStatus = async (
 ): Promise<SubscriptionStatus> => {
   const row = await db
     .prepare(
-      'SELECT id, plan, status, trial_end, cancel_at_period_end FROM subscription WHERE organization_id = ? LIMIT 1',
+      'SELECT id, plan, status, trial_end, period_end, cancel_at_period_end FROM subscription WHERE organization_id = ? LIMIT 1',
     )
     .bind(organizationId)
     .first<SubscriptionRow>();
@@ -47,7 +50,7 @@ export const getSubscriptionStatus = async (
       .bind('expired', 'free', now, row.id)
       .run();
 
-    return FREE_STATUS;
+    return { ...FREE_STATUS, hadTrial: true };
   }
 
   const isTrial = row.status === 'trialing';
@@ -65,8 +68,56 @@ export const getSubscriptionStatus = async (
     plan: row.plan,
     status: row.status as SubscriptionStatus['status'],
     isTrial,
+    hadTrial: true,
     daysLeft,
     limits,
     cancelAtPeriodEnd: row.cancel_at_period_end === 1,
+    periodEnd: row.period_end ?? null,
   };
+};
+
+export interface ResourceCounts {
+  promptCount: number;
+  memberCount: number;
+}
+
+export const getResourceCounts = async (
+  db: D1Database,
+  organizationId: string,
+): Promise<ResourceCounts> => {
+  const [promptResult, memberResult] = await Promise.all([
+    db
+      .prepare(
+        'SELECT COUNT(*) as count FROM prompt WHERE organization_id = ? AND deleted_at IS NULL',
+      )
+      .bind(organizationId)
+      .first<{ count: number }>(),
+    db
+      .prepare('SELECT COUNT(*) as count FROM member WHERE organization_id = ?')
+      .bind(organizationId)
+      .first<{ count: number }>(),
+  ]);
+
+  return {
+    promptCount: promptResult?.count ?? 0,
+    memberCount: memberResult?.count ?? 0,
+  };
+};
+
+export type MemberRole = 'owner' | 'admin' | 'member' | null;
+
+export const getMemberRole = async (
+  db: D1Database,
+  userId: string,
+  organizationId: string,
+): Promise<MemberRole> => {
+  const row = await db
+    .prepare(
+      'SELECT role FROM member WHERE user_id = ? AND organization_id = ? LIMIT 1',
+    )
+    .bind(userId, organizationId)
+    .first<{ role: string }>();
+
+  if (!row) return null;
+  return row.role as MemberRole;
 };

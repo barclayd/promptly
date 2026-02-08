@@ -1,3 +1,4 @@
+import type { ShouldRevalidateFunctionArgs } from 'react-router';
 import {
   isRouteErrorResponse,
   Links,
@@ -17,7 +18,11 @@ import { orgContext, sessionContext } from '~/context';
 import { RecentsProvider } from '~/context/recents-context';
 import { SearchProvider } from '~/context/search-context';
 import { parseCookie } from '~/lib/cookies';
-import { getSubscriptionStatus } from '~/lib/subscription.server';
+import {
+  getMemberRole,
+  getResourceCounts,
+  getSubscriptionStatus,
+} from '~/lib/subscription.server';
 import { authMiddleware } from '~/middleware/auth';
 import { orgMiddleware } from '~/middleware/org';
 import { themeSessionResolver } from '~/sessions.server';
@@ -42,16 +47,29 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   // Get theme from cookie session
   const { getTheme } = await themeSessionResolver(request);
 
-  // Fetch subscription status for the active org (orgContext may not be set on public routes)
+  // Fetch subscription status and member role for the active org
+  // (orgContext may not be set on public routes)
   let subscription = null;
+  let memberRole = null;
+  let resourceCounts = null;
+  let organizationId: string | null = null;
   try {
     const org = context.get(orgContext);
-    subscription = await getSubscriptionStatus(
-      context.cloudflare.env.promptly,
-      org.organizationId,
-    );
+    organizationId = org.organizationId;
+    const db = context.cloudflare.env.promptly;
+    const userId = session?.user?.id;
+
+    const results = await Promise.all([
+      getSubscriptionStatus(db, organizationId),
+      userId ? getMemberRole(db, userId, organizationId) : null,
+      getResourceCounts(db, organizationId),
+    ]);
+
+    subscription = results[0];
+    memberRole = results[1];
+    resourceCounts = results[2];
   } catch {
-    // No org context (public route or unauthenticated) — subscription stays null
+    // No org context (public route or unauthenticated) — defaults stay null
   }
 
   return {
@@ -59,7 +77,32 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     user: session?.user ?? null,
     theme: getTheme(),
     subscription,
+    memberRole,
+    resourceCounts,
+    organizationId,
   };
+};
+
+export const shouldRevalidate = ({
+  formAction,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs): boolean => {
+  // No form action = normal navigation → use default (revalidate)
+  // This ensures lazy trial expiration runs on page transitions
+  if (!formAction) return defaultShouldRevalidate;
+
+  // Only revalidate after actions that could change subscription/role/resource data
+  if (
+    formAction.includes('/subscription/') ||
+    formAction.includes('/api/auth/') ||
+    formAction.includes('/team/') ||
+    formAction.includes('/api/prompts/')
+  ) {
+    return true;
+  }
+
+  // Skip revalidation for all other actions (prompt saves, tests, etc.)
+  return false;
 };
 
 export const links: Route.LinksFunction = () => [

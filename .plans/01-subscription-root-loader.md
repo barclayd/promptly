@@ -1,4 +1,6 @@
-.# 01: Subscription Data in Root Loader
+# 01: Subscription Data in Root Loader
+
+> **STATUS: COMPLETED** -- Implemented in the org-level migration. See `app/root.tsx` and `app/lib/subscription.server.ts`.
 
 ## Summary
 Wire up subscription status data into the root loader so that `useSubscription()` works everywhere in the app. This is the **foundation** for every other subscription UI feature.
@@ -11,7 +13,18 @@ Wire up subscription status data into the root loader so that `useSubscription()
 - The root loader in `app/root.tsx` does NOT currently fetch subscription data
 - The `trial-stripe` plugin exposes `GET /api/auth/subscription/status`
 
-## Implementation
+## What Was Actually Implemented
+
+- Root loader fetches subscription via **direct D1 query** (not internal HTTP endpoint) using `getSubscriptionStatus(db, org.organizationId)`
+- Uses `orgContext` from middleware (not `activeOrganizationId` from session) -- this correctly ties subscription to the current organization
+- Wrapped in `try/catch` to handle public routes where org context is not set (returns `null` gracefully)
+- Returns `subscription` in loader data alongside `user`, `theme`, `serverLayoutCookie`
+- `memberRole` fetched concurrently via `getMemberRole()` in `Promise.all`
+- `periodEnd` added to `SubscriptionStatus` type, D1 query, and status endpoint
+- `canManageBilling` implemented as client-side hook `useCanManageBilling()` at `app/hooks/use-can-manage-billing.ts`
+- `shouldRevalidate` optimization added to skip root loader revalidation after fetcher/form actions that don't affect subscription or role data (prompt saves, test runs, etc.), while keeping default revalidation for navigation to preserve lazy trial expiration
+
+## Original Implementation Plan
 
 ### What to Do
 1. In `app/root.tsx` loader, after fetching the session/user, call the subscription status endpoint

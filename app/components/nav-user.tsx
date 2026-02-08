@@ -7,11 +7,12 @@ import {
   IconLogout,
   IconMoon,
   IconNotification,
+  IconSparkles,
   IconSun,
   IconUserCircle,
 } from '@tabler/icons-react';
-import { useFetcher } from 'react-router';
-
+import { useState } from 'react';
+import { NavLink, useFetcher } from 'react-router';
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 import {
   DropdownMenu,
@@ -34,13 +35,15 @@ import {
   useSidebar,
 } from '~/components/ui/sidebar';
 import { type ThemeValue, useTheme } from '~/hooks/use-dark-mode';
+import { useSubscription } from '~/hooks/use-subscription';
+import { UpgradeGateModal } from './upgrade-gate-modal';
 
 const getUserInitials = (name: string) => {
   const initials = name.split(' ');
   return initials.map((initial) => initial[0]).join('');
 };
 
-export function NavUser({
+export const NavUser = ({
   user,
 }: {
   user: {
@@ -48,10 +51,18 @@ export function NavUser({
     email: string;
     avatar: string;
   };
-}) {
+}) => {
   const { isMobile } = useSidebar();
   const fetcher = useFetcher();
   const { theme, isDark, setTheme } = useTheme();
+  const { subscription } = useSubscription();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  const showUpgrade =
+    !subscription ||
+    subscription.status === 'expired' ||
+    subscription.status === 'canceled' ||
+    subscription.status === 'trialing';
 
   return (
     <SidebarMenu>
@@ -98,14 +109,30 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {showUpgrade && (
+              <>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem
+                    className="text-indigo-700 dark:text-indigo-300 [&_svg]:!text-indigo-500 dark:[&_svg]:!text-indigo-400"
+                    onSelect={() => setShowUpgradeModal(true)}
+                  >
+                    <IconSparkles />
+                    Upgrade to Pro
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <IconUserCircle />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard />
-                Billing
+              <DropdownMenuItem asChild>
+                <NavLink to="/settings?tab=billing">
+                  <IconCreditCard />
+                  Billing
+                </NavLink>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <IconNotification />
@@ -148,7 +175,12 @@ export function NavUser({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <UpgradeGateModal
+          open={showUpgradeModal}
+          onOpenChange={setShowUpgradeModal}
+          resource="general"
+        />
       </SidebarMenuItem>
     </SidebarMenu>
   );
-}
+};

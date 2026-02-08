@@ -1,7 +1,7 @@
 # 14: Dunning / Failed Payment State
 
 ## Summary
-When a user's payment fails (card expired, insufficient funds, etc.), show clear in-app messaging and make it easy to resolve. The goal is to recover revenue without causing unnecessary alarm. Stripe handles retry logic automatically -- we just need to surface the issue in the UI.
+When an organization's payment fails (card expired, insufficient funds, etc.), show clear in-app messaging and make it easy to resolve. The goal is to recover revenue without causing unnecessary alarm. Stripe handles retry logic automatically -- we just need to surface the issue in the UI.
 
 ## Priority: P1
 
@@ -18,10 +18,12 @@ This status is set by the Stripe webhook when a payment fails and enters the dun
 Persistent, non-dismissible banner at top of content area (same position as trial banner):
 
 - **Style**: Red/destructive background, high contrast
-- **Copy**: "Your last payment didn't go through. Update your payment method to keep Pro features."
-- **CTA**: "Update payment method" (opens Stripe Portal)
 - **Icon**: Warning/alert triangle icon
 - **Dismissible**: No (this needs to be resolved)
+
+**Role-aware rendering:**
+- **Owners/Admins**: "Your last payment didn't go through. Update your payment method to keep Pro features." + **CTA**: "Update payment method" (opens Stripe Portal)
+- **Regular members**: "Your organization's payment needs attention. Contact your workspace admin." (no portal CTA -- members cannot update billing)
 
 ### 2. Billing Page Warning
 On the settings billing section, the current plan card shows a warning state:
@@ -73,6 +75,8 @@ During the grace period, users keep Pro access. The in-app UI should:
 - Update existing card details
 - Pay outstanding invoices
 
+> **Role Gating**: The portal endpoint requires owner/admin role. The server-side handler must verify the user's org role before creating a portal session. Regular members should never be able to access the billing portal.
+
 ## Auto-Resolution
 When Stripe successfully retries the payment:
 1. Webhook receives `customer.subscription.updated` with `status: 'active'`
@@ -116,3 +120,33 @@ When multiple states could show a banner, use this priority (highest first):
 - **One-click resolution**: Stripe Portal handles all the complexity. Users click one button and fix the issue.
 - **Auto-resolution**: Smart Retries mean many failed payments resolve themselves. The UI should reflect resolution automatically, giving users confidence that the system works.
 - **Grace period transparency**: Not restricting features during grace period builds trust. Users appreciate being treated fairly during payment hiccups.
+
+## B2B Best Practices
+
+### "Notify Admin" Flow for Non-Admin Members
+When a regular member sees the payment issue banner, include a one-click "Notify your admin" button that sends a notification (in-app or email) to all org owners/admins. This creates a team-driven resolution path without exposing billing controls to non-admin members.
+
+### Proactive Pre-Failure: Card Expiry Warnings
+Handle the `customer.source.expiring` Stripe webhook event to warn admins before a payment actually fails:
+- **When**: Card is expiring within 30 days
+- **Banner**: Amber/warning style (not red): "Your payment card ending in [last 4] expires soon. Update it to avoid interruption."
+- **CTA**: "Update payment method"
+- This prevents dunning entirely for the most common failure case (expired cards).
+
+### Include Payment Failure Reason
+When displaying the failed payment banner, include the specific failure reason from Stripe when available:
+- `card_declined`: "Your card was declined."
+- `expired_card`: "Your card has expired."
+- `insufficient_funds`: "Your card has insufficient funds."
+- Generic fallback: "Your last payment didn't go through."
+
+Specific reasons help users take the right corrective action faster.
+
+### "Retry Now" Button
+Add a manual "Retry payment" button alongside "Update payment method" for owners/admins. This calls Stripe's invoice pay API to immediately retry the outstanding charge. Useful when the card issue has already been resolved outside of Promptly (e.g., user called their bank) and they don't want to wait for Stripe's next automatic retry.
+
+### Countdown to Feature Restriction
+Instead of an abrupt transition from full access to restricted, show a countdown: "Pro features will be restricted on [date]" where the date is the end of Stripe's dunning period. This creates urgency while remaining transparent. The countdown should appear in both the banner and the billing page warning.
+
+### Org-Aware Email Dunning
+When configuring Stripe dunning emails (or sending custom emails), send to all org admins and owners, not just the user who originally created the subscription. In B2B contexts, the billing owner may have left the company or changed roles. Sending to all admins ensures someone with authority receives the notification.

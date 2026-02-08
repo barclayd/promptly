@@ -1,7 +1,7 @@
 # 08: Upgrade Success Celebration
 
 ## Summary
-When a user successfully upgrades to Pro (returning from Stripe Checkout), celebrate the moment with a brief, delightful animation and clear guidance on what to do next. This anchors positive emotion to the purchase and drives immediate engagement with Pro features.
+When an organization is successfully upgraded to Pro (returning from Stripe Checkout), celebrate the moment with a brief, delightful animation and clear guidance on what to do next. This anchors positive emotion to the purchase and drives immediate engagement with Pro features.
 
 ## Priority: P1
 
@@ -17,11 +17,13 @@ User returns from Stripe Checkout with `?upgraded=true` in the URL query string.
 - **Title**: "Welcome to Pro"
 - **Subtitle**: "You now have access to all Pro features."
 - **Feature checklist** (with checkmark icons):
-  - Unlimited prompts
+  - Unlimited prompts for your workspace
   - Up to 5 team members
   - 50,000 API calls/month
 - **Primary CTA**: "Start building" (navigates to prompt creation or dashboard)
-- **Secondary CTA**: "Invite your team" (navigates to team page)
+- **Secondary CTA**: Context-aware team CTA:
+  - If org has 1 member (solo): "Invite your team" (navigates to team page)
+  - If org has 2+ members: "Manage your team" (navigates to team page)
 
 ### Timing
 1. Modal appears immediately on page load when `?upgraded=true` is detected
@@ -52,6 +54,7 @@ After the modal is dismissed:
 - **User navigates directly to `?upgraded=true`**: Show the modal anyway -- if they're not actually upgraded, the subscription data won't match but the modal is harmless
 - **User refreshes with `?upgraded=true`**: Only show once per session (check sessionStorage)
 - **Webhook hasn't processed yet**: The subscription status might still show `trialing` for a few seconds after checkout. Show the celebration optimistically based on the URL param, then revalidate subscription data in the background.
+- **Non-admin org member arrives with `?upgraded=true`**: Show the celebration modal -- it is acceptable for any org member who arrives with the `?upgraded=true` param to see the celebration. The admin may have shared the link, or the member may have navigated there after being notified of the upgrade.
 
 ## Key Implementation Notes
 - Check for `upgraded=true` URL param in the dashboard page or app layout
@@ -64,6 +67,33 @@ After the modal is dismissed:
 
 ## Files to Modify
 - `app/routes/dashboard.tsx` or `app/routes/layouts/app.tsx` -- Detect `?upgraded=true` and show modal
+
+## B2B Best Practices
+
+### Personalized Celebration
+- **Workspace-aware title**: "Welcome to Pro, [Workspace Name]!" instead of generic "Welcome to Pro"
+- Fetch the org name from context to personalize the modal
+
+### Usage Context Nudge
+- Show contextual usage framing: "You had 3 prompts -- now create unlimited"
+- Requires knowing the user's previous usage count (fetch from billing/usage data at modal render time)
+
+### Pro Activation Checklist
+After the celebration modal, consider showing a persistent activation checklist on the dashboard (dismissible):
+1. Create your first unlimited prompt
+2. Invite your team members (0/5 invited)
+3. Generate an API key for SDK integration
+
+This checklist drives engagement with Pro-specific features and increases retention. Mark items as completed dynamically.
+
+### Parallel Notifications
+- **Email to upgrading admin**: Send a "Welcome to Pro" confirmation email with receipt, quick-start tips, and support contact
+- **Notify other org members**: On their next page load, show a toast notification: "Your workspace was upgraded to Pro by [Admin Name]"
+  - Store a `lastUpgradeNotifiedAt` flag per user in sessionStorage or a lightweight DB flag to avoid repeat notifications
+
+### "Share with Your Team" CTA
+- Add a tertiary action in the modal or post-celebration: "Share with your team" that triggers an in-app notification or email to existing org members about the upgrade
+- This drives awareness and engagement across the entire org, not just the admin who upgraded
 
 ## Conversion Psychology
 - **Peak-end rule**: The emotional peak of the upgrade experience (celebration) becomes the lasting memory, creating positive brand association

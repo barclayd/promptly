@@ -44,7 +44,10 @@ interface SubscriptionStatus {
 }
 ```
 
-### Plan Limits
+### Plan Limits (Per-Organization)
+
+> **Note:** All plan limits are enforced **per-organization**, not per-user. Free plan limits (3 prompts, 1 team member, 5,000 API calls) apply to the workspace as a whole. Individual members share the org's quota.
+
 ```
 Free:  3 prompts, 1 team member, 5,000 API calls
 Pro:   Unlimited prompts (-1), 5 team members, 50,000 API calls
@@ -56,4 +59,16 @@ Pro:   Unlimited prompts (-1), 5 team members, 50,000 API calls
 3. **Be specific, not generic** -- "3 of 3 prompts used" beats "you've reached your limit"
 4. **Developer audiences value transparency** -- factual consequences, not emotional pressure
 5. **Always provide a next step** -- every modal/banner should have a clear CTA
-6. **Never lock existing content** -- users must always be able to view/edit prompts they've already created
+6. **Never lock existing content** -- users must always be able to view/edit prompts they've already created. **Never lock existing organization content** -- all org members must retain access to prompts created while on a higher plan, even after downgrade.
+7. **Role-aware CTAs** -- show upgrade CTAs to admins/owners with actionable buttons ("Upgrade to Pro"); show non-admin members informational messages with a "Request upgrade from admin" nudge instead of a direct upgrade button.
+
+### Role-Based Billing Access
+- **Status (read-only)**: All org members can view subscription status via `useSubscription()`
+- **Upgrade/Cancel/Portal (mutations)**: Restricted to org owners and admins via `requireOrgAdmin()` in all billing-mutating endpoints
+- **UI must adapt CTAs**: Admins see actionable buttons ("Upgrade to Pro"); regular members see informational messages ("Contact your workspace admin") or a "Request upgrade" flow that notifies the admin
+- **`useCanManageBilling()` hook**: Shared hook for all billing UI components to determine CTA variant
+
+### B2B Best Practices
+- **Time to First Value (P0)**: Prioritize onboarding features that reduce time-to-first-value (e.g., guided prompt creation, template gallery). Users who hit an "aha moment" within the first 3 days convert at 3x the rate.
+- **Behavioral triggers over calendar-based ones**: Trigger upgrade prompts when users hit limits, invite teammates, or create their Nth prompt -- not just when days tick down.
+- **Social proof near upgrade prompts**: Include proof points near upgrade CTAs (e.g., "Trusted by X teams", "Y prompts managed on Pro this month") to reduce friction at the decision point.

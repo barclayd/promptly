@@ -8,6 +8,7 @@ export const trialStripeClient = () => {
     pathMethods: {
       '/subscription/upgrade': 'POST',
       '/subscription/cancel': 'POST',
+      '/subscription/reactivate': 'POST',
       '/subscription/portal': 'POST',
     },
     getActions: ($fetch) => ({
@@ -28,6 +29,10 @@ export const trialStripeClient = () => {
           }),
         cancel: () =>
           $fetch('/subscription/cancel', {
+            method: 'POST',
+          }),
+        reactivate: () =>
+          $fetch('/subscription/reactivate', {
             method: 'POST',
           }),
         portal: (body: { returnUrl: string }) =>
