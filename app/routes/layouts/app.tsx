@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router';
+import { CancelledBanner } from '~/components/cancelled-banner';
 import { MidTrialNudgeDrawer } from '~/components/mid-trial-nudge-drawer';
 import { SidebarLeft } from '~/components/sidebar-left';
 import { SiteHeader } from '~/components/site-header';
@@ -9,6 +10,7 @@ import { TrialExpiredModal } from '~/components/trial-expired-modal';
 import { TrialExpiryModal } from '~/components/trial-expiry-modal';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 import { UsageThresholdDrawer } from '~/components/usage-threshold-drawer';
+import { useCancelledBanner } from '~/hooks/use-cancelled-banner';
 import { useMidTrialNudge } from '~/hooks/use-mid-trial-nudge';
 import { useTrialExpired } from '~/hooks/use-trial-expired';
 import { useTrialExpiryModal } from '~/hooks/use-trial-expiry-modal';
@@ -35,6 +37,12 @@ export default function AppLayout() {
     memberCount: expiredMemberCount,
   } = useTrialExpired();
   const [expiredModalOpen, setExpiredModalOpen] = useState(false);
+
+  const {
+    visible: cancelledVisible,
+    periodEnd: cancelledPeriodEnd,
+    canDismiss: cancelledCanDismiss,
+  } = useCancelledBanner();
 
   const {
     visible: thresholdVisible,
@@ -87,6 +95,11 @@ export default function AppLayout() {
           <TrialExpiredBanner
             visible={expiredBannerVisible}
             onReactivate={() => setExpiredModalOpen(true)}
+          />
+          <CancelledBanner
+            visible={cancelledVisible}
+            periodEnd={cancelledPeriodEnd}
+            canDismiss={cancelledCanDismiss}
           />
           <SiteHeader />
         </div>

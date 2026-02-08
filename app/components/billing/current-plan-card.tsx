@@ -9,6 +9,7 @@ import {
   IconSparkles,
 } from '@tabler/icons-react';
 import { type ReactNode, useState } from 'react';
+import { toast } from 'sonner';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useResourceLimits } from '~/hooks/use-resource-limits';
 import { useSubscription } from '~/hooks/use-subscription';
@@ -293,6 +294,7 @@ export const CurrentPlanCard = () => {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isPortalLoading, setIsPortalLoading] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
+  const [isReactivating, setIsReactivating] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   if (!subscription) return null;
@@ -335,6 +337,23 @@ export const CurrentPlanCard = () => {
       window.location.reload();
     } finally {
       setIsCanceling(false);
+    }
+  };
+
+  const handleReactivate = async () => {
+    setIsReactivating(true);
+    try {
+      const { error } = await authClient.subscription.reactivate();
+      if (error) {
+        toast.error('Failed to reactivate. Please try again.');
+        return;
+      }
+      toast.success('Your Pro plan has been reactivated.');
+      window.location.reload();
+    } catch {
+      toast.error('Failed to reactivate. Please try again.');
+    } finally {
+      setIsReactivating(false);
     }
   };
 
@@ -487,14 +506,14 @@ export const CurrentPlanCard = () => {
               {status === 'active' && cancelAtPeriodEnd && (
                 <>
                   <Button
-                    onClick={handleUpgrade}
-                    disabled={isUpgrading}
+                    onClick={handleReactivate}
+                    disabled={isReactivating}
                     className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-600 dark:hover:bg-indigo-500"
                   >
-                    {isUpgrading ? (
+                    {isReactivating ? (
                       <>
                         <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Redirecting...
+                        Reactivating...
                       </>
                     ) : (
                       'Reactivate plan'

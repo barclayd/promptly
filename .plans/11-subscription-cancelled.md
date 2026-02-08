@@ -164,7 +164,7 @@ When transitioning from Pro to Free:
 ### Reactivation Celebration
 When an admin reactivates the subscription:
 - Show a celebratory toast to the admin: "Welcome back! Your Pro plan has been reactivated."
-- On next page load, show other org members a toast: "Great news! Your workspace Pro plan has been reactivated by [Admin Name]."
+- On next page load, show other org members a toast: "Great news! Your workspace Pro plan has been reactivated."
 
 ## Conversion Psychology
 - **Cooling-off period**: The interim period between cancellation and actual loss is a powerful conversion window. Users who cancelled impulsively often reactivate during this time.

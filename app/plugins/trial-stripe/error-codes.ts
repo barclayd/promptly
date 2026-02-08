@@ -9,6 +9,7 @@ export const ERROR_CODES = defineErrorCodes({
     'Failed to verify Stripe webhook signature',
   ALREADY_SUBSCRIBED: 'User already has an active subscription',
   CANNOT_CANCEL: 'Cannot cancel subscription',
+  CANNOT_REACTIVATE: 'Cannot reactivate subscription',
   NO_STRIPE_CUSTOMER: 'No Stripe customer found',
   UNAUTHORIZED: 'Unauthorized',
   FORBIDDEN: 'Only org owners or admins can manage billing',

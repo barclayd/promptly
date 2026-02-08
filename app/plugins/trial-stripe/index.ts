@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { ERROR_CODES } from './error-codes';
 import { cancelEndpoint } from './routes/cancel';
 import { portalEndpoint } from './routes/portal';
+import { reactivateEndpoint } from './routes/reactivate';
 import { statusEndpoint } from './routes/status';
 import { upgradeEndpoint } from './routes/upgrade';
 import { webhookEndpoint } from './routes/webhook';
@@ -121,6 +122,7 @@ export const trialStripe = (options: TrialStripePluginOptions) => {
       getSubscriptionStatus: statusEndpoint(options),
       createCheckoutSession: upgradeEndpoint(options),
       cancelSubscription: cancelEndpoint(options),
+      reactivateSubscription: reactivateEndpoint(options),
       createBillingPortal: portalEndpoint(options),
       handleStripeWebhook: webhookEndpoint(options),
     },
