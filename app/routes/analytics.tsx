@@ -20,7 +20,6 @@ import { UpgradeGateModal } from '~/components/upgrade-gate-modal';
 import { orgContext } from '~/context';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useResourceLimits } from '~/hooks/use-resource-limits';
-import { cn } from '~/lib/utils';
 import type { Route } from './+types/analytics';
 
 const emptySubscribe = () => () => {};
@@ -178,11 +177,11 @@ const PromptsMeter = ({
                 onClick={onUpgradeClick}
               >
                 <IconCrown className="size-3.5" />
-                Upgrade for unlimited
+                Upgrade to create unlimited prompts
               </Button>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Ask your admin to upgrade
+                Ask your admin to unlock unlimited prompts
               </p>
             )
           ) : isUnlimited ? (
@@ -190,9 +189,33 @@ const PromptsMeter = ({
               No limit on your plan
             </p>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              {remaining} remaining
-            </p>
+            (() => {
+              const percentage = count / limit;
+              if (percentage >= 0.8) {
+                return canManageBilling ? (
+                  <p className="text-sm text-amber-500">
+                    Only {remaining} prompt{remaining === 1 ? '' : 's'} left —
+                    upgrade for unlimited
+                  </p>
+                ) : (
+                  <p className="text-sm text-amber-500">
+                    Only {remaining} prompt{remaining === 1 ? '' : 's'} left
+                  </p>
+                );
+              }
+              if (percentage >= 0.6) {
+                return (
+                  <p className="text-sm text-amber-500">
+                    {remaining} remaining — running low
+                  </p>
+                );
+              }
+              return (
+                <p className="text-sm text-muted-foreground">
+                  {remaining} remaining
+                </p>
+              );
+            })()
           )}
         </div>
       </CardContent>
@@ -314,26 +337,42 @@ const TeamMeter = ({
                 onClick={onUpgradeClick}
               >
                 <IconCrown className="size-3.5" />
-                Upgrade for unlimited
+                Upgrade to invite more team members
               </Button>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Ask your admin to upgrade
+                Ask your admin to add more seats
               </p>
             )
           ) : (
-            <p
-              className={cn(
-                'text-sm',
-                percentage >= 0.8
-                  ? 'text-red-500'
-                  : percentage >= 0.6
-                    ? 'text-amber-500'
-                    : 'text-muted-foreground',
-              )}
-            >
-              {Math.round(percentage * 100)}% of limit used
-            </p>
+            (() => {
+              const remaining = limit - count;
+              if (percentage >= 0.8) {
+                return canManageBilling ? (
+                  <p className="text-sm text-red-500">
+                    Only {remaining} seat{remaining === 1 ? '' : 's'} left —
+                    upgrade for more
+                  </p>
+                ) : (
+                  <p className="text-sm text-red-500">
+                    Only {remaining} seat{remaining === 1 ? '' : 's'} left
+                  </p>
+                );
+              }
+              if (percentage >= 0.6) {
+                return (
+                  <p className="text-sm text-amber-500">
+                    {remaining} seat{remaining === 1 ? '' : 's'} remaining —
+                    filling up
+                  </p>
+                );
+              }
+              return (
+                <p className="text-sm text-muted-foreground">
+                  {remaining} seat{remaining === 1 ? '' : 's'} remaining
+                </p>
+              );
+            })()
           )}
         </div>
       </CardContent>

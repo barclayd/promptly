@@ -8,6 +8,7 @@ import {
 } from '@tabler/icons-react';
 import { Link } from 'react-router';
 import { Card, CardContent } from '~/components/ui/card';
+import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useResourceLimits } from '~/hooks/use-resource-limits';
 import { cn } from '~/lib/utils';
 
@@ -68,8 +69,14 @@ const UsageRow = ({ icon, label, count, limit }: UsageRowProps) => {
 };
 
 export const UsageSummary = () => {
-  const { promptCount, promptLimit, memberCount, memberLimit } =
+  const { promptCount, promptLimit, memberCount, memberLimit, plan } =
     useResourceLimits();
+  const { canManageBilling } = useCanManageBilling();
+
+  const promptsAtLimit = promptLimit !== -1 && promptCount >= promptLimit;
+  const membersAtLimit = memberLimit !== -1 && memberCount >= memberLimit;
+  const anyAtLimit = promptsAtLimit || membersAtLimit;
+  const showContextual = plan === 'free' && anyAtLimit;
 
   return (
     <Card className="py-4">
@@ -86,14 +93,23 @@ export const UsageSummary = () => {
           count={memberCount}
           limit={memberLimit}
         />
-        <div className="flex justify-end pt-1">
-          <Link
-            to="/analytics"
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            View details
-            <IconArrowRight className="size-3" />
-          </Link>
+        <div className="flex flex-col gap-1.5 pt-1">
+          {showContextual && (
+            <p className="text-xs text-amber-500">
+              {canManageBilling
+                ? 'Upgrade to unlock higher limits'
+                : 'Contact your admin for more capacity'}
+            </p>
+          )}
+          <div className="flex justify-end">
+            <Link
+              to="/analytics"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              View details
+              <IconArrowRight className="size-3" />
+            </Link>
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -8,9 +8,11 @@ import { TrialExpiredBanner } from '~/components/trial-expired-banner';
 import { TrialExpiredModal } from '~/components/trial-expired-modal';
 import { TrialExpiryModal } from '~/components/trial-expiry-modal';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
+import { UsageThresholdDrawer } from '~/components/usage-threshold-drawer';
 import { useMidTrialNudge } from '~/hooks/use-mid-trial-nudge';
 import { useTrialExpired } from '~/hooks/use-trial-expired';
 import { useTrialExpiryModal } from '~/hooks/use-trial-expiry-modal';
+import { useUsageThresholdNudge } from '~/hooks/use-usage-threshold-nudge';
 
 export default function AppLayout() {
   const { visible, daysLeft, promptCount } = useMidTrialNudge();
@@ -34,6 +36,14 @@ export default function AppLayout() {
   } = useTrialExpired();
   const [expiredModalOpen, setExpiredModalOpen] = useState(false);
 
+  const {
+    visible: thresholdVisible,
+    metric: thresholdMetric,
+    count: thresholdCount,
+    limit: thresholdLimit,
+  } = useUsageThresholdNudge();
+  const [thresholdOpen, setThresholdOpen] = useState(false);
+
   useEffect(() => {
     if (!visible) return;
     const timer = setTimeout(() => setNudgeOpen(true), 2000);
@@ -51,6 +61,15 @@ export default function AppLayout() {
     const timer = setTimeout(() => setExpiredModalOpen(true), 2000);
     return () => clearTimeout(timer);
   }, [expiredModalVisible]);
+
+  // Only show threshold drawer if no other interstitial is visible
+  const otherInterstitialVisible =
+    visible || expiryVisible || expiredModalVisible;
+  useEffect(() => {
+    if (!thresholdVisible || otherInterstitialVisible) return;
+    const timer = setTimeout(() => setThresholdOpen(true), 2000);
+    return () => clearTimeout(timer);
+  }, [thresholdVisible, otherInterstitialVisible]);
 
   return (
     <SidebarProvider
@@ -101,6 +120,15 @@ export default function AppLayout() {
           onOpenChange={setExpiredModalOpen}
           promptCount={expiredPromptCount}
           memberCount={expiredMemberCount}
+        />
+      )}
+      {thresholdVisible && thresholdMetric && (
+        <UsageThresholdDrawer
+          open={thresholdOpen}
+          onOpenChange={setThresholdOpen}
+          metric={thresholdMetric}
+          count={thresholdCount}
+          limit={thresholdLimit}
         />
       )}
     </SidebarProvider>
