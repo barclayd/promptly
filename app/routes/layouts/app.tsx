@@ -11,12 +11,14 @@ import { TrialExpiredModal } from '~/components/trial-expired-modal';
 import { TrialExpiryModal } from '~/components/trial-expiry-modal';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 import { UsageThresholdDrawer } from '~/components/usage-threshold-drawer';
+import { WinbackModal } from '~/components/winback-modal';
 import { useCancelledBanner } from '~/hooks/use-cancelled-banner';
 import { useMidTrialNudge } from '~/hooks/use-mid-trial-nudge';
 import { useSubscription } from '~/hooks/use-subscription';
 import { useTrialExpired } from '~/hooks/use-trial-expired';
 import { useTrialExpiryModal } from '~/hooks/use-trial-expiry-modal';
 import { useUsageThresholdNudge } from '~/hooks/use-usage-threshold-nudge';
+import { useWinbackModal } from '~/hooks/use-winback-modal';
 
 export default function AppLayout() {
   const { visible, daysLeft, promptCount } = useMidTrialNudge();
@@ -57,6 +59,14 @@ export default function AppLayout() {
   } = useUsageThresholdNudge();
   const [thresholdOpen, setThresholdOpen] = useState(false);
 
+  const {
+    visible: winbackVisible,
+    segment: winbackSegment,
+    promptCount: winbackPromptCount,
+    memberCount: winbackMemberCount,
+  } = useWinbackModal();
+  const [winbackOpen, setWinbackOpen] = useState(false);
+
   useEffect(() => {
     if (!visible) return;
     const timer = setTimeout(() => setNudgeOpen(true), 2000);
@@ -75,9 +85,15 @@ export default function AppLayout() {
     return () => clearTimeout(timer);
   }, [expiredModalVisible]);
 
+  useEffect(() => {
+    if (!winbackVisible) return;
+    const timer = setTimeout(() => setWinbackOpen(true), 2000);
+    return () => clearTimeout(timer);
+  }, [winbackVisible]);
+
   // Only show threshold drawer if no other interstitial is visible
   const otherInterstitialVisible =
-    visible || expiryVisible || expiredModalVisible;
+    visible || expiryVisible || expiredModalVisible || winbackVisible;
   useEffect(() => {
     if (!thresholdVisible || otherInterstitialVisible) return;
     const timer = setTimeout(() => setThresholdOpen(true), 2000);
@@ -139,6 +155,15 @@ export default function AppLayout() {
           onOpenChange={setExpiredModalOpen}
           promptCount={expiredPromptCount}
           memberCount={expiredMemberCount}
+        />
+      )}
+      {winbackVisible && winbackSegment && (
+        <WinbackModal
+          open={winbackOpen}
+          onOpenChange={setWinbackOpen}
+          segment={winbackSegment}
+          promptCount={winbackPromptCount}
+          memberCount={winbackMemberCount}
         />
       )}
       {thresholdVisible && thresholdMetric && (
