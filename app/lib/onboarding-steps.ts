@@ -60,7 +60,7 @@ export const onboardingTour: Tour = {
       content:
         "This is where you define how your AI should behave. We've pre-filled it with instructions for a personalised welcome message.",
       selector: '#textarea-system-prompt',
-      side: 'left',
+      side: 'bottom',
       showControls: true,
       showSkip: true,
       pointerPadding: 8,
@@ -73,7 +73,7 @@ export const onboardingTour: Tour = {
       content:
         'This is the message sent to the AI each time. Notice the variables in curly braces — they get replaced with real data at runtime.',
       selector: '#textarea-user-prompt',
-      side: 'left',
+      side: 'bottom',
       showControls: true,
       showSkip: true,
       pointerPadding: 8,
@@ -116,7 +116,7 @@ export const onboardingTour: Tour = {
       side: 'left',
       showControls: true,
       showSkip: true,
-      pointerPadding: 8,
+      pointerPadding: 12,
       pointerRadius: 10,
     },
     {

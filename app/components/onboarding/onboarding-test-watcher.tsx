@@ -28,9 +28,14 @@ export const OnboardingTestWatcher = ({
     }
     if (isComplete && !isStreaming && !hasAdvanced.current) {
       hasAdvanced.current = true;
+      // Scroll response into view and wait for layout to settle before advancing
+      const responseEl = document.getElementById('onboarding-test-response');
+      if (responseEl) {
+        responseEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       const timer = setTimeout(() => {
         setCurrentStep(8);
-      }, 1500);
+      }, 2500);
       return () => clearTimeout(timer);
     }
   }, [

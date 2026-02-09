@@ -182,11 +182,17 @@ export const useOnboardingOrchestrator = (
         // Step 6: Open test collapsible by clicking the trigger
         const testSection = document.getElementById('onboarding-test-section');
         if (testSection) {
-          // Find the collapsible trigger within
-          const trigger = testSection.querySelector(
-            '[data-state="closed"]',
-          ) as HTMLElement | null;
-          if (trigger) trigger.click();
+          // Target specifically the CollapsibleTrigger, not any [data-state] element
+          const collapsible = testSection.querySelector(
+            '[data-slot="collapsible"]',
+          );
+          const isClosed = collapsible?.getAttribute('data-state') === 'closed';
+          if (isClosed) {
+            const trigger = testSection.querySelector(
+              '[data-slot="collapsible-trigger"]',
+            ) as HTMLElement | null;
+            if (trigger) trigger.click();
+          }
 
           // Scroll into view
           setTimeout(() => {

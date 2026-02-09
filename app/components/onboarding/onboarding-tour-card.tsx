@@ -21,7 +21,7 @@ export const OnboardingTourCard = ({
 
   return (
     <div className="relative w-[340px] max-w-[90vw]">
-      {arrow}
+      <span className="text-card">{arrow}</span>
       <div className="rounded-xl border bg-card p-5 shadow-lg">
         {/* Skip button */}
         {step.showSkip && (
