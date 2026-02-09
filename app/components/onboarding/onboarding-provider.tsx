@@ -18,11 +18,13 @@ const tours = [onboardingTour];
 
 const OnboardingInner = ({ children }: { children: React.ReactNode }) => {
   const { setCurrentStep } = useNextStep();
-  const { onStepChange, onComplete, onSkip } =
-    useOnboardingOrchestrator(setCurrentStep);
   const navigate = useNavigate();
   const rootData = useRouteLoaderData<typeof rootLoader>('root');
   const userId = rootData?.user?.id ?? null;
+  const { onStepChange, onComplete, onSkip } = useOnboardingOrchestrator(
+    setCurrentStep,
+    userId,
+  );
 
   const handleComplete = useCallback(
     (tourName: string | null) => {
@@ -73,7 +75,7 @@ export const OnboardingProvider = ({
 
 // Hook to start the tour from the app layout
 export const useStartOnboarding = () => {
-  const { startNextStep, isNextStepVisible } = useNextStep();
+  const { startNextStep, setCurrentStep, isNextStepVisible } = useNextStep();
   const isActive = useOnboardingStore((s) => s.isActive);
 
   const start = useCallback(
@@ -84,5 +86,5 @@ export const useStartOnboarding = () => {
     [startNextStep],
   );
 
-  return { start, isNextStepVisible, isActive };
+  return { start, isNextStepVisible, isActive, setCurrentStep, startNextStep };
 };

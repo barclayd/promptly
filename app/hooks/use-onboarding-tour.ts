@@ -1,4 +1,5 @@
 import { useRouteLoaderData } from 'react-router';
+import { getOnboardingStep } from '~/hooks/use-onboarding-progress';
 import type { loader as rootLoader } from '~/root';
 
 const COMPLETED_KEY = (userId: string) =>
@@ -66,6 +67,11 @@ export const useOnboardingTour = () => {
   }
 
   if (isCompleted(user.id) || isSkipped(user.id)) return NOT_VISIBLE;
+
+  // Users who started the tour but dismissed mid-way should NOT auto-start.
+  // The progress widget handles resumption for them.
+  const savedStep = getOnboardingStep(user.id);
+  if (savedStep !== null && savedStep > 0) return NOT_VISIBLE;
 
   const firstName = user.name?.split(' ')[0] ?? null;
 

@@ -4,6 +4,11 @@ import { useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import {
+  clearOnboardingProgress,
+  setOnboardingPromptId,
+  setOnboardingStep,
+} from '~/hooks/use-onboarding-progress';
+import {
   getInputData,
   getPromptDescription,
   getPromptName,
@@ -24,7 +29,7 @@ import { usePromptEditorStore } from '~/stores/prompt-editor-store';
  * the `onStepChange(4)` callback AND explicitly from step 3 (since
  * `setCurrentStep` does NOT trigger `onStepChange`).
  */
-const fillPromptEditor = async (firstName: string) => {
+export const fillPromptEditor = async (firstName: string) => {
   // Wait for prompt editor store to initialize
   await new Promise<void>((resolve) => {
     const check = () => {
@@ -83,6 +88,7 @@ const fillPromptEditor = async (firstName: string) => {
 
 export const useOnboardingOrchestrator = (
   setCurrentStep?: (step: number, delay?: number) => void,
+  userId?: string | null,
 ) => {
   const navigate = useNavigate();
   const processingRef = useRef(false);
@@ -90,6 +96,9 @@ export const useOnboardingOrchestrator = (
   const onStepChange = useCallback(
     async (step: number, tourName: string | null) => {
       if (tourName !== ONBOARDING_TOUR_NAME) return;
+
+      // Persist progress
+      if (userId) setOnboardingStep(userId, step);
 
       const store = useOnboardingStore.getState();
 
@@ -153,6 +162,7 @@ export const useOnboardingOrchestrator = (
           if (!promptId) throw new Error('Could not extract prompt ID');
 
           useOnboardingStore.getState().setCreatedPromptId(promptId);
+          if (userId) setOnboardingPromptId(userId, promptId);
           navigate(`/prompts/${promptId}`);
 
           // Auto-advance to step 4 after navigation.
@@ -224,16 +234,18 @@ export const useOnboardingOrchestrator = (
 
       // Step 9 (completion) is handled by onComplete callback in the provider
     },
-    [navigate, setCurrentStep],
+    [navigate, setCurrentStep, userId],
   );
 
-  const onComplete = useCallback((tourName: string | null) => {
-    if (tourName !== ONBOARDING_TOUR_NAME) return;
-    const store = useOnboardingStore.getState();
-    store.reset();
-    // Navigate to settings
-    // userId will be read from the root loader by the component that calls this
-  }, []);
+  const onComplete = useCallback(
+    (tourName: string | null) => {
+      if (tourName !== ONBOARDING_TOUR_NAME) return;
+      const store = useOnboardingStore.getState();
+      store.reset();
+      if (userId) clearOnboardingProgress(userId);
+    },
+    [userId],
+  );
 
   const onSkip = useCallback((_step: number, tourName: string | null) => {
     if (tourName !== ONBOARDING_TOUR_NAME) return;
