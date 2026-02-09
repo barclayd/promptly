@@ -4,6 +4,8 @@ import { IconChevronRight, IconRocket } from '@tabler/icons-react';
 import { useNavigate } from 'react-router';
 import { useStartOnboarding } from '~/components/onboarding/onboarding-provider';
 import {
+  SidebarGroup,
+  SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -54,30 +56,34 @@ export const OnboardingProgressWidget = ({
   };
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <SidebarMenuButton
-          onClick={handleResume}
-          className="flex items-center gap-2"
-        >
-          <IconRocket className="size-4 text-primary" />
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-xs font-medium">Finish setup</span>
-            <span className="text-xs text-muted-foreground">
-              {milestone}/{total} complete
-            </span>
-          </span>
-          <IconChevronRight className="size-3.5 text-muted-foreground" />
-        </SidebarMenuButton>
-        <div className="mx-3 mt-1 mb-1">
-          <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-300"
-              style={{ width: `${percentage}%` }}
-            />
-          </div>
-        </div>
-      </SidebarMenuItem>
-    </SidebarMenu>
+    <SidebarGroup className="flex-1 justify-center">
+      <SidebarGroupContent>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={handleResume}
+              className="flex items-center gap-2"
+            >
+              <IconRocket className="size-4 text-sidebar-primary" />
+              <span className="min-w-0 flex-1 truncate text-xs font-medium">
+                Finish setup
+              </span>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {milestone}/{total}
+              </span>
+              <IconChevronRight className="size-3.5 text-muted-foreground" />
+            </SidebarMenuButton>
+            <div className="mx-3 mt-0.5 mb-1.5">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-sidebar-accent">
+                <div
+                  className="animate-onboarding-shimmer h-full rounded-full transition-[width] duration-500 ease-out"
+                  style={{ width: `${percentage}%` }}
+                />
+              </div>
+            </div>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 };
