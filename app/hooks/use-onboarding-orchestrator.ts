@@ -23,6 +23,43 @@ import { usePromptEditorStore } from '~/stores/prompt-editor-store';
 // markOnboardingCompleted/Skipped are called from the provider, not here
 
 /**
+ * Pre-fill the Create Prompt dialog inputs with onboarding data.
+ * Called from both onStepChange(2) (via "Next" button) and from NavMain
+ * (when the user clicks the Create button directly during onboarding).
+ */
+export const fillCreateDialogInputs = (firstName: string) => {
+  setTimeout(() => {
+    const nameInput = document.getElementById(
+      'prompt',
+    ) as HTMLInputElement | null;
+    const descInput = document.getElementById(
+      'description',
+    ) as HTMLTextAreaElement | null;
+    if (nameInput) {
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        'value',
+      )?.set;
+      nativeSetter?.call(nameInput, getPromptName(firstName));
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    if (descInput) {
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        HTMLTextAreaElement.prototype,
+        'value',
+      )?.set;
+      nativeSetter?.call(descInput, getPromptDescription(firstName));
+      descInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    // Force NextStepjs to recalculate spotlight position now that
+    // the dialog is rendered and visible
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 300);
+  }, 300);
+};
+
+/**
  * Wait for the prompt editor store to be initialized, then fill it with
  * onboarding content (system message, user message, schema, test config).
  * Extracted as a standalone async function so it can be called from both
@@ -102,39 +139,18 @@ export const useOnboardingOrchestrator = (
 
       const store = useOnboardingStore.getState();
 
-      if (step === 1) {
-        // Step 1: Open create dialog by clicking the create button
-        const btn = document.getElementById('onboarding-create-button');
-        if (btn) btn.click();
-      }
-
       if (step === 2) {
-        // Step 2: Pre-fill the dialog inputs
+        // Step 2: Open create dialog then pre-fill inputs.
+        // Only click the Create button if the dialog isn't already open
+        // (it may already be open if the user clicked the Create button directly).
+        const dialog = document.getElementById('onboarding-create-dialog');
+        if (!dialog) {
+          const btn = document.getElementById('onboarding-create-button');
+          if (btn) btn.click();
+        }
+
         const firstName = store.userName ?? 'there';
-        requestAnimationFrame(() => {
-          const nameInput = document.getElementById(
-            'prompt',
-          ) as HTMLInputElement | null;
-          const descInput = document.getElementById(
-            'description',
-          ) as HTMLTextAreaElement | null;
-          if (nameInput) {
-            const nativeSetter = Object.getOwnPropertyDescriptor(
-              HTMLInputElement.prototype,
-              'value',
-            )?.set;
-            nativeSetter?.call(nameInput, getPromptName(firstName));
-            nameInput.dispatchEvent(new Event('input', { bubbles: true }));
-          }
-          if (descInput) {
-            const nativeSetter = Object.getOwnPropertyDescriptor(
-              HTMLTextAreaElement.prototype,
-              'value',
-            )?.set;
-            nativeSetter?.call(descInput, getPromptDescription(firstName));
-            descInput.dispatchEvent(new Event('input', { bubbles: true }));
-          }
-        });
+        fillCreateDialogInputs(firstName);
       }
 
       if (step === 3 && !processingRef.current) {
