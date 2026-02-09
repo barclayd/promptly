@@ -13,6 +13,7 @@ import {
   ThemeProvider,
   useTheme,
 } from 'remix-themes';
+import { OnboardingProvider } from '~/components/onboarding/onboarding-provider';
 import { Toaster } from '~/components/ui/sonner';
 import { orgContext, sessionContext } from '~/context';
 import { RecentsProvider } from '~/context/recents-context';
@@ -153,7 +154,9 @@ const AppWithTheme = ({ children }: { children: React.ReactNode }) => {
       </head>
       <body>
         <RecentsProvider>
-          <SearchProvider>{children}</SearchProvider>
+          <SearchProvider>
+            <OnboardingProvider>{children}</OnboardingProvider>
+          </SearchProvider>
         </RecentsProvider>
         <Toaster />
         <ScrollRestoration />

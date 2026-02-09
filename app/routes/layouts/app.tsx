@@ -3,6 +3,7 @@ import { Outlet } from 'react-router';
 import { CancelledBanner } from '~/components/cancelled-banner';
 import { FailedPaymentBanner } from '~/components/failed-payment-banner';
 import { MidTrialNudgeDrawer } from '~/components/mid-trial-nudge-drawer';
+import { useStartOnboarding } from '~/components/onboarding/onboarding-provider';
 import { SidebarLeft } from '~/components/sidebar-left';
 import { SiteHeader } from '~/components/site-header';
 import { TrialBanner } from '~/components/trial-banner';
@@ -14,6 +15,7 @@ import { UsageThresholdDrawer } from '~/components/usage-threshold-drawer';
 import { WinbackModal } from '~/components/winback-modal';
 import { useCancelledBanner } from '~/hooks/use-cancelled-banner';
 import { useMidTrialNudge } from '~/hooks/use-mid-trial-nudge';
+import { useOnboardingTour } from '~/hooks/use-onboarding-tour';
 import { useSubscription } from '~/hooks/use-subscription';
 import { useTrialExpired } from '~/hooks/use-trial-expired';
 import { useTrialExpiryModal } from '~/hooks/use-trial-expiry-modal';
@@ -67,6 +69,19 @@ export default function AppLayout() {
   } = useWinbackModal();
   const [winbackOpen, setWinbackOpen] = useState(false);
 
+  // Onboarding tour
+  const { visible: onboardingVisible, firstName: onboardingFirstName } =
+    useOnboardingTour();
+  const { start: startOnboarding, isNextStepVisible } = useStartOnboarding();
+
+  useEffect(() => {
+    if (!onboardingVisible) return;
+    const timer = setTimeout(() => {
+      startOnboarding(onboardingFirstName);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [onboardingVisible, onboardingFirstName, startOnboarding]);
+
   useEffect(() => {
     if (!visible) return;
     const timer = setTimeout(() => setNudgeOpen(true), 2000);
@@ -93,7 +108,11 @@ export default function AppLayout() {
 
   // Only show threshold drawer if no other interstitial is visible
   const otherInterstitialVisible =
-    visible || expiryVisible || expiredModalVisible || winbackVisible;
+    visible ||
+    expiryVisible ||
+    expiredModalVisible ||
+    winbackVisible ||
+    isNextStepVisible;
   useEffect(() => {
     if (!thresholdVisible || otherInterstitialVisible) return;
     const timer = setTimeout(() => setThresholdOpen(true), 2000);

@@ -14,8 +14,7 @@ const subscribeScroll = (callback: () => void) => {
   };
 };
 
-const getScrolled = () =>
-  window.scrollY > 20 || document.body.scrollTop > 20;
+const getScrolled = () => window.scrollY > 20 || document.body.scrollTop > 20;
 
 const getScrolledServer = () => false;
 

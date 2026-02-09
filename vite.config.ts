@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { cloudflare } from '@cloudflare/vite-plugin';
 import { reactRouter } from '@react-router/dev/vite';
 import tailwindcss from '@tailwindcss/vite';
@@ -11,6 +12,17 @@ export default defineConfig(() => ({
     reactRouter(),
     tsconfigPaths(),
   ],
+  resolve: {
+    alias: {
+      'next/navigation': path.resolve(
+        import.meta.dirname,
+        'app/lib/mocks/next-navigation.ts',
+      ),
+    },
+  },
+  ssr: {
+    noExternal: ['nextstepjs'],
+  },
   build: {
     // Increase chunk size limit (prompt-detail includes heavy deps like syntax highlighter)
     chunkSizeWarningLimit: 1000,
