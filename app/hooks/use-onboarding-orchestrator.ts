@@ -178,6 +178,20 @@ export const useOnboardingOrchestrator = (
         await fillPromptEditor(firstName);
       }
 
+      if (step === 5) {
+        // Step 5: Scroll User Prompt textarea into view then force overlay
+        // recalculation.  NextStepjs calculates spotlight position before its
+        // own scrollIntoView animation finishes, so the cutout ends up at the
+        // pre-scroll coordinates.  A deferred resize event forces recalc.
+        const userPrompt = document.getElementById('textarea-user-prompt');
+        if (userPrompt) {
+          userPrompt.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+          }, 600);
+        }
+      }
+
       if (step === 6) {
         // Step 6: Open test collapsible by clicking the trigger
         const testSection = document.getElementById('onboarding-test-section');
@@ -194,13 +208,17 @@ export const useOnboardingOrchestrator = (
             if (trigger) trigger.click();
           }
 
-          // Scroll into view
+          // Scroll into view, then force overlay recalculation after scroll
+          // and collapsible animation settle
           setTimeout(() => {
             testSection.scrollIntoView({
               behavior: 'smooth',
               block: 'start',
             });
-          }, 200);
+            setTimeout(() => {
+              window.dispatchEvent(new Event('resize'));
+            }, 500);
+          }, 300);
         }
       }
 
