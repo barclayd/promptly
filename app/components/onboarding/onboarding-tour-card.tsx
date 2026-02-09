@@ -20,7 +20,7 @@ export const OnboardingTourCard = ({
   const isTestStep = currentStep === 7; // User must click Test
 
   return (
-    <div className="relative w-[340px] max-w-[90vw]">
+    <div className="relative w-[340px] max-w-[90vw] translate-y-2.5">
       <span className="text-card">{arrow}</span>
       <div className="rounded-xl border bg-card p-5 shadow-lg">
         {/* Skip button */}
