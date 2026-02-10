@@ -21,8 +21,9 @@ export const OnboardingProgressWidget = ({
   userId: string | undefined;
   firstName: string | null;
 }) => {
-  const { visible, milestone, total, highestStep, promptId } =
-    useOnboardingProgress(userId ?? null);
+  const { visible, milestone, total, promptId } = useOnboardingProgress(
+    userId ?? null,
+  );
   const { start, setCurrentStep, startNextStep } = useStartOnboarding();
   const navigate = useNavigate();
 
@@ -33,7 +34,7 @@ export const OnboardingProgressWidget = ({
   const handleResume = () => {
     const name = firstName ?? 'there';
 
-    if (highestStep !== null && highestStep >= 3 && promptId) {
+    if (promptId) {
       // Resume from prompt editor (step 4+)
       navigate(`/prompts/${promptId}`);
       useOnboardingStore.getState().start(name);

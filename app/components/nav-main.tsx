@@ -5,7 +5,6 @@ import { useNextStep } from 'nextstepjs';
 import { NavLink, useLocation } from 'react-router';
 
 import { CreatePromptDialog } from '~/components/create-prompt-dialog';
-import { fillCreateDialogInputs } from '~/hooks/use-onboarding-orchestrator';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -13,6 +12,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '~/components/ui/sidebar';
+import { fillCreateDialogInputs } from '~/hooks/use-onboarding-orchestrator';
 import { useOnboardingStore } from '~/stores/onboarding-store';
 
 export const NavMain = ({
@@ -28,7 +28,9 @@ export const NavMain = ({
   const currentSection = location.pathname.split('/').filter(Boolean)[0] || '';
   const { setCurrentStep } = useNextStep();
   const isOnboardingActive = useOnboardingStore((s) => s.isActive);
-  const hasCreatedPrompt = useOnboardingStore((s) => s.createdPromptId !== null);
+  const hasCreatedPrompt = useOnboardingStore(
+    (s) => s.createdPromptId !== null,
+  );
 
   const handleCreateClick = () => {
     // If onboarding is active and we haven't created a prompt yet,

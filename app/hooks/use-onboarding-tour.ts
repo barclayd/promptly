@@ -1,5 +1,8 @@
 import { useRouteLoaderData } from 'react-router';
-import { getOnboardingStep } from '~/hooks/use-onboarding-progress';
+import {
+  getOnboardingStep,
+  notifyProgressChange,
+} from '~/hooks/use-onboarding-progress';
 import type { loader as rootLoader } from '~/root';
 
 const COMPLETED_KEY = (userId: string) =>
@@ -27,6 +30,7 @@ const isSkipped = (userId: string): boolean => {
 export const markOnboardingCompleted = (userId: string) => {
   try {
     localStorage.setItem(COMPLETED_KEY(userId), '1');
+    notifyProgressChange();
   } catch {
     // ignore
   }

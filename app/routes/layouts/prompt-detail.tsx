@@ -20,6 +20,7 @@ import type { Version } from '~/components/versions-table';
 import { useIsMobile } from '~/hooks/use-mobile';
 import type { SchemaField } from '~/lib/schema-types';
 import type { loader as rootLoader } from '~/root';
+import { useOnboardingStore } from '~/stores/onboarding-store';
 
 type PromptDetailLoaderData = {
   versions: Version[];
@@ -72,7 +73,9 @@ export default function PromptDetailLayout() {
   const inputDataRootName = promptDetailData?.inputDataRootName ?? null;
   const isViewingOldVersion = promptDetailData?.isViewingOldVersion ?? false;
   const isReadOnlyDueToLimit = promptDetailData?.isReadOnlyDueToLimit ?? false;
-  const isReadonly = isViewingOldVersion || isReadOnlyDueToLimit;
+  const isOnboardingActive = useOnboardingStore((s) => s.isActive);
+  const isReadonly =
+    isViewingOldVersion || isReadOnlyDueToLimit || isOnboardingActive;
 
   // Ref for external control of SidebarRight (trigger test, get streaming state)
   const sidebarRightRef = useRef<SidebarRightHandle>(null);

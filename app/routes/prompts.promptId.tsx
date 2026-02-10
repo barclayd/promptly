@@ -31,6 +31,7 @@ import { useUndoRedo } from '~/hooks/use-undo-redo';
 import { getAuth } from '~/lib/auth.server';
 import type { SchemaField } from '~/lib/schema-types';
 import { getSubscriptionStatus } from '~/lib/subscription.server';
+import { useOnboardingStore } from '~/stores/onboarding-store';
 import { usePromptEditorStore } from '~/stores/prompt-editor-store';
 import type { Route } from './+types/prompts.promptId';
 
@@ -523,7 +524,9 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
     requestedVersion,
     isReadOnlyDueToLimit,
   } = loaderData;
-  const isReadOnly = isViewingOldVersion || isReadOnlyDueToLimit;
+  const isOnboardingActive = useOnboardingStore((s) => s.isActive);
+  const isReadOnly =
+    isViewingOldVersion || isReadOnlyDueToLimit || isOnboardingActive;
 
   const [planLimitModalOpen, setPlanLimitModalOpen] = useState(false);
   const { promptCount, memberCount } = useResourceLimits();

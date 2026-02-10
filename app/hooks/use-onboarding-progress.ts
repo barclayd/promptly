@@ -29,6 +29,12 @@ export const stepToMilestone = (step: number): number => {
   return 6;
 };
 
+// --- Custom event for same-tab reactivity ---
+
+const PROGRESS_EVENT = 'onboarding-progress';
+export const notifyProgressChange = () =>
+  window.dispatchEvent(new Event(PROGRESS_EVENT));
+
 // --- localStorage utilities ---
 
 export const getOnboardingStep = (userId: string): number | null => {
@@ -46,10 +52,8 @@ export const getOnboardingStep = (userId: string): number | null => {
 export const setOnboardingStep = (userId: string, step: number) => {
   if (typeof window === 'undefined') return;
   try {
-    const current = getOnboardingStep(userId);
-    if (current === null || step > current) {
-      localStorage.setItem(STEP_KEY(userId), String(step));
-    }
+    localStorage.setItem(STEP_KEY(userId), String(step));
+    notifyProgressChange();
   } catch {
     // ignore
   }
@@ -78,6 +82,7 @@ export const clearOnboardingProgress = (userId: string) => {
   try {
     localStorage.removeItem(STEP_KEY(userId));
     localStorage.removeItem(PROMPT_ID_KEY(userId));
+    notifyProgressChange();
   } catch {
     // ignore
   }
@@ -87,7 +92,11 @@ export const clearOnboardingProgress = (userId: string) => {
 
 const subscribe = (cb: () => void) => {
   window.addEventListener('storage', cb);
-  return () => window.removeEventListener('storage', cb);
+  window.addEventListener(PROGRESS_EVENT, cb);
+  return () => {
+    window.removeEventListener('storage', cb);
+    window.removeEventListener(PROGRESS_EVENT, cb);
+  };
 };
 
 const NOT_VISIBLE = {

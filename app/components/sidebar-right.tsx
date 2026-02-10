@@ -54,6 +54,7 @@ import { useIsMobile } from '~/hooks/use-mobile';
 import { removeFieldsFromInputData } from '~/lib/input-data-utils';
 import type { SchemaField } from '~/lib/schema-types';
 import { cn } from '~/lib/utils';
+import { useOnboardingStore } from '~/stores/onboarding-store';
 import { usePromptEditorStore } from '~/stores/prompt-editor-store';
 
 const DEFAULT_INPUT_DATA: unknown = {};
@@ -133,6 +134,8 @@ type SidebarRightProps = React.ComponentProps<typeof Sidebar> & {
 
 export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
   ({ versions = [], isReadonly = false, ...props }, ref) => {
+    const isOnboardingActive = useOnboardingStore((s) => s.isActive);
+
     // Get state from the store
     const schemaFields = usePromptEditorStore((state) => state.schemaFields);
     const model = usePromptEditorStore((state) => state.model);
@@ -699,7 +702,13 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                         <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
                           Input data
                         </div>
-                        <div className="rounded-md border border-sidebar-border bg-sidebar/50 p-2 overflow-x-auto">
+                        <div
+                          className={cn(
+                            'rounded-md border border-sidebar-border bg-sidebar/50 p-2 overflow-x-auto',
+                            isOnboardingActive &&
+                              'pointer-events-none opacity-60',
+                          )}
+                        >
                           <JsonEditor
                             data={inputData ?? DEFAULT_INPUT_DATA}
                             setData={handleInputDataChange}
@@ -722,6 +731,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                           <SelectScrollable
                             value={testModel ?? ''}
                             onChange={setTestModel}
+                            disabled={isOnboardingActive}
                           />
                         </div>
                       </div>
@@ -735,7 +745,9 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                             value={testVersionToUse ?? ''}
                             onValueChange={setTestVersionOverride}
                             disabled={
-                              !hasDraftVersion && publishedVersions.length === 0
+                              isOnboardingActive ||
+                              (!hasDraftVersion &&
+                                publishedVersions.length === 0)
                             }
                           >
                             <SelectTrigger className="w-full">
@@ -786,6 +798,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                           <SidebarSlider
                             value={testTemperature ?? temperature}
                             onChange={setTestTemperature}
+                            disabled={isOnboardingActive}
                           />
                         </div>
                       </div>
@@ -816,6 +829,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                           className="w-full"
                           onClick={handleSaveTestConfig}
                           disabled={
+                            isOnboardingActive ||
                             !hasTestConfigChanges ||
                             configFetcher.state !== 'idle'
                           }
