@@ -15,6 +15,7 @@ import { useSearchContext } from '~/context/search-context';
 
 export const NavSecondary = ({
   items,
+  onHelpClick,
   ...props
 }: {
   items: {
@@ -22,6 +23,7 @@ export const NavSecondary = ({
     url: string;
     icon: Icon;
   }[];
+  onHelpClick?: () => void;
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) => {
   const location = useLocation();
   const currentSection = location.pathname.split('/').filter(Boolean)[0] || '';
@@ -40,6 +42,18 @@ export const NavSecondary = ({
               return (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton onClick={() => setSearchOpen(true)}>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            }
+
+            // Handle Help item specially
+            if (item.title === 'Help' && onHelpClick) {
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton onClick={onHelpClick}>
                     <item.icon />
                     <span>{item.title}</span>
                   </SidebarMenuButton>

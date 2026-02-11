@@ -13,11 +13,14 @@ import {
   IconUsers,
 } from '@tabler/icons-react';
 import type * as React from 'react';
-import { NavLink, useRouteLoaderData } from 'react-router';
+import { useCallback } from 'react';
+import { NavLink, useNavigate, useRouteLoaderData } from 'react-router';
 import { NavDocuments } from '~/components/nav-documents';
 import { NavMain } from '~/components/nav-main';
 import { NavSecondary } from '~/components/nav-secondary';
 import { NavUser } from '~/components/nav-user';
+import { OnboardingProgressWidget } from '~/components/onboarding/onboarding-progress-widget';
+import { useStartOnboarding } from '~/components/onboarding/onboarding-provider';
 import { SubscriptionBadge } from '~/components/subscription-badge';
 import {
   Sidebar,
@@ -29,6 +32,8 @@ import {
   SidebarMenuItem,
 } from '~/components/ui/sidebar';
 import { useRecentsContext } from '~/context/recents-context';
+import { clearOnboardingProgress } from '~/hooks/use-onboarding-progress';
+import { resetOnboarding } from '~/hooks/use-onboarding-tour';
 import type { loader as rootLoader } from '~/root';
 
 const data = {
@@ -121,6 +126,11 @@ export const SidebarLeft = ({
 }: React.ComponentProps<typeof Sidebar>) => {
   const rootData = useRouteLoaderData<typeof rootLoader>('root');
   const { recents } = useRecentsContext();
+  const { start: startOnboarding } = useStartOnboarding();
+  const navigate = useNavigate();
+
+  const userId = rootData?.user?.id;
+  const firstName = rootData?.user?.name?.split(' ')[0] ?? null;
 
   const user = {
     name: rootData?.user?.name ?? 'Guest',
@@ -137,6 +147,17 @@ export const SidebarLeft = ({
     folderName: r.folderName,
     version: r.version,
   }));
+
+  const handleHelpClick = useCallback(() => {
+    if (userId) {
+      resetOnboarding(userId);
+      clearOnboardingProgress(userId);
+    }
+    navigate('/dashboard');
+    setTimeout(() => {
+      startOnboarding(firstName);
+    }, 500);
+  }, [userId, firstName, navigate, startOnboarding]);
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -167,7 +188,12 @@ export const SidebarLeft = ({
       <SidebarContent>
         <NavMain items={data.navMain} />
         {recentItems.length > 0 && <NavDocuments items={recentItems} />}
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <OnboardingProgressWidget userId={userId} firstName={firstName} />
+        <NavSecondary
+          items={data.navSecondary}
+          onHelpClick={handleHelpClick}
+          className="mt-auto"
+        />
       </SidebarContent>
       <SidebarFooter>
         <SubscriptionBadge />

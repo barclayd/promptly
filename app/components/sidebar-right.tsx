@@ -20,6 +20,7 @@ import {
 import { toast } from 'sonner';
 import { useDebouncedCallback } from 'use-debounce';
 import { CodePreview } from '~/components/code-preview';
+import { OnboardingTestWatcher } from '~/components/onboarding/onboarding-test-watcher';
 import { SchemaBuilder } from '~/components/schema-builder';
 import { SelectScrollable } from '~/components/select-scrollable';
 import { SidebarSlider } from '~/components/sidebar-slider';
@@ -53,6 +54,7 @@ import { useIsMobile } from '~/hooks/use-mobile';
 import { removeFieldsFromInputData } from '~/lib/input-data-utils';
 import type { SchemaField } from '~/lib/schema-types';
 import { cn } from '~/lib/utils';
+import { useOnboardingStore } from '~/stores/onboarding-store';
 import { usePromptEditorStore } from '~/stores/prompt-editor-store';
 
 const DEFAULT_INPUT_DATA: unknown = {};
@@ -132,6 +134,8 @@ type SidebarRightProps = React.ComponentProps<typeof Sidebar> & {
 
 export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
   ({ versions = [], isReadonly = false, ...props }, ref) => {
+    const isOnboardingActive = useOnboardingStore((s) => s.isActive);
+
     // Get state from the store
     const schemaFields = usePromptEditorStore((state) => state.schemaFields);
     const model = usePromptEditorStore((state) => state.model);
@@ -671,7 +675,12 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
             <SidebarSeparator className="mx-0" />
           </Fragment>
           <Fragment key={5}>
-            <SidebarGroup ref={testSectionRef} key="test" className="py-0">
+            <SidebarGroup
+              ref={testSectionRef}
+              id="onboarding-test-section"
+              key="test"
+              className="py-0"
+            >
               <Collapsible
                 open={testOpen}
                 onOpenChange={setTestOpen}
@@ -693,7 +702,13 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                         <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
                           Input data
                         </div>
-                        <div className="rounded-md border border-sidebar-border bg-sidebar/50 p-2 overflow-x-auto">
+                        <div
+                          className={cn(
+                            'rounded-md border border-sidebar-border bg-sidebar/50 p-2 overflow-x-auto',
+                            isOnboardingActive &&
+                              'pointer-events-none opacity-60',
+                          )}
+                        >
                           <JsonEditor
                             data={inputData ?? DEFAULT_INPUT_DATA}
                             setData={handleInputDataChange}
@@ -716,6 +731,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                           <SelectScrollable
                             value={testModel ?? ''}
                             onChange={setTestModel}
+                            disabled={isOnboardingActive}
                           />
                         </div>
                       </div>
@@ -729,7 +745,9 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                             value={testVersionToUse ?? ''}
                             onValueChange={setTestVersionOverride}
                             disabled={
-                              !hasDraftVersion && publishedVersions.length === 0
+                              isOnboardingActive ||
+                              (!hasDraftVersion &&
+                                publishedVersions.length === 0)
                             }
                           >
                             <SelectTrigger className="w-full">
@@ -780,12 +798,14 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                           <SidebarSlider
                             value={testTemperature ?? temperature}
                             onChange={setTestTemperature}
+                            disabled={isOnboardingActive}
                           />
                         </div>
                       </div>
 
                       <div className="px-2 pt-4 flex flex-col gap-2">
                         <Button
+                          id="onboarding-test-button"
                           className={cn(
                             'w-full font-medium transition-all duration-200',
                             isStreaming
@@ -809,6 +829,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                           className="w-full"
                           onClick={handleSaveTestConfig}
                           disabled={
+                            isOnboardingActive ||
                             !hasTestConfigChanges ||
                             configFetcher.state !== 'idle'
                           }
@@ -824,7 +845,10 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                         </Button>
                       </div>
 
-                      <div className="px-2 pt-6 pb-4">
+                      <div
+                        id="onboarding-test-response"
+                        className="px-2 pt-6 pb-4"
+                      >
                         <div className="text-xs font-medium text-sidebar-foreground mb-2 block">
                           Response
                         </div>
@@ -833,6 +857,10 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                           isStreaming={isStreaming}
                           isComplete={isComplete}
                           error={streamError}
+                        />
+                        <OnboardingTestWatcher
+                          isComplete={isComplete}
+                          isStreaming={isStreaming}
                         />
                       </div>
                     </div>

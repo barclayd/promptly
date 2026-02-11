@@ -72,7 +72,10 @@ export const CreatePromptDialog = ({ children }: CreatePromptDialogProps) => {
         }}
       >
         <DialogTrigger asChild>{children}</DialogTrigger>
-        <DialogContent className="sm:max-w-106.25">
+        <DialogContent
+          id="onboarding-create-dialog"
+          className="sm:max-w-106.25"
+        >
           {serverLimitExceeded ? (
             // Server returned limit exceeded — close this and show gate
             <div className="py-4 text-center text-sm text-muted-foreground">
