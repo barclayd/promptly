@@ -1,16 +1,17 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
+import type { LanguageModel } from 'ai';
 import { streamText } from 'ai';
 import { data } from 'react-router';
 import { orgContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
+import { decryptApiKey } from '~/lib/encryption.server';
+import { getLlmApiKeyForModel } from '~/lib/llm-api-keys.server';
+import { createModelInstance } from '~/lib/model-dispatch.server';
+import { getProviderFromModelId } from '~/lib/model-pricing';
 import { preparePrompts } from '~/lib/prompt-interpolation';
 import type { Route } from './+types/prompts.run';
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
-  const anthropic = createAnthropic({
-    apiKey: context.cloudflare.env.ANTHROPIC_API_KEY,
-  });
-
   const auth = getAuth(context);
 
   const session = await auth.api.getSession({
@@ -29,8 +30,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   const formData = await request.formData();
   const promptId = formData.get('promptId') as string;
   const versionNumber = formData.get('version') as string | null;
-  // TODO: Use dynamic model selection instead of hardcoded claude-haiku-4-5
-  // Model parameter from client is currently ignored: formData.get('model')
+  const requestedModel = formData.get('model') as string | null;
   const temperature = Number.parseFloat(
     (formData.get('temperature') as string) || '0.5',
   );
@@ -125,8 +125,32 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
   const versionId = promptVersion.id;
 
+  // Resolve model: try org LLM key first, then fall back to env var
+  const modelId = requestedModel || 'claude-haiku-4.5';
+  let modelInstance: LanguageModel;
+
+  const orgKey = await getLlmApiKeyForModel(db, org.organizationId, modelId);
+
+  if (orgKey) {
+    const encryptionKey = context.cloudflare.env.API_KEY_ENCRYPTION_KEY;
+    const apiKey = await decryptApiKey(orgKey.encryptedKey, encryptionKey);
+    const provider = getProviderFromModelId(modelId);
+    modelInstance = createModelInstance(modelId, apiKey, provider);
+  } else if (context.cloudflare.env.ANTHROPIC_API_KEY) {
+    // Fallback: use env var for onboarding / default
+    const anthropic = createAnthropic({
+      apiKey: context.cloudflare.env.ANTHROPIC_API_KEY,
+    });
+    modelInstance = anthropic('claude-haiku-4-5-20251001');
+  } else {
+    return data(
+      { error: 'No API key configured for this model' },
+      { status: 400 },
+    );
+  }
+
   const result = streamText({
-    model: anthropic('claude-haiku-4-5'),
+    model: modelInstance,
     system: prepared.systemMessage,
     prompt: prepared.userMessage,
     temperature,

@@ -20,6 +20,7 @@ import {
 import { toast } from 'sonner';
 import { useDebouncedCallback } from 'use-debounce';
 import { CodePreview } from '~/components/code-preview';
+import { NoLlmApiKeysModal } from '~/components/no-llm-api-keys-modal';
 import { OnboardingTestWatcher } from '~/components/onboarding/onboarding-test-watcher';
 import { SchemaBuilder } from '~/components/schema-builder';
 import { SelectScrollable } from '~/components/select-scrollable';
@@ -50,6 +51,7 @@ import {
 } from '~/components/ui/sidebar';
 import { type Version, VersionsTable } from '~/components/versions-table';
 import { useTheme } from '~/hooks/use-dark-mode';
+import { useEnabledModels } from '~/hooks/use-enabled-models';
 import { useIsMobile } from '~/hooks/use-mobile';
 import { removeFieldsFromInputData } from '~/lib/input-data-utils';
 import type { SchemaField } from '~/lib/schema-types';
@@ -135,6 +137,8 @@ type SidebarRightProps = React.ComponentProps<typeof Sidebar> & {
 export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
   ({ versions = [], isReadonly = false, ...props }, ref) => {
     const isOnboardingActive = useOnboardingStore((s) => s.isActive);
+    const enabledModels = useEnabledModels();
+    const [showNoApiKeysModal, setShowNoApiKeysModal] = useState(false);
 
     // Get state from the store
     const schemaFields = usePromptEditorStore((state) => state.schemaFields);
@@ -338,6 +342,12 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       const { promptId } = params;
       if (!promptId) return;
 
+      // Check if user has LLM API keys configured (skip during onboarding)
+      if (!isOnboardingActive && enabledModels.length === 0) {
+        setShowNoApiKeysModal(true);
+        return;
+      }
+
       setStreamText('');
       setIsStreaming(true);
       setIsComplete(false);
@@ -439,6 +449,8 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       }
     }, [
       params,
+      isOnboardingActive,
+      enabledModels,
       testModel,
       testTemperature,
       temperature,
@@ -639,6 +651,9 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                         value={model ?? ''}
                         onChange={handleModelChange}
                         disabled={isReadonly}
+                        enabledModels={
+                          isOnboardingActive ? undefined : enabledModels
+                        }
                       />
                     </div>
                   </SidebarGroupContent>
@@ -732,6 +747,9 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                             value={testModel ?? ''}
                             onChange={setTestModel}
                             disabled={isOnboardingActive}
+                            enabledModels={
+                              isOnboardingActive ? undefined : enabledModels
+                            }
                           />
                         </div>
                       </div>
@@ -871,6 +889,10 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
             <SidebarSeparator className="mx-0" />
           </Fragment>
         </SidebarContent>
+        <NoLlmApiKeysModal
+          open={showNoApiKeysModal}
+          onOpenChange={setShowNoApiKeysModal}
+        />
       </Sidebar>
     );
   },

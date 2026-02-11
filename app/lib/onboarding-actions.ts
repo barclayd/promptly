@@ -15,7 +15,7 @@ export const getTimeOfDay = (): string => {
 export const getPromptName = (firstName: string) => `Welcome ${firstName}`;
 
 export const getPromptDescription = (firstName: string) =>
-  `A sample prompt to show ${firstName} how to get started with Promptly and just how easy it is to manage your prompts and ship AI agents in production at lightening speed`;
+  `A sample prompt to show ${firstName} how to get started with Promptly`;
 
 export const SYSTEM_MESSAGE = `You are the welcome assistant for PromptlyCMS, a modern content management platform. Your job is to greet new users warmly and personally when they first log in.
 
@@ -35,7 +35,7 @@ Built to grow with you — From a single blog to a multi-site setup, PromptlyCMS
 Formatting rules:
 
 Use emojis at the start of each bullet point to aid scannability.
-Do not use more than 3 bullet points.
+Do not use more than 3 bullet points. No markdown.
 Keep the entire message concise — aim for under 100 words total.
 Do not include technical jargon or onboarding instructions. This is a welcome moment, not a tutorial.`;
 

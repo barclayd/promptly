@@ -19,6 +19,7 @@ import { orgContext, sessionContext } from '~/context';
 import { RecentsProvider } from '~/context/recents-context';
 import { SearchProvider } from '~/context/search-context';
 import { parseCookie } from '~/lib/cookies';
+import { getEnabledModelsForOrg } from '~/lib/llm-api-keys.server';
 import {
   getMemberRole,
   getResourceCounts,
@@ -53,6 +54,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   let subscription = null;
   let memberRole = null;
   let resourceCounts = null;
+  let enabledModels: string[] = [];
   let organizationId: string | null = null;
   try {
     const org = context.get(orgContext);
@@ -64,11 +66,13 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
       getSubscriptionStatus(db, organizationId),
       userId ? getMemberRole(db, userId, organizationId) : null,
       getResourceCounts(db, organizationId),
+      getEnabledModelsForOrg(db, organizationId),
     ]);
 
     subscription = results[0];
     memberRole = results[1];
     resourceCounts = results[2];
+    enabledModels = results[3];
   } catch {
     // No org context (public route or unauthenticated) — defaults stay null
   }
@@ -80,6 +84,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     subscription,
     memberRole,
     resourceCounts,
+    enabledModels,
     organizationId,
   };
 };
@@ -97,7 +102,8 @@ export const shouldRevalidate = ({
     formAction.includes('/subscription/') ||
     formAction.includes('/api/auth/') ||
     formAction.includes('/team/') ||
-    formAction.includes('/api/prompts/')
+    formAction.includes('/api/prompts/') ||
+    formAction.includes('/api/settings/')
   ) {
     return true;
   }
