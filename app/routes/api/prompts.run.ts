@@ -140,7 +140,10 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     } catch (err) {
       console.error('Failed to decrypt/create model:', err);
       return data(
-        { error: 'Failed to initialize model with stored API key' },
+        {
+          error: 'Failed to initialize model with stored API key',
+          errorType: 'AUTH_ERROR',
+        },
         { status: 500 },
       );
     }
@@ -169,13 +172,28 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     onError: ({ error }) => {
       console.error('streamText error:', error);
       // Extract a user-friendly message from the AI SDK error
+      let message: string;
+      let isAuthError = false;
       if (error && typeof error === 'object' && 'data' in error) {
-        const apiError = error as { data?: { error?: { message?: string } } };
-        streamError = apiError.data?.error?.message ?? String(error);
+        const apiError = error as {
+          data?: { error?: { message?: string; type?: string } };
+        };
+        message = apiError.data?.error?.message ?? String(error);
+        const errorType = apiError.data?.error?.type;
+        isAuthError =
+          errorType === 'authentication_error' ||
+          /invalid.*(x-)?api[- ]?key|invalid.*auth|unauthorized|authentication/i.test(
+            message,
+          );
       } else {
-        streamError =
+        message =
           error instanceof Error ? error.message : 'Unknown streaming error';
+        isAuthError =
+          /invalid.*(x-)?api[- ]?key|invalid.*auth|unauthorized|authentication/i.test(
+            message,
+          );
       }
+      streamError = `${isAuthError ? 'AUTH_ERROR' : 'STREAM_ERROR'}:${message}`;
     },
   });
 
@@ -232,14 +250,16 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       }
       // Stream completed — check if onError captured an error
       if (streamError) {
-        await writer.write(encoder.encode(`[Error: ${streamError}]`));
+        await writer.write(encoder.encode(`[Error:${streamError}]`));
       }
       await writer.close();
     } catch (err) {
       console.error('Stream error:', err);
       const errorMessage =
         err instanceof Error ? err.message : 'Unknown streaming error';
-      await writer.write(encoder.encode(`[Error: ${errorMessage}]`));
+      await writer.write(
+        encoder.encode(`[Error:STREAM_ERROR:${errorMessage}]`),
+      );
       await writer.close();
     }
   };

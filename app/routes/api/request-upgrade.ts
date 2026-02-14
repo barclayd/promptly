@@ -104,54 +104,60 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   // Get resource counts for the email
   const resourceCounts = await getResourceCounts(db, org.organizationId);
 
-  // Pre-generate Stripe Checkout URL
   const env = context.cloudflare.env;
-  const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-    httpClient: Stripe.createFetchHttpClient(),
-  });
-
-  // Get or create Stripe customer
-  const subscriptionRow = await db
-    .prepare(
-      'SELECT stripe_customer_id FROM subscription WHERE organization_id = ? LIMIT 1',
-    )
-    .bind(org.organizationId)
-    .first<SubscriptionRow>();
-
-  let customerId = subscriptionRow?.stripe_customer_id;
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: admin.email,
-      name: admin.name,
-      metadata: { userId: admin.id, organizationId: org.organizationId },
-    });
-    customerId = customer.id;
-  }
-
   const baseURL = env.BETTER_AUTH_URL;
+  const isApiKeyContext = result.data.context === 'invalid-api-key';
   let checkoutUrl: string;
 
-  try {
-    const checkoutSession = await stripe.checkout.sessions.create({
-      customer: customerId,
-      mode: 'subscription',
-      line_items: [{ price: env.STRIPE_PRICE_ID, quantity: 1 }],
-      success_url: `${baseURL}/dashboard?upgraded=true`,
-      cancel_url: `${baseURL}/settings`,
-      expires_at: Math.floor(now / 1000) + 24 * 60 * 60, // 24h expiry
-      metadata: {
-        userId: admin.id,
-        plan: 'pro',
-        organizationId: org.organizationId,
-      },
+  if (isApiKeyContext) {
+    // No Stripe checkout needed for API key notifications
+    checkoutUrl = `${baseURL}/settings?tab=llm-api-keys`;
+  } else {
+    // Pre-generate Stripe Checkout URL
+    const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+      httpClient: Stripe.createFetchHttpClient(),
     });
-    checkoutUrl = checkoutSession.url ?? `${baseURL}/settings`;
-  } catch (error) {
-    console.error('Failed to create Stripe checkout session:', error);
-    return data(
-      { success: false, error: 'Failed to create checkout session' },
-      { status: 500 },
-    );
+
+    // Get or create Stripe customer
+    const subscriptionRow = await db
+      .prepare(
+        'SELECT stripe_customer_id FROM subscription WHERE organization_id = ? LIMIT 1',
+      )
+      .bind(org.organizationId)
+      .first<SubscriptionRow>();
+
+    let customerId = subscriptionRow?.stripe_customer_id;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: admin.email,
+        name: admin.name,
+        metadata: { userId: admin.id, organizationId: org.organizationId },
+      });
+      customerId = customer.id;
+    }
+
+    try {
+      const checkoutSession = await stripe.checkout.sessions.create({
+        customer: customerId,
+        mode: 'subscription',
+        line_items: [{ price: env.STRIPE_PRICE_ID, quantity: 1 }],
+        success_url: `${baseURL}/dashboard?upgraded=true`,
+        cancel_url: `${baseURL}/settings`,
+        expires_at: Math.floor(now / 1000) + 24 * 60 * 60, // 24h expiry
+        metadata: {
+          userId: admin.id,
+          plan: 'pro',
+          organizationId: org.organizationId,
+        },
+      });
+      checkoutUrl = checkoutSession.url ?? `${baseURL}/settings`;
+    } catch (error) {
+      console.error('Failed to create Stripe checkout session:', error);
+      return data(
+        { success: false, error: 'Failed to create checkout session' },
+        { status: 500 },
+      );
+    }
   }
 
   // Store the upgrade request
@@ -201,10 +207,13 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     );
 
     const resend = new Resend(resendApiKey);
+    const emailSubject = isApiKeyContext
+      ? `${session.user.name ?? 'A team member'} reports an invalid API key in ${org.organizationName}`
+      : `${session.user.name ?? 'A team member'} requested a Pro upgrade`;
     await resend.emails.send({
       from: 'Promptly <hello@info.promptlycms.com>',
       to: admin.email,
-      subject: `${session.user.name ?? 'A team member'} requested a Pro upgrade`,
+      subject: emailSubject,
       html: emailHtml,
     });
   } catch (error) {

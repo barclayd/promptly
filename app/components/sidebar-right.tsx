@@ -14,6 +14,7 @@ import {
 import {
   useFetcher,
   useLocation,
+  useNavigate,
   useParams,
   useSearchParams,
 } from 'react-router';
@@ -50,6 +51,7 @@ import {
   SidebarSeparator,
 } from '~/components/ui/sidebar';
 import { type Version, VersionsTable } from '~/components/versions-table';
+import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useTheme } from '~/hooks/use-dark-mode';
 import { useEnabledModels } from '~/hooks/use-enabled-models';
 import { useIsMobile } from '~/hooks/use-mobile';
@@ -190,9 +192,11 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
 
     const configFetcher = useFetcher();
     const location = useLocation();
+    const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const params = useParams();
     const isMobile = useIsMobile();
+    const { canManageBilling } = useCanManageBilling();
 
     // Streaming response state
     const [streamText, setStreamText] = useState('');
@@ -337,6 +341,45 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       [handleRemoveUnusedFields],
     );
 
+    // Show a user-friendly toast for API key errors with role-based CTAs
+    const showApiKeyErrorToast = useCallback(async () => {
+      if (canManageBilling) {
+        toast.error('API key error', {
+          description:
+            'Your API key appears to be invalid or expired. Update it in settings to continue testing.',
+          duration: 10000,
+          action: {
+            label: 'Update API Key',
+            onClick: () => navigate('/settings?tab=llm-api-keys'),
+          },
+        });
+      } else {
+        try {
+          const formData = new FormData();
+          formData.append('context', 'invalid-api-key');
+          const res = await fetch('/api/request-upgrade', {
+            method: 'POST',
+            body: formData,
+          });
+          const result = (await res.json()) as {
+            alreadyNotified?: boolean;
+          };
+          toast.error('API key error', {
+            duration: 10000,
+            description: result.alreadyNotified
+              ? 'Your API key appears to be invalid or expired. Your admin was already notified.'
+              : 'Your API key appears to be invalid or expired. Your admin has been notified.',
+          });
+        } catch {
+          toast.error('API key error', {
+            duration: 10000,
+            description:
+              'Your API key appears to be invalid or expired. Please contact your admin.',
+          });
+        }
+      }
+    }, [canManageBilling, navigate]);
+
     // Handle running the prompt
     const handleRunPrompt = useCallback(async () => {
       const { promptId } = params;
@@ -375,7 +418,12 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         if (!response.ok) {
           const errorData = (await response.json().catch(() => ({}))) as {
             error?: string;
+            errorType?: string;
           };
+          if (errorData.errorType === 'AUTH_ERROR') {
+            showApiKeyErrorToast();
+            return;
+          }
           throw new Error(errorData.error || `HTTP ${response.status}`);
         }
 
@@ -410,10 +458,16 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         }
 
         // Check if the stream contained an error from the server
-        const errorMatch = fullText.match(/\[Error:\s*(.+)\]$/);
+        const errorMatch = fullText.match(/\[Error:(?:(\w+):)?(.+)\]$/);
         if (errorMatch) {
+          const errorType = errorMatch[1] || 'STREAM_ERROR';
+          const errorMessage = errorMatch[2];
           setStreamText('');
-          throw new Error(errorMatch[1]);
+          if (errorType === 'AUTH_ERROR') {
+            showApiKeyErrorToast();
+            return;
+          }
+          throw new Error(errorMessage);
         }
 
         setIsComplete(true);
@@ -465,6 +519,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       inputDataRootName,
       testVersionToUse,
       showUnusedFieldsToast,
+      showApiKeyErrorToast,
       setLastOutputTokens,
       setLastSystemInputTokens,
       setLastUserInputTokens,
