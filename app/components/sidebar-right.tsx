@@ -1,5 +1,6 @@
 'use client';
 
+import { IconKeyOff, IconX } from '@tabler/icons-react';
 import { JsonEditor, type Theme } from 'json-edit-react';
 import { ChevronRight } from 'lucide-react';
 import type * as React from 'react';
@@ -14,12 +15,14 @@ import {
 import {
   useFetcher,
   useLocation,
+  useNavigate,
   useParams,
   useSearchParams,
 } from 'react-router';
 import { toast } from 'sonner';
 import { useDebouncedCallback } from 'use-debounce';
 import { CodePreview } from '~/components/code-preview';
+import { NoLlmApiKeysModal } from '~/components/no-llm-api-keys-modal';
 import { OnboardingTestWatcher } from '~/components/onboarding/onboarding-test-watcher';
 import { SchemaBuilder } from '~/components/schema-builder';
 import { SelectScrollable } from '~/components/select-scrollable';
@@ -49,7 +52,9 @@ import {
   SidebarSeparator,
 } from '~/components/ui/sidebar';
 import { type Version, VersionsTable } from '~/components/versions-table';
+import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useTheme } from '~/hooks/use-dark-mode';
+import { useEnabledModels } from '~/hooks/use-enabled-models';
 import { useIsMobile } from '~/hooks/use-mobile';
 import { removeFieldsFromInputData } from '~/lib/input-data-utils';
 import type { SchemaField } from '~/lib/schema-types';
@@ -135,6 +140,8 @@ type SidebarRightProps = React.ComponentProps<typeof Sidebar> & {
 export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
   ({ versions = [], isReadonly = false, ...props }, ref) => {
     const isOnboardingActive = useOnboardingStore((s) => s.isActive);
+    const enabledModels = useEnabledModels();
+    const [showNoApiKeysModal, setShowNoApiKeysModal] = useState(false);
 
     // Get state from the store
     const schemaFields = usePromptEditorStore((state) => state.schemaFields);
@@ -186,9 +193,11 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
 
     const configFetcher = useFetcher();
     const location = useLocation();
+    const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const params = useParams();
     const isMobile = useIsMobile();
+    const { canManageBilling } = useCanManageBilling();
 
     // Streaming response state
     const [streamText, setStreamText] = useState('');
@@ -333,10 +342,89 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       [handleRemoveUnusedFields],
     );
 
+    // Show a user-friendly toast for API key errors with role-based CTAs
+    const showApiKeyErrorToast = useCallback(async () => {
+      let description: string;
+      let actionLabel: string | null = null;
+      let actionOnClick: (() => void) | null = null;
+
+      if (canManageBilling) {
+        description =
+          'Your API key is invalid or expired. Update it in settings to continue testing.';
+        actionLabel = 'Update API Key';
+        actionOnClick = () => navigate('/settings?tab=llm-api-keys');
+      } else {
+        try {
+          const formData = new FormData();
+          formData.append('context', 'invalid-api-key');
+          const res = await fetch('/api/request-upgrade', {
+            method: 'POST',
+            body: formData,
+          });
+          const result = (await res.json()) as {
+            alreadyNotified?: boolean;
+          };
+          description = result.alreadyNotified
+            ? 'Your API key is invalid or expired. Your admin was already notified.'
+            : 'Your API key is invalid or expired. Your admin has been notified.';
+        } catch {
+          description =
+            'Your API key is invalid or expired. Please contact your admin.';
+        }
+      }
+
+      toast.custom(
+        (id) => (
+          <div className="w-[388px] rounded-lg border border-border bg-popover p-4 shadow-lg">
+            <div className="flex items-start gap-3">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-destructive/10">
+                <IconKeyOff className="size-4 text-destructive" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-popover-foreground">
+                  API key error
+                </p>
+                <p className="mt-1 text-sm leading-snug text-muted-foreground">
+                  {description}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => toast.dismiss(id)}
+                className="shrink-0 cursor-pointer rounded-md p-1 text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+              >
+                <IconX className="size-3.5" />
+              </button>
+            </div>
+            {actionLabel && actionOnClick && (
+              <div className="mt-3 flex justify-end">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    actionOnClick();
+                    toast.dismiss(id);
+                  }}
+                >
+                  {actionLabel}
+                </Button>
+              </div>
+            )}
+          </div>
+        ),
+        { duration: 12000 },
+      );
+    }, [canManageBilling, navigate]);
+
     // Handle running the prompt
     const handleRunPrompt = useCallback(async () => {
       const { promptId } = params;
       if (!promptId) return;
+
+      // Check if user has LLM API keys configured (skip during onboarding)
+      if (!isOnboardingActive && enabledModels.length === 0) {
+        setShowNoApiKeysModal(true);
+        return;
+      }
 
       setStreamText('');
       setIsStreaming(true);
@@ -365,7 +453,12 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         if (!response.ok) {
           const errorData = (await response.json().catch(() => ({}))) as {
             error?: string;
+            errorType?: string;
           };
+          if (errorData.errorType === 'AUTH_ERROR') {
+            showApiKeyErrorToast();
+            return;
+          }
           throw new Error(errorData.error || `HTTP ${response.status}`);
         }
 
@@ -397,6 +490,19 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
           const chunk = decoder.decode(value, { stream: true });
           fullText += chunk;
           setStreamText(fullText);
+        }
+
+        // Check if the stream contained an error from the server
+        const errorMatch = fullText.match(/\[Error:(?:(\w+):)?(.+)\]$/);
+        if (errorMatch) {
+          const errorType = errorMatch[1] || 'STREAM_ERROR';
+          const errorMessage = errorMatch[2];
+          setStreamText('');
+          if (errorType === 'AUTH_ERROR') {
+            showApiKeyErrorToast();
+            return;
+          }
+          throw new Error(errorMessage);
         }
 
         setIsComplete(true);
@@ -439,6 +545,8 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       }
     }, [
       params,
+      isOnboardingActive,
+      enabledModels,
       testModel,
       testTemperature,
       temperature,
@@ -446,6 +554,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       inputDataRootName,
       testVersionToUse,
       showUnusedFieldsToast,
+      showApiKeyErrorToast,
       setLastOutputTokens,
       setLastSystemInputTokens,
       setLastUserInputTokens,
@@ -639,6 +748,9 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                         value={model ?? ''}
                         onChange={handleModelChange}
                         disabled={isReadonly}
+                        enabledModels={
+                          isOnboardingActive ? undefined : enabledModels
+                        }
                       />
                     </div>
                   </SidebarGroupContent>
@@ -732,6 +844,9 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                             value={testModel ?? ''}
                             onChange={setTestModel}
                             disabled={isOnboardingActive}
+                            enabledModels={
+                              isOnboardingActive ? undefined : enabledModels
+                            }
                           />
                         </div>
                       </div>
@@ -871,6 +986,10 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
             <SidebarSeparator className="mx-0" />
           </Fragment>
         </SidebarContent>
+        <NoLlmApiKeysModal
+          open={showNoApiKeysModal}
+          onOpenChange={setShowNoApiKeysModal}
+        />
       </Sidebar>
     );
   },

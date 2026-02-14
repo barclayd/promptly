@@ -33,6 +33,8 @@ const CONTEXT_COPY: Record<string, string> = {
   read_only: 'Your workspace is in read-only mode on the Free plan.',
   plan_comparison: 'A team member compared plans and wants to upgrade.',
   usage_limit: 'Your workspace is running low on capacity.',
+  'invalid-api-key':
+    'The API key configured for your workspace appears to be invalid or expired. Update it in Settings \u203A LLM API Keys.',
   general: 'A team member would like to upgrade your workspace to Pro.',
 };
 
@@ -50,10 +52,43 @@ export const UpgradeRequestEmail = ({
   settingsUrl,
 }: UpgradeRequestEmailProps) => {
   const contextLine = CONTEXT_COPY[context] ?? CONTEXT_COPY.general;
+  const isApiKeyContext = context === 'invalid-api-key';
   const promptsAtLimit =
     freeLimits.prompts > 0 && promptCount >= freeLimits.prompts;
   const membersAtLimit =
     freeLimits.members > 0 && memberCount >= freeLimits.members;
+
+  if (isApiKeyContext) {
+    return (
+      <EmailLayout
+        preview={`${requesterName} reports an invalid API key in ${workspaceName}`}
+      >
+        <Text style={greeting}>Hi {adminName},</Text>
+
+        <Text style={paragraph}>
+          <strong>{requesterName}</strong> from <strong>{workspaceName}</strong>{' '}
+          ran into an API key issue while testing a prompt.
+        </Text>
+
+        <Text style={contextText}>{contextLine}</Text>
+
+        <Hr style={divider} />
+
+        <Section style={ctaSection}>
+          <EmailButton href={`${settingsUrl}?tab=llm-api-keys`}>
+            Update API Key
+          </EmailButton>
+        </Section>
+
+        <Hr style={divider} />
+
+        <Text style={footerNote}>
+          You're receiving this because {requesterName} ({requesterEmail})
+          reported an API key issue in {workspaceName}.
+        </Text>
+      </EmailLayout>
+    );
+  }
 
   return (
     <EmailLayout

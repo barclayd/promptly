@@ -1,14 +1,19 @@
 import { IconKey } from '@tabler/icons-react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { ApiKeysEmptyState } from '~/components/api-keys-empty-state';
 import { ApiKeysTable } from '~/components/api-keys-table';
 import { BillingSection } from '~/components/billing/billing-section';
 import { CreateApiKeyDialog } from '~/components/create-api-key-dialog';
+import { CreateLlmApiKeyDialog } from '~/components/create-llm-api-key-dialog';
+import { LlmApiKeysEmptyState } from '~/components/llm-api-keys-empty-state';
+import { LlmApiKeysTable } from '~/components/llm-api-keys-table';
 import { Button } from '~/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { orgContext, userContext } from '~/context';
 import { useSubscription } from '~/hooks/use-subscription';
 import { getAuth } from '~/lib/auth.server';
+import { getLlmApiKeysForOrg } from '~/lib/llm-api-keys.server';
 import type { Route } from './+types/settings';
 
 type ApiKey = {
@@ -42,12 +47,16 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   }
 
   const auth = getAuth(context);
+  const db = context.cloudflare.env.promptly;
 
-  // Get API keys for the current user
-  const apiKeysResponse = await auth.api.listApiKeys({
-    headers: request.headers,
-    asResponse: true,
-  });
+  // Get Promptly API keys and LLM API keys in parallel
+  const [apiKeysResponse, llmApiKeys] = await Promise.all([
+    auth.api.listApiKeys({
+      headers: request.headers,
+      asResponse: true,
+    }),
+    getLlmApiKeysForOrg(db, org.organizationId),
+  ]);
 
   let allApiKeys: ApiKey[] = [];
 
@@ -87,12 +96,13 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 
   return {
     apiKeys: transformedKeys,
+    llmApiKeys,
     organizationId: org.organizationId,
     organizationName: org.organizationName,
   };
 };
 
-const ApiKeysContent = ({
+const PromptlyApiKeysContent = ({
   apiKeys,
 }: {
   apiKeys: Route.ComponentProps['loaderData']['apiKeys'];
@@ -102,7 +112,9 @@ const ApiKeysContent = ({
   return hasApiKeys ? (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <div className="text-sm font-medium text-foreground">API Keys</div>
+        <div className="text-sm font-medium text-foreground">
+          Promptly API Keys
+        </div>
         <CreateApiKeyDialog>
           <Button variant="outline" size="sm" className="gap-2">
             <IconKey className="size-4" />
@@ -119,8 +131,50 @@ const ApiKeysContent = ({
   );
 };
 
+const LlmApiKeysContent = ({
+  llmApiKeys,
+  createDialogOpen,
+  onCreateDialogOpenChange,
+}: {
+  llmApiKeys: Route.ComponentProps['loaderData']['llmApiKeys'];
+  createDialogOpen: boolean;
+  onCreateDialogOpenChange: (open: boolean) => void;
+}) => {
+  const hasKeys = llmApiKeys.length > 0;
+
+  return hasKeys ? (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-medium text-foreground">LLM API Keys</div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={() => onCreateDialogOpenChange(true)}
+        >
+          <IconKey className="size-4" />
+          Add LLM API Key
+        </Button>
+      </div>
+      <LlmApiKeysTable llmApiKeys={llmApiKeys} />
+      <CreateLlmApiKeyDialog
+        open={createDialogOpen}
+        onOpenChange={onCreateDialogOpenChange}
+      />
+    </div>
+  ) : (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <LlmApiKeysEmptyState onAddKey={() => onCreateDialogOpenChange(true)} />
+      <CreateLlmApiKeyDialog
+        open={createDialogOpen}
+        onOpenChange={onCreateDialogOpenChange}
+      />
+    </div>
+  );
+};
+
 const Settings = ({ loaderData }: Route.ComponentProps) => {
-  const { apiKeys } = loaderData;
+  const { apiKeys, llmApiKeys } = loaderData;
   const { subscription } = useSubscription();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -130,18 +184,24 @@ const Settings = ({ loaderData }: Route.ComponentProps) => {
       subscription.status === 'active' ||
       subscription.status === 'past_due');
 
-  const activeTab = hasBillingTab
-    ? (searchParams.get('tab') ?? 'api-keys')
-    : 'api-keys';
+  // Default tab: 'promptly-api-keys', support 'llm-api-keys' and 'billing'
+  const tabParam = searchParams.get('tab');
+  const activeTab = tabParam ?? 'promptly-api-keys';
+
+  // Auto-open create dialog when redirected from no-keys modal
+  const [createLlmDialogOpen, setCreateLlmDialogOpen] = useState(
+    tabParam === 'llm-api-keys' && searchParams.get('open') === 'create',
+  );
 
   const handleTabChange = (value: string) => {
     setSearchParams(
       (prev) => {
-        if (value === 'api-keys') {
+        if (value === 'promptly-api-keys') {
           prev.delete('tab');
         } else {
           prev.set('tab', value);
         }
+        prev.delete('open');
         return prev;
       },
       { replace: true },
@@ -166,24 +226,32 @@ const Settings = ({ loaderData }: Route.ComponentProps) => {
             </div>
 
             {/* Content */}
-            {hasBillingTab ? (
-              <Tabs value={activeTab} onValueChange={handleTabChange}>
-                <TabsList>
-                  <TabsTrigger value="api-keys">API Keys</TabsTrigger>
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+              <TabsList>
+                <TabsTrigger value="promptly-api-keys">
+                  Promptly API Keys
+                </TabsTrigger>
+                <TabsTrigger value="llm-api-keys">LLM API Keys</TabsTrigger>
+                {hasBillingTab && (
                   <TabsTrigger value="billing">Billing</TabsTrigger>
-                </TabsList>
-                <TabsContent value="api-keys" className="mt-6">
-                  <ApiKeysContent apiKeys={apiKeys} />
-                </TabsContent>
+                )}
+              </TabsList>
+              <TabsContent value="promptly-api-keys" className="mt-6">
+                <PromptlyApiKeysContent apiKeys={apiKeys} />
+              </TabsContent>
+              <TabsContent value="llm-api-keys" className="mt-6">
+                <LlmApiKeysContent
+                  llmApiKeys={llmApiKeys}
+                  createDialogOpen={createLlmDialogOpen}
+                  onCreateDialogOpenChange={setCreateLlmDialogOpen}
+                />
+              </TabsContent>
+              {hasBillingTab && (
                 <TabsContent value="billing" className="mt-6">
                   <BillingSection />
                 </TabsContent>
-              </Tabs>
-            ) : (
-              <div className="space-y-8">
-                <ApiKeysContent apiKeys={apiKeys} />
-              </div>
-            )}
+              )}
+            </Tabs>
           </div>
         </div>
       </div>
