@@ -409,6 +409,13 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
           setStreamText(fullText);
         }
 
+        // Check if the stream contained an error from the server
+        const errorMatch = fullText.match(/\[Error:\s*(.+)\]$/);
+        if (errorMatch) {
+          setStreamText('');
+          throw new Error(errorMatch[1]);
+        }
+
         setIsComplete(true);
 
         // Fetch the accurate token counts from the server

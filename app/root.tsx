@@ -117,12 +117,6 @@ const CDN = 'https://images.keepfre.sh/app/icons/promptly/';
 export const links: Route.LinksFunction = () => [
   {
     rel: 'icon',
-    href: `${CDN}light-favicon.ico`,
-    sizes: '32x32',
-    media: '(prefers-color-scheme: light)',
-  },
-  {
-    rel: 'icon',
     href: `${CDN}favicon.ico`,
     sizes: '32x32',
     media: '(prefers-color-scheme: dark)',

@@ -135,7 +135,7 @@ export const SidebarLeft = ({
   const user = {
     name: rootData?.user?.name ?? 'Guest',
     email: rootData?.user?.email ?? '',
-    avatar: rootData?.user?.image ?? '/avatars/shadcn.jpg',
+    avatar: rootData?.user?.image ?? undefined,
   };
 
   // Transform recents to NavDocuments format

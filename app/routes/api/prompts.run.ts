@@ -132,10 +132,18 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   const orgKey = await getLlmApiKeyForModel(db, org.organizationId, modelId);
 
   if (orgKey) {
-    const encryptionKey = context.cloudflare.env.API_KEY_ENCRYPTION_KEY;
-    const apiKey = await decryptApiKey(orgKey.encryptedKey, encryptionKey);
-    const provider = getProviderFromModelId(modelId);
-    modelInstance = createModelInstance(modelId, apiKey, provider);
+    try {
+      const encryptionKey = context.cloudflare.env.API_KEY_ENCRYPTION_KEY;
+      const apiKey = await decryptApiKey(orgKey.encryptedKey, encryptionKey);
+      const provider = getProviderFromModelId(modelId);
+      modelInstance = createModelInstance(modelId, apiKey, provider);
+    } catch (err) {
+      console.error('Failed to decrypt/create model:', err);
+      return data(
+        { error: 'Failed to initialize model with stored API key' },
+        { status: 500 },
+      );
+    }
   } else if (context.cloudflare.env.ANTHROPIC_API_KEY) {
     // Fallback: use env var for onboarding / default
     const anthropic = createAnthropic({
@@ -149,55 +157,98 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     );
   }
 
+  // Capture stream errors — onError swallows them so the textStream
+  // iterator completes normally without throwing
+  let streamError: string | null = null;
+
   const result = streamText({
     model: modelInstance,
     system: prepared.systemMessage,
     prompt: prepared.userMessage,
     temperature,
+    onError: ({ error }) => {
+      console.error('streamText error:', error);
+      // Extract a user-friendly message from the AI SDK error
+      if (error && typeof error === 'object' && 'data' in error) {
+        const apiError = error as { data?: { error?: { message?: string } } };
+        streamError = apiError.data?.error?.message ?? String(error);
+      } else {
+        streamError =
+          error instanceof Error ? error.message : 'Unknown streaming error';
+      }
+    },
   });
 
   // After the response is sent, update the database with token counts
-  // Wrap in Promise.resolve to convert PromiseLike to Promise for waitUntil
   context.cloudflare.ctx.waitUntil(
-    Promise.resolve(result.usage).then(async (usage) => {
-      if (versionId && usage) {
-        const { inputTokens, outputTokens } = usage;
+    Promise.resolve(result.usage)
+      .then(async (usage) => {
+        if (versionId && usage) {
+          const { inputTokens, outputTokens } = usage;
 
-        // Distribute input tokens proportionally by character length
-        let systemInputTokens: number | null = null;
-        let userInputTokens: number | null = null;
+          let systemInputTokens: number | null = null;
+          let userInputTokens: number | null = null;
 
-        if (inputTokens && totalLength > 0) {
-          const systemRatio = systemLength / totalLength;
-          systemInputTokens = Math.round(inputTokens * systemRatio);
-          userInputTokens = inputTokens - systemInputTokens; // Ensure they sum exactly
-        }
+          if (inputTokens && totalLength > 0) {
+            const systemRatio = systemLength / totalLength;
+            systemInputTokens = Math.round(inputTokens * systemRatio);
+            userInputTokens = inputTokens - systemInputTokens;
+          }
 
-        await db
-          .prepare(
-            `UPDATE prompt_version
+          await db
+            .prepare(
+              `UPDATE prompt_version
              SET last_output_tokens = ?,
                  last_system_input_tokens = ?,
                  last_user_input_tokens = ?
              WHERE id = ?`,
-          )
-          .bind(
-            outputTokens ?? null,
-            systemInputTokens,
-            userInputTokens,
-            versionId,
-          )
-          .run();
-      }
-    }),
+            )
+            .bind(
+              outputTokens ?? null,
+              systemInputTokens,
+              userInputTokens,
+              versionId,
+            )
+            .run();
+        }
+      })
+      .catch((err) => {
+        console.error('waitUntil usage error:', err);
+      }),
   );
 
-  const response = result.toTextStreamResponse();
+  // Wrap the text stream to surface errors to the client.
+  // The AI SDK's onError callback swallows errors, so textStream
+  // completes normally — we check streamError after iteration.
+  const textStream = result.textStream;
+  const { readable, writable } = new TransformStream<Uint8Array>();
+  const writer = writable.getWriter();
+  const encoder = new TextEncoder();
+
+  const pumpStream = async () => {
+    try {
+      for await (const chunk of textStream) {
+        await writer.write(encoder.encode(chunk));
+      }
+      // Stream completed — check if onError captured an error
+      if (streamError) {
+        await writer.write(encoder.encode(`[Error: ${streamError}]`));
+      }
+      await writer.close();
+    } catch (err) {
+      console.error('Stream error:', err);
+      const errorMessage =
+        err instanceof Error ? err.message : 'Unknown streaming error';
+      await writer.write(encoder.encode(`[Error: ${errorMessage}]`));
+      await writer.close();
+    }
+  };
+
+  context.cloudflare.ctx.waitUntil(pumpStream());
+
+  const headers = new Headers({ 'Content-Type': 'text/plain; charset=utf-8' });
   if (prepared.unusedFields.length > 0) {
-    response.headers.set(
-      'X-Unused-Fields',
-      JSON.stringify(prepared.unusedFields),
-    );
+    headers.set('X-Unused-Fields', JSON.stringify(prepared.unusedFields));
   }
-  return response;
+  return new Response(readable, { headers });
 };
