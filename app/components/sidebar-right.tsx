@@ -1,5 +1,6 @@
 'use client';
 
+import { IconKeyOff, IconX } from '@tabler/icons-react';
 import { JsonEditor, type Theme } from 'json-edit-react';
 import { ChevronRight } from 'lucide-react';
 import type * as React from 'react';
@@ -343,16 +344,15 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
 
     // Show a user-friendly toast for API key errors with role-based CTAs
     const showApiKeyErrorToast = useCallback(async () => {
+      let description: string;
+      let actionLabel: string | null = null;
+      let actionOnClick: (() => void) | null = null;
+
       if (canManageBilling) {
-        toast.error('API key error', {
-          description:
-            'Your API key appears to be invalid or expired. Update it in settings to continue testing.',
-          duration: 10000,
-          action: {
-            label: 'Update API Key',
-            onClick: () => navigate('/settings?tab=llm-api-keys'),
-          },
-        });
+        description =
+          'Your API key is invalid or expired. Update it in settings to continue testing.';
+        actionLabel = 'Update API Key';
+        actionOnClick = () => navigate('/settings?tab=llm-api-keys');
       } else {
         try {
           const formData = new FormData();
@@ -364,20 +364,55 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
           const result = (await res.json()) as {
             alreadyNotified?: boolean;
           };
-          toast.error('API key error', {
-            duration: 10000,
-            description: result.alreadyNotified
-              ? 'Your API key appears to be invalid or expired. Your admin was already notified.'
-              : 'Your API key appears to be invalid or expired. Your admin has been notified.',
-          });
+          description = result.alreadyNotified
+            ? 'Your API key is invalid or expired. Your admin was already notified.'
+            : 'Your API key is invalid or expired. Your admin has been notified.';
         } catch {
-          toast.error('API key error', {
-            duration: 10000,
-            description:
-              'Your API key appears to be invalid or expired. Please contact your admin.',
-          });
+          description =
+            'Your API key is invalid or expired. Please contact your admin.';
         }
       }
+
+      toast.custom(
+        (id) => (
+          <div className="w-[388px] rounded-lg border border-border bg-popover p-4 shadow-lg">
+            <div className="flex items-start gap-3">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-destructive/10">
+                <IconKeyOff className="size-4 text-destructive" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-popover-foreground">
+                  API key error
+                </p>
+                <p className="mt-1 text-sm leading-snug text-muted-foreground">
+                  {description}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => toast.dismiss(id)}
+                className="shrink-0 cursor-pointer rounded-md p-1 text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+              >
+                <IconX className="size-3.5" />
+              </button>
+            </div>
+            {actionLabel && actionOnClick && (
+              <div className="mt-3 flex justify-end">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    actionOnClick();
+                    toast.dismiss(id);
+                  }}
+                >
+                  {actionLabel}
+                </Button>
+              </div>
+            )}
+          </div>
+        ),
+        { duration: 12000 },
+      );
     }, [canManageBilling, navigate]);
 
     // Handle running the prompt
