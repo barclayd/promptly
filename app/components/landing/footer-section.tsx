@@ -5,8 +5,11 @@ const footerLinks = {
   product: [
     { label: 'Features', href: '#features' },
     { label: 'Pricing', href: '#pricing' },
-    { label: 'Documentation', href: '/docs' },
-    { label: 'Changelog', href: '/changelog' },
+    { label: 'Documentation', href: 'https://docs.promptlycms.com' },
+    {
+      label: 'Changelog',
+      href: 'https://github.com/barclayd/promptly-package/blob/main/CHANGELOG.md',
+    },
   ],
   company: [
     { label: 'About', href: '/about' },
@@ -72,7 +75,7 @@ export const FooterSection = () => {
                 className="text-muted-foreground hover:text-foreground"
               >
                 <a
-                  href="https://github.com/promptly"
+                  href="https://github.com/barclayd/promptly"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -100,16 +103,23 @@ export const FooterSection = () => {
           <div>
             <h4 className="font-semibold mb-4">Product</h4>
             <ul className="space-y-3">
-              {footerLinks.product.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
+              {footerLinks.product.map((link) => {
+                const isExternal = link.href.startsWith('http');
+                return (
+                  <li key={link.label}>
+                    <a
+                      href={link.href}
+                      {...(isExternal && {
+                        target: '_blank',
+                        rel: 'noopener noreferrer',
+                      })}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 

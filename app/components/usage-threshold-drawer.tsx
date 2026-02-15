@@ -170,7 +170,7 @@ export const UsageThresholdDrawer = ({
                 ) : (
                   <>
                     <ArrowUpIcon size={16} />
-                    Upgrade to Pro — $29/mo
+                    Upgrade to Pro - $29/mo
                   </>
                 )}
               </Button>

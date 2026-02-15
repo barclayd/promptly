@@ -17,7 +17,7 @@ export const UpgradeConfirmedEmail = ({
     <Text style={heading}>{workspaceName} is now on Pro!</Text>
 
     <Text style={paragraph}>
-      Hey {requesterName}, great news &mdash; your workspace admin upgraded to
+      Hey {requesterName}, great news - your workspace admin upgraded to
       Promptly Pro. You now have access to the full experience.
     </Text>
 

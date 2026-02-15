@@ -8,12 +8,33 @@ type MultiLanguageIdeDemoProps = {
   isVisible?: boolean;
 };
 
-const TYPESCRIPT_CODE = `import { getPrompt } from '@promptly/sdk';
+const TYPESCRIPT_CODE = `import { createPromptlyClient } from '@promptlycms/prompts';
+import { generateText } from 'ai';
 
-const { text } = await getPrompt('marketing/welcome-email', {
-  company_name: 'Acme Inc',
-  user_name: 'Sarah',
-  plan_type: 'Pro'
+const { getPrompt } = createPromptlyClient();
+
+// fetch your prompt at runtime - no prompts hardcoded in your codebase
+const { userMessage, systemMessage, temperature, model } = await getPrompt(
+  'upsellMessage',
+);
+
+const { text } = await generateText({
+  model,
+  messages: [
+    {
+      role: 'system',
+      content: systemMessage,
+    },
+    {
+      role: 'user',
+      content: userMessage({
+        username,
+        persuasionLevel: 1,
+        recentPurchases,
+      }),
+    },
+  ],
+  temperature,
 });
 
 await sendEmail({
@@ -56,19 +77,21 @@ type Token = {
 const tokenizeTypeScript = (code: string): Token[] => {
   const tokens: Token[] = [];
   const regex =
-    /('.*?'|".*?"|`.*?`)|(\b(?:import|export|const|let|var|async|await|from|return|function|type|interface)\b)|(\b\w+)(?=\s*\()|(\b\w+)(?=\s*:)|([{}();,.:=<>])|(\s+)|(.)/g;
+    /(\/\/.*$)|('.*?'|".*?"|`.*?`)|(\b(?:import|export|const|let|var|async|await|from|return|function|type|interface)\b)|(\b\w+)(?=\s*\()|(\b\w+)(?=\s*:)|([{}()[\];,.:=<>])|(\s+)|(.)/gm;
 
   let match: RegExpExecArray | null = regex.exec(code);
   while (match !== null) {
     if (match[1]) {
-      tokens.push({ text: match[0], type: 'string' });
+      tokens.push({ text: match[0], type: 'comment' });
     } else if (match[2]) {
-      tokens.push({ text: match[0], type: 'keyword' });
+      tokens.push({ text: match[0], type: 'string' });
     } else if (match[3]) {
-      tokens.push({ text: match[0], type: 'function' });
+      tokens.push({ text: match[0], type: 'keyword' });
     } else if (match[4]) {
-      tokens.push({ text: match[0], type: 'property' });
+      tokens.push({ text: match[0], type: 'function' });
     } else if (match[5]) {
+      tokens.push({ text: match[0], type: 'property' });
+    } else if (match[6]) {
       tokens.push({ text: match[0], type: 'punctuation' });
     } else {
       tokens.push({ text: match[0], type: 'text' });
@@ -450,7 +473,7 @@ export const MultiLanguageIdeDemo = ({
             </span>
           )}
           <span className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-[10px]">
-            @promptly/sdk
+            @promptlycms/prompts
           </span>
         </div>
       </div>

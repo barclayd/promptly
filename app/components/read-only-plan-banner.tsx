@@ -21,7 +21,7 @@ export const ReadOnlyPlanBanner = ({
       </div>
       <div className="flex min-w-0 flex-1 items-center gap-x-2 gap-y-1 flex-wrap">
         <p className="text-sm text-amber-900 dark:text-amber-100">
-          <span className="sm:hidden">View-only — Free plan limit.</span>
+          <span className="sm:hidden">View-only - Free plan limit.</span>
           <span className="hidden sm:inline">
             This prompt is view-only on the Free plan.
           </span>

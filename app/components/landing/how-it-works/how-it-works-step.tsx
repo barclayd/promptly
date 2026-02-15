@@ -6,7 +6,7 @@ import { cn } from '~/lib/utils';
 type HowItWorksStepProps = {
   step: number;
   title: string;
-  description: string;
+  description: ReactNode;
   children: ReactNode;
   isLastStep?: boolean;
 };

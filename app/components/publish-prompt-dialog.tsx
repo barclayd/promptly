@@ -101,8 +101,8 @@ export const PublishPromptDialog = ({
                   {isFirstPublish
                     ? 'Initial release'
                     : isSchemaChanged
-                      ? 'Major version bump — schema fields changed'
-                      : 'Minor version bump — content updated'}
+                      ? 'Major version bump - schema fields changed'
+                      : 'Minor version bump - content updated'}
                 </ItemDescription>
               </ItemContent>
             </Item>

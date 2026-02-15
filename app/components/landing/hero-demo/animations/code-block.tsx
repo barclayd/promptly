@@ -27,19 +27,21 @@ type Token = {
 const tokenize = (code: string): Token[] => {
   const tokens: Token[] = [];
   const regex =
-    /('.*?'|".*?"|`.*?`)|(\b(?:import|export|const|let|var|async|await|from|return|function|type|interface)\b)|(\b\w+)(?=\s*\()|(\b\w+)(?=\s*:)|([{}();,.:=<>])|(\s+)|(.)/g;
+    /(\/\/.*$)|('.*?'|".*?"|`.*?`)|(\b(?:import|export|const|let|var|async|await|from|return|function|type|interface)\b)|(\b\w+)(?=\s*\()|(\b\w+)(?=\s*:)|([{}()[\];,.:=<>])|(\s+)|(.)/gm;
 
   let match: RegExpExecArray | null = regex.exec(code);
   while (match !== null) {
     if (match[1]) {
-      tokens.push({ text: match[0], type: 'string' });
+      tokens.push({ text: match[0], type: 'comment' });
     } else if (match[2]) {
-      tokens.push({ text: match[0], type: 'keyword' });
+      tokens.push({ text: match[0], type: 'string' });
     } else if (match[3]) {
-      tokens.push({ text: match[0], type: 'function' });
+      tokens.push({ text: match[0], type: 'keyword' });
     } else if (match[4]) {
-      tokens.push({ text: match[0], type: 'property' });
+      tokens.push({ text: match[0], type: 'function' });
     } else if (match[5]) {
+      tokens.push({ text: match[0], type: 'property' });
+    } else if (match[6]) {
       tokens.push({ text: match[0], type: 'punctuation' });
     } else {
       tokens.push({ text: match[0], type: 'text' });

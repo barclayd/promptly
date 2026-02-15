@@ -1,6 +1,37 @@
+import { IconArrowRight } from '@tabler/icons-react';
+import type { ReactNode } from 'react';
 import { features } from '~/lib/landing-data';
 import { AnimatedWrapper } from './animated-wrapper';
 import { FeatureCard } from './feature-card';
+
+const docsLink =
+  'text-indigo-600 dark:text-indigo-400 hover:underline font-medium';
+
+const richDescriptions: Record<string, ReactNode> = {
+  'Developer SDK': (
+    <>
+      Easy to integrate{' '}
+      <a
+        href="https://docs.promptlycms.com/api/overview/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={docsLink}
+      >
+        API
+      </a>
+      .{' '}
+      <a
+        href="https://docs.promptlycms.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={docsLink}
+      >
+        TypeScript client
+      </a>{' '}
+      with Zod schemas. Full autocomplete, zero guesswork.
+    </>
+  ),
+};
 
 export const FeaturesGridSection = () => {
   return (
@@ -14,6 +45,14 @@ export const FeaturesGridSection = () => {
             A complete platform for managing AI prompts at scale, from creation
             to deployment.
           </p>
+          <a
+            href="https://docs.promptlycms.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline mt-3"
+          >
+            Developer SDK <IconArrowRight className="size-3.5" />
+          </a>
         </AnimatedWrapper>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -22,7 +61,9 @@ export const FeaturesGridSection = () => {
               <FeatureCard
                 icon={feature.icon}
                 title={feature.title}
-                description={feature.description}
+                description={
+                  richDescriptions[feature.title] ?? feature.description
+                }
                 badge={feature.badge}
               />
             </AnimatedWrapper>

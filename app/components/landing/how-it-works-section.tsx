@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { workflowSteps } from '~/lib/landing-data';
 import { AnimatedWrapper } from './animated-wrapper';
 import {
@@ -6,6 +7,26 @@ import {
   StaticEditorWindow,
   StaticIdeWindow,
 } from './how-it-works';
+
+const docsLink =
+  'text-indigo-600 dark:text-indigo-400 hover:underline font-medium';
+
+const richDescriptions: Record<string, ReactNode> = {
+  'Integrate once': (
+    <>
+      Add our{' '}
+      <a
+        href="https://docs.promptlycms.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={docsLink}
+      >
+        SDK
+      </a>{' '}
+      to your app. Type-safe prompts with full autocomplete.
+    </>
+  ),
+};
 
 export const HowItWorksSection = () => {
   return (
@@ -27,7 +48,7 @@ export const HowItWorksSection = () => {
               key={step.step}
               step={step.step}
               title={step.title}
-              description={step.description}
+              description={richDescriptions[step.title] ?? step.description}
               isLastStep={index === workflowSteps.length - 1}
             >
               <StepVisual visual={step.visual} />

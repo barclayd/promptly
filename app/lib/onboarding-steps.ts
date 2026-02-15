@@ -10,7 +10,7 @@ export const onboardingTour: Tour = {
       icon: '👋',
       title: 'Welcome to Promptly!',
       content:
-        "Let's create your first prompt together — it only takes about 2 minutes. We'll write a prompt, configure it with variables, and run a live test.",
+        "Let's create your first prompt together - it only takes about 2 minutes. We'll write a prompt, configure it with variables, and run a live test.",
       showControls: true,
       showSkip: true,
       pointerPadding: 0,
@@ -46,7 +46,7 @@ export const onboardingTour: Tour = {
       // Step 3: Creating prompt overlay
       icon: '🚀',
       title: 'Creating your prompt...',
-      content: "Hang tight — we're setting everything up for you.",
+      content: "Hang tight - we're setting everything up for you.",
       showControls: false,
       showSkip: false,
       blockKeyboardControl: true,
@@ -71,7 +71,7 @@ export const onboardingTour: Tour = {
       icon: '💬',
       title: 'User Prompt',
       content:
-        'This is the message sent to the AI each time. Notice the variables in curly braces — they get replaced with real data at runtime.',
+        'This is the message sent to the AI each time. Notice the variables in curly braces - they get replaced with real data at runtime.',
       selector: '#textarea-user-prompt',
       side: 'bottom',
       showControls: true,
@@ -84,7 +84,7 @@ export const onboardingTour: Tour = {
       icon: '🧪',
       title: 'Test your prompt',
       content:
-        "The test panel lets you try your prompt with real data before publishing. We've set up test values for you — click Next, then hit the Test button.",
+        "The test panel lets you try your prompt with real data before publishing. We've set up test values for you - click Next, then hit the Test button.",
       selector: '#onboarding-test-section',
       side: 'left',
       showControls: true,

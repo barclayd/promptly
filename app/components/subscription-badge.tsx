@@ -46,7 +46,7 @@ const getBadgeConfig = (
         'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
       subtextClasses: 'text-indigo-600 dark:text-indigo-400 font-medium',
       icon: <IconSparkles />,
-      tooltipBase: 'Free plan — upgrade to unlock unlimited prompts',
+      tooltipBase: 'Free plan - upgrade to unlock unlimited prompts',
     };
   }
 
@@ -61,7 +61,7 @@ const getBadgeConfig = (
           'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
         subtextClasses: 'text-red-600 dark:text-red-400 font-medium',
         icon: <IconAlertTriangle />,
-        tooltipBase: `Pro Trial — ends today`,
+        tooltipBase: `Pro Trial - ends today`,
       };
     }
     if (daysLeft !== null && daysLeft <= 7) {
@@ -72,7 +72,7 @@ const getBadgeConfig = (
           'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
         subtextClasses: 'text-amber-600 dark:text-amber-400',
         icon: <IconClock />,
-        tooltipBase: `Pro Trial — ${daysLeft} days remaining`,
+        tooltipBase: `Pro Trial - ${daysLeft} days remaining`,
       };
     }
     return {
@@ -82,7 +82,7 @@ const getBadgeConfig = (
         'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
       subtextClasses: '',
       icon: <IconSparkles />,
-      tooltipBase: `Pro Trial — ${daysLeft ?? 14} days remaining`,
+      tooltipBase: `Pro Trial - ${daysLeft ?? 14} days remaining`,
     };
   }
 
@@ -94,7 +94,7 @@ const getBadgeConfig = (
         colorClasses: 'bg-secondary text-muted-foreground',
         subtextClasses: 'text-muted-foreground',
         icon: null,
-        tooltipBase: `Pro plan — cancels ${formatCancelDate(periodEnd)}`,
+        tooltipBase: `Pro plan - cancels ${formatCancelDate(periodEnd)}`,
       };
     }
     return {
@@ -104,7 +104,7 @@ const getBadgeConfig = (
         'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300',
       subtextClasses: '',
       icon: <IconCircleCheck />,
-      tooltipBase: 'Pro plan — active',
+      tooltipBase: 'Pro plan - active',
     };
   }
 
@@ -116,7 +116,7 @@ const getBadgeConfig = (
         'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
       subtextClasses: 'text-indigo-600 dark:text-indigo-400 font-medium',
       icon: <IconSparkles />,
-      tooltipBase: 'Free plan — upgrade to unlock unlimited prompts',
+      tooltipBase: 'Free plan - upgrade to unlock unlimited prompts',
     };
   }
 
@@ -128,7 +128,7 @@ const getBadgeConfig = (
         'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
       subtextClasses: 'text-red-600 dark:text-red-400 font-medium',
       icon: <IconAlertTriangle />,
-      tooltipBase: 'Pro plan — payment issue',
+      tooltipBase: 'Pro plan - payment issue',
     };
   }
 
@@ -139,7 +139,7 @@ const getBadgeConfig = (
       'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
     subtextClasses: 'text-indigo-600 dark:text-indigo-400 font-medium',
     icon: <IconSparkles />,
-    tooltipBase: 'Free plan — upgrade to unlock unlimited prompts',
+    tooltipBase: 'Free plan - upgrade to unlock unlimited prompts',
   };
 };
 
