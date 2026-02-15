@@ -1,21 +1,47 @@
-import { IconChartBar, IconFileText, IconUsers } from '@tabler/icons-react';
-import { useState, useSyncExternalStore } from 'react';
 import {
+  IconApi,
+  IconChartBar,
+  IconFileText,
+  IconUsers,
+} from '@tabler/icons-react';
+import { useState, useSyncExternalStore } from 'react';
+import { useLoaderData } from 'react-router';
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
   Label,
   PolarGrid,
   PolarRadiusAxis,
   RadialBar,
   RadialBarChart,
+  ReferenceLine,
+  XAxis,
+  YAxis,
 } from 'recharts';
 import { ArrowUpIcon } from '~/components/ui/arrow-up-icon';
 import { Button } from '~/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '~/components/ui/card';
 import type { ChartConfig } from '~/components/ui/chart';
-import { ChartContainer } from '~/components/ui/chart';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '~/components/ui/chart';
 import { UpgradeGateModal } from '~/components/upgrade-gate-modal';
 import { orgContext } from '~/context';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useResourceLimits } from '~/hooks/use-resource-limits';
+import {
+  type DailyApiUsage,
+  getDailyApiUsage,
+} from '~/lib/subscription.server';
 import type { Route } from './+types/analytics';
 
 const emptySubscribe = () => () => {};
@@ -42,7 +68,10 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     throw new Response('Unauthorized', { status: 403 });
   }
 
-  return null;
+  const db = context.cloudflare.env.promptly;
+  const dailyApiUsage = await getDailyApiUsage(db, org.organizationId);
+
+  return { dailyApiUsage };
 };
 
 const getUsageColor = (percentage: number): string => {
@@ -376,18 +405,356 @@ const TeamMeter = ({
   );
 };
 
+// --- Radial ring chart for API Calls ---
+
+type ApiCallsMeterProps = {
+  count: number;
+  limit: number;
+  canManageBilling: boolean;
+  onUpgradeClick: () => void;
+};
+
+const ApiCallsMeter = ({
+  count,
+  limit,
+  canManageBilling,
+  onUpgradeClick,
+}: ApiCallsMeterProps) => {
+  const isClient = useIsClient();
+  const isUnlimited = limit === -1;
+  const percentage = isUnlimited ? 0 : limit === 0 ? 1 : count / limit;
+  const isAtLimit = !isUnlimited && count >= limit;
+
+  const endAngle = percentage * 360;
+
+  const chartConfig = {
+    apiCalls: {
+      label: 'API Calls',
+    },
+    usage: {
+      label: 'Usage',
+      color: getUsageColor(percentage),
+    },
+  } satisfies ChartConfig;
+
+  const chartData = [
+    { name: 'usage', value: count, fill: 'var(--color-usage)' },
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-sm font-medium">
+          <IconApi className="size-4" />
+          API Calls
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col items-center gap-3 pb-6">
+        {isClient ? (
+          <ChartContainer
+            config={chartConfig}
+            className="mx-auto aspect-square w-full max-w-[250px]"
+          >
+            <RadialBarChart
+              data={chartData}
+              startAngle={0}
+              endAngle={endAngle}
+              innerRadius={90}
+              outerRadius={100}
+            >
+              <PolarGrid
+                gridType="circle"
+                radialLines={false}
+                stroke="none"
+                className="first:fill-muted last:fill-background"
+                polarRadius={[100, 90]}
+              />
+              <RadialBar dataKey="value" cornerRadius={10} />
+              <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
+                <Label
+                  content={({ viewBox }) => {
+                    if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
+                      return (
+                        <text
+                          x={viewBox.cx}
+                          y={viewBox.cy}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          <tspan
+                            x={viewBox.cx}
+                            y={viewBox.cy}
+                            className="fill-foreground text-4xl font-bold"
+                          >
+                            {count.toLocaleString()}
+                          </tspan>
+                          <tspan
+                            x={viewBox.cx}
+                            y={(viewBox.cy ?? 0) + 24}
+                            className="fill-muted-foreground"
+                          >
+                            {isUnlimited
+                              ? 'Unlimited'
+                              : `of ${limit.toLocaleString()}`}
+                          </tspan>
+                        </text>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+              </PolarRadiusAxis>
+            </RadialBarChart>
+          </ChartContainer>
+        ) : (
+          <div className="aspect-square w-full max-w-[250px] mx-auto" />
+        )}
+
+        <div className="text-center">
+          {isAtLimit ? (
+            canManageBilling ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={onUpgradeClick}
+              >
+                <ArrowUpIcon size={14} />
+                Upgrade for more API calls
+              </Button>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Ask your admin to upgrade for more API calls
+              </p>
+            )
+          ) : isUnlimited ? (
+            <p className="text-sm text-muted-foreground">
+              No limit on your plan
+            </p>
+          ) : (
+            (() => {
+              const remaining = limit - count;
+              if (percentage >= 0.8) {
+                return canManageBilling ? (
+                  <p className="text-sm text-red-500">
+                    Only {remaining.toLocaleString()} call
+                    {remaining === 1 ? '' : 's'} left — upgrade for more
+                  </p>
+                ) : (
+                  <p className="text-sm text-red-500">
+                    Only {remaining.toLocaleString()} call
+                    {remaining === 1 ? '' : 's'} left
+                  </p>
+                );
+              }
+              if (percentage >= 0.6) {
+                return (
+                  <p className="text-sm text-amber-500">
+                    {remaining.toLocaleString()} remaining — running low
+                  </p>
+                );
+              }
+              return (
+                <p className="text-sm text-muted-foreground">
+                  {remaining.toLocaleString()} remaining this month
+                </p>
+              );
+            })()
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// --- Area chart for daily API calls ---
+
+type ApiCallsChartProps = {
+  data: DailyApiUsage[];
+  limit: number;
+  totalCount: number;
+};
+
+const apiChartConfig = {
+  count: {
+    label: 'API Calls',
+    color: 'hsl(243 75% 59%)',
+  },
+} satisfies ChartConfig;
+
+const ApiCallsChart = ({ data, limit, totalCount }: ApiCallsChartProps) => {
+  const isClient = useIsClient();
+  const isUnlimited = limit === -1;
+
+  const monthLabel = new Date().toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const hasData = data.some((d) => d.count > 0);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <IconApi className="size-4" />
+          API Calls
+        </CardTitle>
+        <CardDescription>
+          <span className="tabular-nums font-medium text-foreground">
+            {totalCount.toLocaleString()}
+          </span>
+          {isUnlimited ? (
+            <span> calls this month</span>
+          ) : (
+            <span> of {limit.toLocaleString()} this month</span>
+          )}
+          {' \u00B7 '}
+          {monthLabel}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+        {isClient ? (
+          hasData ? (
+            <ChartContainer
+              config={apiChartConfig}
+              className="aspect-auto h-[250px] w-full"
+            >
+              <AreaChart data={data}>
+                <defs>
+                  <linearGradient id="fillApiCalls" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="5%"
+                      stopColor="var(--color-count)"
+                      stopOpacity={0.4}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--color-count)"
+                      stopOpacity={0.05}
+                    />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  minTickGap={32}
+                  tickFormatter={(value: string) => {
+                    const date = new Date(`${value}T00:00:00`);
+                    return date.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                    });
+                  }}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  width={48}
+                  tickFormatter={(value: number) =>
+                    value >= 1000 ? `${(value / 1000).toFixed(0)}k` : `${value}`
+                  }
+                />
+                <ChartTooltip
+                  cursor={false}
+                  content={
+                    <ChartTooltipContent
+                      labelFormatter={(value) =>
+                        new Date(`${value}T00:00:00`).toLocaleDateString(
+                          'en-US',
+                          {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                          },
+                        )
+                      }
+                      indicator="dot"
+                    />
+                  }
+                />
+                {!isUnlimited && (
+                  <ReferenceLine
+                    y={limit}
+                    stroke="hsl(0 84% 60%)"
+                    strokeDasharray="4 4"
+                    strokeOpacity={0.6}
+                  >
+                    <Label
+                      value="Plan limit"
+                      position="insideTopRight"
+                      className="fill-red-500/60 text-[11px]"
+                    />
+                  </ReferenceLine>
+                )}
+                <Area
+                  dataKey="count"
+                  type="monotone"
+                  fill="url(#fillApiCalls)"
+                  stroke="var(--color-count)"
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ChartContainer>
+          ) : (
+            <div className="flex h-[250px] items-center justify-center">
+              <div className="text-center">
+                <IconApi className="size-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  No API calls this month yet
+                </p>
+                <p className="text-xs text-muted-foreground/60 mt-1">
+                  Usage will appear here as your API keys are used
+                </p>
+              </div>
+            </div>
+          )
+        ) : (
+          <div className="h-[250px] w-full" />
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// --- Main page ---
+
+type UpgradeResource = 'prompts' | 'team' | 'api-calls';
+
 const Analytics = () => {
-  const { promptCount, promptLimit, memberCount, memberLimit } =
-    useResourceLimits();
+  const { dailyApiUsage } = useLoaderData<typeof loader>();
+  const {
+    promptCount,
+    promptLimit,
+    memberCount,
+    memberLimit,
+    apiCallCount,
+    apiCallLimit,
+  } = useResourceLimits();
   const { canManageBilling } = useCanManageBilling();
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
-  const [upgradeResource, setUpgradeResource] = useState<'prompts' | 'team'>(
-    'prompts',
-  );
+  const [upgradeResource, setUpgradeResource] =
+    useState<UpgradeResource>('prompts');
 
-  const handleUpgradeClick = (resource: 'prompts' | 'team') => {
+  const handleUpgradeClick = (resource: UpgradeResource) => {
     setUpgradeResource(resource);
     setUpgradeModalOpen(true);
+  };
+
+  const getUpgradeCurrent = () => {
+    if (upgradeResource === 'prompts') return promptCount;
+    if (upgradeResource === 'team') return memberCount;
+    return apiCallCount;
+  };
+
+  const getUpgradeLimit = () => {
+    if (upgradeResource === 'prompts') return promptLimit;
+    if (upgradeResource === 'team') return memberLimit;
+    return apiCallLimit;
   };
 
   return (
@@ -409,7 +776,7 @@ const Analytics = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <PromptsMeter
                 count={promptCount}
                 limit={promptLimit}
@@ -422,6 +789,20 @@ const Analytics = () => {
                 canManageBilling={canManageBilling}
                 onUpgradeClick={() => handleUpgradeClick('team')}
               />
+              <ApiCallsMeter
+                count={apiCallCount}
+                limit={apiCallLimit}
+                canManageBilling={canManageBilling}
+                onUpgradeClick={() => handleUpgradeClick('api-calls')}
+              />
+            </div>
+
+            <div className="mt-6">
+              <ApiCallsChart
+                data={dailyApiUsage}
+                limit={apiCallLimit}
+                totalCount={apiCallCount}
+              />
             </div>
           </div>
         </div>
@@ -431,8 +812,8 @@ const Analytics = () => {
         open={upgradeModalOpen}
         onOpenChange={setUpgradeModalOpen}
         resource={upgradeResource}
-        current={upgradeResource === 'prompts' ? promptCount : memberCount}
-        limit={upgradeResource === 'prompts' ? promptLimit : memberLimit}
+        current={getUpgradeCurrent()}
+        limit={getUpgradeLimit()}
       />
     </div>
   );
