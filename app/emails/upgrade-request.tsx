@@ -35,6 +35,8 @@ const CONTEXT_COPY: Record<string, string> = {
   usage_limit: 'Your workspace is running low on capacity.',
   'invalid-api-key':
     'The API key configured for your workspace appears to be invalid or expired. Update it in Settings \u203A LLM API Keys.',
+  'no-api-keys':
+    'Your workspace needs API keys configured to test prompts. Add OpenAI, Anthropic, or Google AI credentials in Settings \u203A LLM API Keys.',
   general: 'A team member would like to upgrade your workspace to Pro.',
 };
 
@@ -52,7 +54,8 @@ export const UpgradeRequestEmail = ({
   settingsUrl,
 }: UpgradeRequestEmailProps) => {
   const contextLine = CONTEXT_COPY[context] ?? CONTEXT_COPY.general;
-  const isApiKeyContext = context === 'invalid-api-key';
+  const isApiKeyContext =
+    context === 'invalid-api-key' || context === 'no-api-keys';
   const promptsAtLimit =
     freeLimits.prompts > 0 && promptCount >= freeLimits.prompts;
   const membersAtLimit =

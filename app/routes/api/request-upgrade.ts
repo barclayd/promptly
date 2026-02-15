@@ -106,7 +106,9 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
   const env = context.cloudflare.env;
   const baseURL = env.BETTER_AUTH_URL;
-  const isApiKeyContext = result.data.context === 'invalid-api-key';
+  const isApiKeyContext =
+    result.data.context === 'invalid-api-key' ||
+    result.data.context === 'no-api-keys';
   let checkoutUrl: string;
 
   if (isApiKeyContext) {
@@ -207,9 +209,15 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     );
 
     const resend = new Resend(resendApiKey);
-    const emailSubject = isApiKeyContext
-      ? `${session.user.name ?? 'A team member'} reports an invalid API key in ${org.organizationName}`
-      : `${session.user.name ?? 'A team member'} requested a Pro upgrade`;
+    const requesterLabel = session.user.name ?? 'A team member';
+    let emailSubject: string;
+    if (result.data.context === 'no-api-keys') {
+      emailSubject = `${requesterLabel} needs API keys configured in ${org.organizationName}`;
+    } else if (isApiKeyContext) {
+      emailSubject = `${requesterLabel} reports an invalid API key in ${org.organizationName}`;
+    } else {
+      emailSubject = `${requesterLabel} requested a Pro upgrade`;
+    }
     await resend.emails.send({
       from: 'Promptly <hello@info.promptlycms.com>',
       to: admin.email,
