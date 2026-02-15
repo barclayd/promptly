@@ -1,11 +1,10 @@
 import {
-  IconArrowRight,
   IconBriefcase,
   IconCheck,
   IconCode,
   IconPencil,
 } from '@tabler/icons-react';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Badge } from '~/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { AnimatedWrapper } from './animated-wrapper';
@@ -59,6 +58,27 @@ const solutionTabs = [
     ],
   },
 ];
+
+const docsLink =
+  'text-indigo-600 dark:text-indigo-400 hover:underline font-medium';
+
+const richDescriptions: Record<string, ReactNode> = {
+  developers: (
+    <>
+      Install our{' '}
+      <a
+        href="https://docs.promptlycms.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={docsLink}
+      >
+        SDK
+      </a>
+      , call your prompts by name, and get full TypeScript types automatically.
+      No more managing string templates or syncing prompt changes.
+    </>
+  ),
+};
 
 export const SolutionSection = () => {
   const [activeTab, setActiveTab] = useState('editors');
@@ -118,7 +138,7 @@ export const SolutionSection = () => {
                       {tab.headline}
                     </h3>
                     <p className="text-lg text-muted-foreground leading-relaxed">
-                      {tab.description}
+                      {richDescriptions[tab.value] ?? tab.description}
                     </p>
                     <ul className="space-y-3">
                       {tab.benefits.map((benefit) => (

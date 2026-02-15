@@ -1,9 +1,4 @@
-import {
-  IconArrowRight,
-  IconCheck,
-  IconCode,
-  IconPencil,
-} from '@tabler/icons-react';
+import { IconCheck, IconCode, IconPencil } from '@tabler/icons-react';
 import { audienceCards } from '~/lib/landing-data';
 import { AnimatedWrapper } from './animated-wrapper';
 
