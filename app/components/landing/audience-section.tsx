@@ -19,14 +19,6 @@ export const AudienceSection = () => {
             Whether you're writing code or crafting content, Promptly fits into
             your workflow.
           </p>
-          <a
-            href="https://docs.promptlycms.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline mt-3"
-          >
-            For Developers <IconArrowRight className="size-3.5" />
-          </a>
         </AnimatedWrapper>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">

@@ -1,7 +1,37 @@
 import { IconArrowRight } from '@tabler/icons-react';
+import type { ReactNode } from 'react';
 import { features } from '~/lib/landing-data';
 import { AnimatedWrapper } from './animated-wrapper';
 import { FeatureCard } from './feature-card';
+
+const docsLink =
+  'text-indigo-600 dark:text-indigo-400 hover:underline font-medium';
+
+const richDescriptions: Record<string, ReactNode> = {
+  'Developer SDK': (
+    <>
+      Easy to integrate{' '}
+      <a
+        href="https://docs.promptlycms.com/api/overview/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={docsLink}
+      >
+        API
+      </a>
+      .{' '}
+      <a
+        href="https://docs.promptlycms.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={docsLink}
+      >
+        TypeScript client
+      </a>{' '}
+      with Zod schemas. Full autocomplete, zero guesswork.
+    </>
+  ),
+};
 
 export const FeaturesGridSection = () => {
   return (
@@ -31,7 +61,9 @@ export const FeaturesGridSection = () => {
               <FeatureCard
                 icon={feature.icon}
                 title={feature.title}
-                description={feature.description}
+                description={
+                  richDescriptions[feature.title] ?? feature.description
+                }
                 badge={feature.badge}
               />
             </AnimatedWrapper>

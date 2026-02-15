@@ -82,14 +82,6 @@ export const SolutionSection = () => {
             A dedicated platform where everyone on your team can contribute to
             your AI features.
           </p>
-          <a
-            href="https://docs.promptlycms.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline mt-3"
-          >
-            For Developers <IconArrowRight className="size-3.5" />
-          </a>
         </AnimatedWrapper>
 
         <AnimatedWrapper delay={200}>

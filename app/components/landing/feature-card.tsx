@@ -1,11 +1,11 @@
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { Badge } from '~/components/ui/badge';
 import { cn } from '~/lib/utils';
 
 type FeatureCardProps = {
   icon: ComponentType<{ className?: string }>;
   title: string;
-  description: string;
+  description: ReactNode;
   badge?: string | string[];
   className?: string;
 };
