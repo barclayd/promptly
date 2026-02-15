@@ -107,7 +107,7 @@ export const UpgradeRequestEmail = ({
       {personalNote && (
         <Section style={noteBlock}>
           <Text style={noteText}>&ldquo;{personalNote}&rdquo;</Text>
-          <Text style={noteAttribution}>&mdash; {requesterName}</Text>
+          <Text style={noteAttribution}>- {requesterName}</Text>
         </Section>
       )}
 
@@ -138,9 +138,7 @@ export const UpgradeRequestEmail = ({
 
       {/* CTA */}
       <Section style={ctaSection}>
-        <EmailButton href={checkoutUrl}>
-          Upgrade to Pro &mdash; $29/mo
-        </EmailButton>
+        <EmailButton href={checkoutUrl}>Upgrade to Pro - $29/mo</EmailButton>
       </Section>
 
       <Text style={finePrint}>

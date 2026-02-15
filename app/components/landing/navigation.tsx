@@ -25,6 +25,11 @@ const navLinks = [
     description: 'What makes Promptly special',
   },
   {
+    label: 'For Developers',
+    href: 'https://docs.promptlycms.com',
+    description: 'API and SDK documentation',
+  },
+  {
     label: 'Pricing',
     href: '#pricing',
     description: 'Plans for every team size',
@@ -83,15 +88,22 @@ export const Navigation = ({ isAuthenticated = false }: NavigationProps) => {
 
             {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-1">
-              {navLinks.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent/50"
-                >
-                  {link.label}
-                </a>
-              ))}
+              {navLinks.map((link) => {
+                const isExternal = link.href.startsWith('http');
+                return (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    {...(isExternal && {
+                      target: '_blank',
+                      rel: 'noopener noreferrer',
+                    })}
+                    className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent/50"
+                  >
+                    {link.label}
+                  </a>
+                );
+              })}
             </div>
 
             {/* Desktop CTAs */}
@@ -211,38 +223,45 @@ export const Navigation = ({ isAuthenticated = false }: NavigationProps) => {
           {/* Navigation Links */}
           <div className="flex-1 flex flex-col justify-center px-6 pt-4">
             <nav className="space-y-2">
-              {navLinks.map((link, index) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  onClick={closeMobileMenu}
-                  className={cn(
-                    'group block py-4 transition-all',
-                    mobileOpen
-                      ? 'opacity-100 translate-x-0'
-                      : 'opacity-0 -translate-x-8',
-                  )}
-                  style={{
-                    transitionDuration: '500ms',
-                    transitionDelay: mobileOpen
-                      ? `${150 + index * 75}ms`
-                      : '0ms',
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-2xl font-semibold text-foreground group-hover:text-indigo-500 transition-colors">
-                        {link.label}
-                      </span>
-                      <p className="text-sm text-muted-foreground mt-0.5">
-                        {link.description}
-                      </p>
+              {navLinks.map((link, index) => {
+                const isExternal = link.href.startsWith('http');
+                return (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    {...(isExternal && {
+                      target: '_blank',
+                      rel: 'noopener noreferrer',
+                    })}
+                    onClick={closeMobileMenu}
+                    className={cn(
+                      'group block py-4 transition-all',
+                      mobileOpen
+                        ? 'opacity-100 translate-x-0'
+                        : 'opacity-0 -translate-x-8',
+                    )}
+                    style={{
+                      transitionDuration: '500ms',
+                      transitionDelay: mobileOpen
+                        ? `${150 + index * 75}ms`
+                        : '0ms',
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-2xl font-semibold text-foreground group-hover:text-indigo-500 transition-colors">
+                          {link.label}
+                        </span>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          {link.description}
+                        </p>
+                      </div>
+                      <IconArrowRight className="size-5 text-muted-foreground/50 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
                     </div>
-                    <IconArrowRight className="size-5 text-muted-foreground/50 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
-                  </div>
-                  <div className="mt-4 h-px bg-gradient-to-r from-border via-border/50 to-transparent" />
-                </a>
-              ))}
+                    <div className="mt-4 h-px bg-gradient-to-r from-border via-border/50 to-transparent" />
+                  </a>
+                );
+              })}
             </nav>
           </div>
 

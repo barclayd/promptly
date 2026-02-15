@@ -93,7 +93,7 @@ export const MidTrialNudgeDrawer = ({
 
             <DrawerDescription className="text-sm text-muted-foreground leading-relaxed max-w-sm">
               {canManageBilling
-                ? `You've created ${promptCount} prompts so far — nice work. Go unlimited with Pro and keep building without limits.`
+                ? `You've created ${promptCount} prompts so far - nice work. Go unlimited with Pro and keep building without limits.`
                 : `Your team has created ${promptCount} prompts so far. Ask your admin to upgrade before the trial ends in ${daysLeft} days.`}
             </DrawerDescription>
           </div>
@@ -131,7 +131,7 @@ export const MidTrialNudgeDrawer = ({
                 ) : (
                   <>
                     <ArrowUpIcon size={16} />
-                    Upgrade to Pro — $29/mo
+                    Upgrade to Pro - $29/mo
                   </>
                 )}
               </Button>

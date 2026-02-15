@@ -197,7 +197,7 @@ export const TrialExpiredModal = ({
               style={stagger(300, 0)}
             >
               <IconShieldCheckFilled className="size-3" />
-              Your data is safe — nothing has been deleted
+              Your data is safe - nothing has been deleted
             </span>
           </div>
         </div>
@@ -234,7 +234,7 @@ export const TrialExpiredModal = ({
                 ) : (
                   <>
                     <ArrowUpIcon size={16} />
-                    Reactivate Pro — $29/mo
+                    Reactivate Pro - $29/mo
                   </>
                 )}
               </Button>

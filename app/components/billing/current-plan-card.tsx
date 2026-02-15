@@ -255,7 +255,7 @@ const CancelPlanDialog = ({
             >
               * You have {willExceedPrompts ? `${promptCount} prompts` : ''}
               {willExceedPrompts && willExceedMembers ? ' and ' : ''}
-              {willExceedMembers ? `${memberCount} team members` : ''} —
+              {willExceedMembers ? `${memberCount} team members` : ''} -
               exceeding Free limits. You won't lose data, but access will be
               restricted.
             </p>

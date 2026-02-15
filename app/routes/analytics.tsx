@@ -219,7 +219,7 @@ const PromptsMeter = ({
               if (percentage >= 0.8) {
                 return canManageBilling ? (
                   <p className="text-sm text-amber-500">
-                    Only {remaining} prompt{remaining === 1 ? '' : 's'} left —
+                    Only {remaining} prompt{remaining === 1 ? '' : 's'} left -
                     upgrade for unlimited
                   </p>
                 ) : (
@@ -231,7 +231,7 @@ const PromptsMeter = ({
               if (percentage >= 0.6) {
                 return (
                   <p className="text-sm text-amber-500">
-                    {remaining} remaining — running low
+                    {remaining} remaining - running low
                   </p>
                 );
               }
@@ -375,7 +375,7 @@ const TeamMeter = ({
               if (percentage >= 0.8) {
                 return canManageBilling ? (
                   <p className="text-sm text-red-500">
-                    Only {remaining} seat{remaining === 1 ? '' : 's'} left —
+                    Only {remaining} seat{remaining === 1 ? '' : 's'} left -
                     upgrade for more
                   </p>
                 ) : (
@@ -387,7 +387,7 @@ const TeamMeter = ({
               if (percentage >= 0.6) {
                 return (
                   <p className="text-sm text-amber-500">
-                    {remaining} seat{remaining === 1 ? '' : 's'} remaining —
+                    {remaining} seat{remaining === 1 ? '' : 's'} remaining -
                     filling up
                   </p>
                 );
@@ -538,7 +538,7 @@ const ApiCallsMeter = ({
                 return canManageBilling ? (
                   <p className="text-sm text-red-500">
                     Only {remaining.toLocaleString()} call
-                    {remaining === 1 ? '' : 's'} left — upgrade for more
+                    {remaining === 1 ? '' : 's'} left - upgrade for more
                   </p>
                 ) : (
                   <p className="text-sm text-red-500">
@@ -550,7 +550,7 @@ const ApiCallsMeter = ({
               if (percentage >= 0.6) {
                 return (
                   <p className="text-sm text-amber-500">
-                    {remaining.toLocaleString()} remaining — running low
+                    {remaining.toLocaleString()} remaining - running low
                   </p>
                 );
               }

@@ -232,13 +232,13 @@ export const faqs: FAQ[] = [
   {
     question: 'What is Promptly?',
     answer:
-      'Promptly is a prompt management platform that lets teams create, test, version, and deploy AI prompts without code changes. Editors get a familiar writing interface; developers integrate once with a type-safe SDK. Changes go live instantly — no PRs, no deployments.',
+      'Promptly is a prompt management platform that lets teams create, test, version, and deploy AI prompts without code changes. Editors get a familiar writing interface; developers integrate once with a type-safe SDK. Changes go live instantly - no PRs, no deployments.',
   },
   {
     question: 'Do I need coding experience to use Promptly?',
     answer:
       // biome-ignore lint/suspicious/noTemplateCurlyInString: docs
-      'No. The editor works like Google Docs — write in plain text, add variables like ${customer_name}, and test with sample data. Developers handle the one-time integration; after that, anyone can edit and publish prompts.',
+      'No. The editor works like Google Docs - write in plain text, add variables like ${customer_name}, and test with sample data. Developers handle the one-time integration; after that, anyone can edit and publish prompts.',
   },
   {
     question: 'What AI providers do you support?',
@@ -258,7 +258,12 @@ export const faqs: FAQ[] = [
   {
     question: 'Can I try Promptly before committing?',
     answer:
-      'Yes. Every plan includes a 14-day free trial with full Pro features — no credit card required. The Free plan is also available indefinitely for evaluation.',
+      'Yes. Every plan includes a 14-day free trial with full Pro features - no credit card required. The Free plan is also available indefinitely for evaluation.',
+  },
+  {
+    question: 'How can I integrate PromptlyCMS into my codebase?',
+    answer:
+      'Promptly provides a REST API and a TypeScript SDK available as an npm package (@promptlycms/prompts). Install it, create a client, and fetch prompts by name at runtime. See docs.promptlycms.com for guides, API reference, and examples.',
   },
 ];
 

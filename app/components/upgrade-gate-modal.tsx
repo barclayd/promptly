@@ -82,7 +82,7 @@ const getBody = (
   current?: number,
 ) => {
   if (resource === 'prompts') {
-    return `You've created ${current ?? 0} prompts — nice work. Go unlimited with Pro.`;
+    return `You've created ${current ?? 0} prompts - nice work. Go unlimited with Pro.`;
   }
   if (resource === 'team') {
     return 'Your team is growing. Upgrade to invite up to 5 members.';
@@ -122,9 +122,7 @@ export const UpgradeGateModal = ({
   };
 
   const isGeneral = resource === 'general';
-  const ctaLabel = isGeneral
-    ? 'Get Pro \u2014 $29/mo'
-    : 'Unlock Unlimited \u2014 $29/mo';
+  const ctaLabel = isGeneral ? 'Get Pro - $29/mo' : 'Unlock Unlimited - $29/mo';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

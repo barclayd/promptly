@@ -8,12 +8,33 @@ type DemoIdeWindowProps = {
   onAnimationComplete?: () => void;
 };
 
-const CODE = `import { getPrompt } from '@promptly/sdk';
+const CODE = `import { createPromptlyClient } from '@promptlycms/prompts';
+import { generateText } from 'ai';
 
-const { text } = await getPrompt('marketing/welcome-email', {
-  company_name: 'Acme Inc',
-  user_name: 'Sarah',
-  plan_type: 'Pro'
+const { getPrompt } = createPromptlyClient();
+
+// fetch your prompt at runtime - no prompts hardcoded in your codebase
+const { userMessage, systemMessage, temperature, model } = await getPrompt(
+  'upsellMessage',
+);
+
+const { text } = await generateText({
+  model,
+  messages: [
+    {
+      role: 'system',
+      content: systemMessage,
+    },
+    {
+      role: 'user',
+      content: userMessage({
+        username,
+        persuasionLevel: 1,
+        recentPurchases,
+      }),
+    },
+  ],
+  temperature,
 });
 
 await sendEmail({

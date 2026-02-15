@@ -1,3 +1,4 @@
+import { IconArrowRight } from '@tabler/icons-react';
 import { features } from '~/lib/landing-data';
 import { AnimatedWrapper } from './animated-wrapper';
 import { FeatureCard } from './feature-card';
@@ -14,6 +15,14 @@ export const FeaturesGridSection = () => {
             A complete platform for managing AI prompts at scale, from creation
             to deployment.
           </p>
+          <a
+            href="https://docs.promptlycms.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline mt-3"
+          >
+            Developer SDK <IconArrowRight className="size-3.5" />
+          </a>
         </AnimatedWrapper>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
