@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  IconApi,
   IconCheck,
   IconFileText,
   IconSparkles,
@@ -24,7 +25,7 @@ import {
 interface UpgradeGateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  resource: 'prompts' | 'team' | 'general';
+  resource: 'prompts' | 'team' | 'api-calls' | 'general';
   current?: number;
   limit?: number;
 }
@@ -52,6 +53,17 @@ const RESOURCE_CONFIG = {
       { label: 'Priority support', highlighted: false },
     ],
   },
+  'api-calls': {
+    icon: IconApi,
+    title: 'Unlock more API calls',
+    features: [
+      { label: '50,000 API calls/mo', highlighted: true },
+      { label: 'Unlimited prompts', highlighted: false },
+      { label: '5 team members', highlighted: false },
+      { label: 'Version history', highlighted: false },
+      { label: 'Priority support', highlighted: false },
+    ],
+  },
   general: {
     icon: IconSparkles,
     title: 'Unlock the full experience',
@@ -66,7 +78,7 @@ const RESOURCE_CONFIG = {
 } as const;
 
 const getBody = (
-  resource: 'prompts' | 'team' | 'general',
+  resource: 'prompts' | 'team' | 'api-calls' | 'general',
   current?: number,
 ) => {
   if (resource === 'prompts') {
@@ -74,6 +86,9 @@ const getBody = (
   }
   if (resource === 'team') {
     return 'Your team is growing. Upgrade to invite up to 5 members.';
+  }
+  if (resource === 'api-calls') {
+    return `You've used ${(current ?? 0).toLocaleString()} API calls this month. Upgrade for 10x more capacity.`;
   }
   return 'Pro gives you room to build without limits.';
 };
@@ -141,8 +156,9 @@ export const UpgradeGateModal = ({
             <div data-slot="upgrade-gate-progress" className="mt-4 space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">
-                  {current}{' '}
-                  {resource === 'prompts' ? 'prompts created' : 'members'}
+                  {resource === 'api-calls'
+                    ? `${(current ?? 0).toLocaleString()} API calls used`
+                    : `${current} ${resource === 'prompts' ? 'prompts created' : 'members'}`}
                 </span>
                 <span className="font-medium text-amber-600 dark:text-amber-400">
                   Ready for more

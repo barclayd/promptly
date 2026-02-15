@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  IconApi,
   IconArrowRight,
   IconCheck,
   IconFileText,
@@ -50,7 +51,7 @@ const UsageRow = ({ icon, label, count, limit }: UsageRowProps) => {
               isAtLimit ? 'font-medium text-red-500' : 'text-muted-foreground',
             )}
           >
-            {count} of {limit}
+            {count.toLocaleString()} of {limit.toLocaleString()}
           </span>
         )}
       </div>
@@ -70,13 +71,21 @@ const UsageRow = ({ icon, label, count, limit }: UsageRowProps) => {
 };
 
 export const UsageSummary = () => {
-  const { promptCount, promptLimit, memberCount, memberLimit, plan } =
-    useResourceLimits();
+  const {
+    promptCount,
+    promptLimit,
+    memberCount,
+    memberLimit,
+    apiCallCount,
+    apiCallLimit,
+    plan,
+  } = useResourceLimits();
   const { canManageBilling } = useCanManageBilling();
 
   const promptsAtLimit = promptLimit !== -1 && promptCount >= promptLimit;
   const membersAtLimit = memberLimit !== -1 && memberCount >= memberLimit;
-  const anyAtLimit = promptsAtLimit || membersAtLimit;
+  const apiCallsAtLimit = apiCallLimit !== -1 && apiCallCount >= apiCallLimit;
+  const anyAtLimit = promptsAtLimit || membersAtLimit || apiCallsAtLimit;
   const showContextual = plan === 'free' && anyAtLimit;
 
   return (
@@ -93,6 +102,12 @@ export const UsageSummary = () => {
           label="Team Members"
           count={memberCount}
           limit={memberLimit}
+        />
+        <UsageRow
+          icon={<IconApi className="size-3.5" />}
+          label="API Calls"
+          count={apiCallCount}
+          limit={apiCallLimit}
         />
         <div className="flex flex-col gap-1.5 pt-1">
           {showContextual &&

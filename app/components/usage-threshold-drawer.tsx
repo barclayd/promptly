@@ -2,6 +2,7 @@
 
 import {
   IconAlertTriangle,
+  IconApi,
   IconFileText,
   IconUsers,
   IconX,
@@ -29,7 +30,7 @@ import {
 interface UsageThresholdDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  metric: 'prompts' | 'team';
+  metric: 'prompts' | 'team' | 'api-calls';
   count: number;
   limit: number;
 }
@@ -71,18 +72,35 @@ export const UsageThresholdDrawer = ({
     }
   };
 
-  const description =
-    metric === 'prompts'
-      ? `You've used ${count} of ${limit} prompts. Upgrade to Pro for unlimited prompts.`
-      : `You've filled ${count} of ${limit} team seats. Upgrade to Pro for up to 5 members.`;
+  const descriptionMap = {
+    prompts: `You've used ${count} of ${limit} prompts. Upgrade to Pro for unlimited prompts.`,
+    team: `You've filled ${count} of ${limit} team seats. Upgrade to Pro for up to 5 members.`,
+    'api-calls': `You've used ${count.toLocaleString()} of ${limit.toLocaleString()} API calls this month. Upgrade to Pro for 50,000 calls/mo.`,
+  };
 
-  const nonAdminDescription =
-    metric === 'prompts'
-      ? `Your workspace has used ${count} of ${limit} prompts. Ask your admin to upgrade for unlimited prompts.`
-      : `Your workspace has filled ${count} of ${limit} team seats. Ask your admin to upgrade for more seats.`;
+  const nonAdminDescriptionMap = {
+    prompts: `Your workspace has used ${count} of ${limit} prompts. Ask your admin to upgrade for unlimited prompts.`,
+    team: `Your workspace has filled ${count} of ${limit} team seats. Ask your admin to upgrade for more seats.`,
+    'api-calls': `Your workspace has used ${count.toLocaleString()} of ${limit.toLocaleString()} API calls this month. Ask your admin to upgrade for more capacity.`,
+  };
 
-  const MetricIcon = metric === 'prompts' ? IconFileText : IconUsers;
-  const metricLabel = metric === 'prompts' ? 'prompts used' : 'seats filled';
+  const description = descriptionMap[metric];
+  const nonAdminDescription = nonAdminDescriptionMap[metric];
+
+  const metricIconMap = {
+    prompts: IconFileText,
+    team: IconUsers,
+    'api-calls': IconApi,
+  };
+
+  const metricLabelMap = {
+    prompts: 'prompts used',
+    team: 'seats filled',
+    'api-calls': 'API calls used',
+  };
+
+  const MetricIcon = metricIconMap[metric];
+  const metricLabel = metricLabelMap[metric];
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>

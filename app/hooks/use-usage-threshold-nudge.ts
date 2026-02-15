@@ -2,7 +2,7 @@ import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useOrganizationId } from '~/hooks/use-organization-id';
 import { useResourceLimits } from '~/hooks/use-resource-limits';
 
-type ThresholdMetric = 'prompts' | 'team';
+type ThresholdMetric = 'prompts' | 'team' | 'api-calls';
 
 const PERMANENT_KEY = (metric: ThresholdMetric, orgId: string) =>
   `promptly:usage-threshold-dismissed:${metric}:${orgId}`;
@@ -78,8 +78,14 @@ const NOT_VISIBLE: ThresholdResult = {
 export const useUsageThresholdNudge = (): ThresholdResult => {
   const { canManageBilling } = useCanManageBilling();
   const organizationId = useOrganizationId();
-  const { promptCount, promptLimit, memberCount, memberLimit } =
-    useResourceLimits();
+  const {
+    promptCount,
+    promptLimit,
+    memberCount,
+    memberLimit,
+    apiCallCount,
+    apiCallLimit,
+  } = useResourceLimits();
 
   if (!organizationId) return NOT_VISIBLE;
 
@@ -113,6 +119,18 @@ export const useUsageThresholdNudge = (): ThresholdResult => {
         metric: 'team',
         count: memberCount,
         limit: memberLimit,
+        percentage: pct,
+      });
+    }
+  }
+
+  if (apiCallLimit !== -1 && apiCallLimit > 0) {
+    const pct = apiCallCount / apiCallLimit;
+    if (pct >= 0.8) {
+      candidates.push({
+        metric: 'api-calls',
+        count: apiCallCount,
+        limit: apiCallLimit,
         percentage: pct,
       });
     }
