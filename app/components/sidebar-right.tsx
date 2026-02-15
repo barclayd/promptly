@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import { useDebouncedCallback } from 'use-debounce';
 import { CodePreview } from '~/components/code-preview';
 import { NoLlmApiKeysModal } from '~/components/no-llm-api-keys-modal';
+import { NoModelsWarning } from '~/components/no-models-warning';
 import { OnboardingTestWatcher } from '~/components/onboarding/onboarding-test-watcher';
 import { SchemaBuilder } from '~/components/schema-builder';
 import { SelectScrollable } from '~/components/select-scrollable';
@@ -141,6 +142,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
   ({ versions = [], isReadonly = false, ...props }, ref) => {
     const isOnboardingActive = useOnboardingStore((s) => s.isActive);
     const enabledModels = useEnabledModels();
+    const hasNoModels = !isOnboardingActive && enabledModels.length === 0;
     const [showNoApiKeysModal, setShowNoApiKeysModal] = useState(false);
 
     // Get state from the store
@@ -744,14 +746,18 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                 <CollapsibleContent>
                   <SidebarGroupContent>
                     <div className="px-2 py-3">
-                      <SelectScrollable
-                        value={model ?? ''}
-                        onChange={handleModelChange}
-                        disabled={isReadonly}
-                        enabledModels={
-                          isOnboardingActive ? undefined : enabledModels
-                        }
-                      />
+                      {hasNoModels ? (
+                        <NoModelsWarning />
+                      ) : (
+                        <SelectScrollable
+                          value={model ?? ''}
+                          onChange={handleModelChange}
+                          disabled={isReadonly}
+                          enabledModels={
+                            isOnboardingActive ? undefined : enabledModels
+                          }
+                        />
+                      )}
                     </div>
                   </SidebarGroupContent>
                 </CollapsibleContent>
@@ -840,14 +846,18 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                           Model
                         </div>
                         <div className="my-4">
-                          <SelectScrollable
-                            value={testModel ?? ''}
-                            onChange={setTestModel}
-                            disabled={isOnboardingActive}
-                            enabledModels={
-                              isOnboardingActive ? undefined : enabledModels
-                            }
-                          />
+                          {hasNoModels ? (
+                            <NoModelsWarning />
+                          ) : (
+                            <SelectScrollable
+                              value={testModel ?? ''}
+                              onChange={setTestModel}
+                              disabled={isOnboardingActive}
+                              enabledModels={
+                                isOnboardingActive ? undefined : enabledModels
+                              }
+                            />
+                          )}
                         </div>
                       </div>
 
