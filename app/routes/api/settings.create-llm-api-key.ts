@@ -65,6 +65,19 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
   try {
     const encryptionKey = context.cloudflare.env.API_KEY_ENCRYPTION_KEY;
+    if (!encryptionKey) {
+      console.error(
+        'API_KEY_ENCRYPTION_KEY environment variable is not configured',
+      );
+      return data(
+        {
+          errors: {
+            _form: ['Server configuration error. Please contact support.'],
+          },
+        },
+        { status: 500 },
+      );
+    }
     const encryptedKey = await encryptApiKey(result.data.apiKey, encryptionKey);
     const keyHint = getKeyHint(result.data.apiKey);
     const now = Date.now();
