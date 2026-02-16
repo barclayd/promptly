@@ -134,6 +134,12 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   if (orgKey) {
     try {
       const encryptionKey = context.cloudflare.env.API_KEY_ENCRYPTION_KEY;
+      if (!encryptionKey) {
+        console.error(
+          'API_KEY_ENCRYPTION_KEY environment variable is not configured',
+        );
+        return data({ error: 'Server configuration error' }, { status: 500 });
+      }
       const apiKey = await decryptApiKey(orgKey.encryptedKey, encryptionKey);
       const provider = getProviderFromModelId(modelId);
       modelInstance = createModelInstance(modelId, apiKey, provider);
