@@ -332,10 +332,11 @@ export const action = async ({
     }
   }
 
-  if (intent === 'google') {
+  if (intent === 'google' || intent === 'apple') {
+    const provider = intent;
     const response = await auth.api.signInSocial({
       body: {
-        provider: 'google',
+        provider,
         callbackURL: `/invite/${id}/callback`,
       },
       asResponse: true,
@@ -345,7 +346,13 @@ export const action = async ({
 
     if (!responseData.url) {
       return data(
-        { errors: { form: ['Failed to start Google sign-in'] } },
+        {
+          errors: {
+            form: [
+              `Failed to start ${provider === 'google' ? 'Google' : 'Apple'} sign-in`,
+            ],
+          },
+        },
         { status: 500 },
       );
     }
