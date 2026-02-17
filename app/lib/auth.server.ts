@@ -25,11 +25,15 @@ export const getAuth = (ctx: Readonly<RouterContextProvider>) => {
       },
     },
     baseURL,
-    trustedOrigins: [baseURL],
+    trustedOrigins: [baseURL, 'https://appleid.apple.com'],
     socialProviders: {
       google: {
         clientId: ctx.cloudflare.env.GOOGLE_CLIENT_ID,
         clientSecret: ctx.cloudflare.env.GOOGLE_CLIENT_SECRET,
+      },
+      apple: {
+        clientId: ctx.cloudflare.env.APPLE_CLIENT_ID,
+        clientSecret: ctx.cloudflare.env.APPLE_CLIENT_SECRET,
       },
     },
     secret: ctx.cloudflare.env.BETTER_AUTH_SECRET,
