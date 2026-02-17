@@ -10,11 +10,11 @@ import {
 import { useState } from 'react';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useOrganizationId } from '~/hooks/use-organization-id';
+import { authClient } from '~/lib/auth.client';
 import {
   permanentlyDismissThreshold,
   softDismissThreshold,
-} from '~/hooks/use-usage-threshold-nudge';
-import { authClient } from '~/lib/auth.client';
+} from '~/lib/interstitials/actions';
 import { NumberTicker } from './landing/hero-demo/animations/number-ticker';
 import { NotifyAdminButton } from './notify-admin-button';
 import { ArrowUpIcon } from './ui/arrow-up-icon';

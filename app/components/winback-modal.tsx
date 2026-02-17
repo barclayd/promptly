@@ -13,12 +13,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useOrganizationId } from '~/hooks/use-organization-id';
+import { authClient } from '~/lib/auth.client';
 import {
   dismissWinback,
   markWinbackShown,
   type WinbackSegment,
-} from '~/hooks/use-winback-modal';
-import { authClient } from '~/lib/auth.client';
+} from '~/lib/interstitials/actions';
 import { cn } from '~/lib/utils';
 import { NumberTicker } from './landing/hero-demo/animations/number-ticker';
 import { NotifyAdminButton } from './notify-admin-button';

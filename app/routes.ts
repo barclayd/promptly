@@ -39,6 +39,7 @@ export default [
     'api/settings/delete-llm-api-key',
     './routes/api/settings.delete-llm-api-key.ts',
   ),
+  route('api/user-state', './routes/api/user-state.update.ts'),
   route('api/search-prompts', './routes/api/search-prompts.ts'),
   route('api/request-upgrade', './routes/api/request-upgrade.ts'),
   route(

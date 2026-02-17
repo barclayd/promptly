@@ -56,6 +56,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   let resourceCounts = null;
   let enabledModels: string[] = [];
   let organizationId: string | null = null;
+  const userState: Record<string, string> = {};
   try {
     const org = context.get(orgContext);
     organizationId = org.organizationId;
@@ -67,12 +68,25 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
       userId ? getMemberRole(db, userId, organizationId) : null,
       getResourceCounts(db, organizationId),
       getEnabledModelsForOrg(db, organizationId),
+      userId
+        ? db
+            .prepare('SELECT key, value FROM user_state WHERE user_id = ?')
+            .bind(userId)
+            .all<{ key: string; value: string }>()
+        : null,
     ]);
 
     subscription = results[0];
     memberRole = results[1];
     resourceCounts = results[2];
     enabledModels = results[3];
+
+    const userStateRows = results[4]?.results;
+    if (userStateRows) {
+      for (const row of userStateRows) {
+        userState[row.key] = row.value;
+      }
+    }
   } catch {
     // No org context (public route or unauthenticated) — defaults stay null
   }
@@ -86,6 +100,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     resourceCounts,
     enabledModels,
     organizationId,
+    userState,
   };
 };
 
@@ -103,7 +118,8 @@ export const shouldRevalidate = ({
     formAction.includes('/api/auth/') ||
     formAction.includes('/team/') ||
     formAction.includes('/api/prompts/') ||
-    formAction.includes('/api/settings/')
+    formAction.includes('/api/settings/') ||
+    formAction.includes('/api/user-state')
   ) {
     return true;
   }
