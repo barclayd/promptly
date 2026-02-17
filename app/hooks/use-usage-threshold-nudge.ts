@@ -1,6 +1,8 @@
+import { useRouteLoaderData } from 'react-router';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useOrganizationId } from '~/hooks/use-organization-id';
 import { useResourceLimits } from '~/hooks/use-resource-limits';
+import type { loader as rootLoader } from '~/root';
 
 type ThresholdMetric = 'prompts' | 'team' | 'api-calls';
 
@@ -8,6 +10,32 @@ const PERMANENT_KEY = (metric: ThresholdMetric, orgId: string) =>
   `promptly:usage-threshold-dismissed:${metric}:${orgId}`;
 const REMIND_KEY = (metric: ThresholdMetric, orgId: string) =>
   `promptly:usage-threshold-remind-after:${metric}:${orgId}`;
+
+const HAS_VISITED_KEY = (userId: string) => `promptly:has-visited:${userId}`;
+
+const ONBOARDING_COMPLETED_KEY = (userId: string) =>
+  `promptly:onboarding-completed:${userId}`;
+const ONBOARDING_SKIPPED_KEY = (userId: string) =>
+  `promptly:onboarding-skipped:${userId}`;
+
+const isFirstVisitWithoutOnboarding = (userId: string): boolean => {
+  if (typeof window === 'undefined') return false;
+  try {
+    const hasVisited = localStorage.getItem(HAS_VISITED_KEY(userId)) === '1';
+    const onboardingDone =
+      localStorage.getItem(ONBOARDING_COMPLETED_KEY(userId)) === '1' ||
+      localStorage.getItem(ONBOARDING_SKIPPED_KEY(userId)) === '1';
+
+    // Set the flag for next visit (regardless of outcome)
+    if (!hasVisited) {
+      localStorage.setItem(HAS_VISITED_KEY(userId), '1');
+    }
+
+    return !hasVisited && !onboardingDone;
+  } catch {
+    return false;
+  }
+};
 
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 
@@ -86,8 +114,13 @@ export const useUsageThresholdNudge = (): ThresholdResult => {
     apiCallCount,
     apiCallLimit,
   } = useResourceLimits();
+  const rootData = useRouteLoaderData<typeof rootLoader>('root');
+  const userId = rootData?.user?.id;
 
   if (!organizationId) return NOT_VISIBLE;
+
+  // Suppress for brand-new users until second visit or onboarding completion
+  if (userId && isFirstVisitWithoutOnboarding(userId)) return NOT_VISIBLE;
 
   // Only show for admins/owners
   if (!canManageBilling) return NOT_VISIBLE;
