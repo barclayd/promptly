@@ -57,7 +57,7 @@ export const OnboardingProgressWidget = ({
   };
 
   return (
-    <SidebarGroup className="flex-1 justify-center">
+    <SidebarGroup className="pb-2">
       <SidebarGroupContent>
         <SidebarMenu>
           <SidebarMenuItem>

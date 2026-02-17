@@ -188,12 +188,13 @@ export const SidebarLeft = ({
       <SidebarContent>
         <NavMain items={data.navMain} />
         {recentItems.length > 0 && <NavDocuments items={recentItems} />}
-        <OnboardingProgressWidget userId={userId} firstName={firstName} />
-        <NavSecondary
-          items={data.navSecondary}
-          onHelpClick={handleHelpClick}
-          className="mt-auto"
-        />
+        <div className="mt-auto">
+          <OnboardingProgressWidget userId={userId} firstName={firstName} />
+          <NavSecondary
+            items={data.navSecondary}
+            onHelpClick={handleHelpClick}
+          />
+        </div>
       </SidebarContent>
       <SidebarFooter>
         <SubscriptionBadge />
