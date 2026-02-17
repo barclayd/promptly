@@ -35,6 +35,10 @@ export const getAuth = (ctx: Readonly<RouterContextProvider>) => {
         clientId: ctx.cloudflare.env.APPLE_CLIENT_ID,
         clientSecret: ctx.cloudflare.env.APPLE_CLIENT_SECRET,
       },
+      github: {
+        clientId: ctx.cloudflare.env.GITHUB_CLIENT_ID,
+        clientSecret: ctx.cloudflare.env.GITHUB_CLIENT_SECRET,
+      },
     },
     secret: ctx.cloudflare.env.BETTER_AUTH_SECRET,
     database: {
