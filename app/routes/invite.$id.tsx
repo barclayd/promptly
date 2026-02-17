@@ -332,7 +332,7 @@ export const action = async ({
     }
   }
 
-  if (intent === 'google' || intent === 'apple') {
+  if (intent === 'google' || intent === 'apple' || intent === 'github') {
     const provider = intent;
     const response = await auth.api.signInSocial({
       body: {
@@ -344,12 +344,18 @@ export const action = async ({
 
     const responseData = (await response.json()) as { url?: string };
 
+    const providerNames: Record<string, string> = {
+      google: 'Google',
+      apple: 'Apple',
+      github: 'GitHub',
+    };
+
     if (!responseData.url) {
       return data(
         {
           errors: {
             form: [
-              `Failed to start ${provider === 'google' ? 'Google' : 'Apple'} sign-in`,
+              `Failed to start ${providerNames[provider] ?? provider} sign-in`,
             ],
           },
         },

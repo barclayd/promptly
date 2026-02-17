@@ -99,11 +99,10 @@ The app supports Light, Dark, and System (follows OS) modes via a theme switcher
 - `app/root.tsx` - ThemeProvider setup
 
 **Testing UI in both modes:**
-When implementing or modifying UI components, test in both light and dark modes:
-1. Use Chrome DevTools MCP to emulate color scheme: `emulateMedia({ colorScheme: 'dark' })`
-2. Toggle theme via user menu dropdown
-3. Reload page and verify theme persists
-4. Check contrast, readability, and visual consistency in both modes
+The app uses cookie-based themes, **not** `prefers-color-scheme` media queries. `emulate({ colorScheme: 'dark' })` in Chrome DevTools will NOT work. Instead:
+1. Toggle theme via the user dropdown menu (requires being logged in)
+2. Or inject the class directly via Chrome DevTools: `document.documentElement.classList.add('dark')` / `.remove('dark')`
+3. Check contrast, readability, and visual consistency in both modes
 
 # Local Testing
 - Test user email: test@promptlycms.com
@@ -1522,4 +1521,4 @@ UPDATE subscription SET status = 'active' WHERE user_id = (SELECT id FROM user W
 - Set `promptly:trial-expired-modal-shown:{orgId}` to `"1"` (simulates initial modal already seen)
 - Clear `promptly:winback-*:{orgId}` keys to reset frequency cap
 
-**Theme testing note:** The app uses cookie-based themes (remix-themes), not `prefers-color-scheme` media queries. Chrome DevTools `emulate({ colorScheme: 'dark' })` won't work — toggle theme via the user dropdown menu instead.
+**Theme testing note:** See the "Testing UI in both modes" section under Theme System above for how to toggle dark mode in Chrome DevTools.
