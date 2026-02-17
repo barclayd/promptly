@@ -2,9 +2,9 @@ import { IconInfoCircle, IconX } from '@tabler/icons-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
-import { dismissCancelledBanner } from '~/hooks/use-cancelled-banner';
 import { useOrganizationId } from '~/hooks/use-organization-id';
 import { authClient } from '~/lib/auth.client';
+import { dismissCancelledBanner } from '~/lib/interstitials/actions';
 import { NotifyAdminButton } from './notify-admin-button';
 
 const formatDate = (timestamp: number | null): string => {

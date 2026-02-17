@@ -9,11 +9,11 @@ import {
 import { useState } from 'react';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useOrganizationId } from '~/hooks/use-organization-id';
+import { authClient } from '~/lib/auth.client';
 import {
   dismissTrialExpiryModal,
   type WarningLevel,
-} from '~/hooks/use-trial-expiry-modal';
-import { authClient } from '~/lib/auth.client';
+} from '~/lib/interstitials/actions';
 import { cn } from '~/lib/utils';
 import { NumberTicker } from './landing/hero-demo/animations/number-ticker';
 import { NotifyAdminButton } from './notify-admin-button';

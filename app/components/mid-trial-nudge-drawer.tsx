@@ -3,12 +3,12 @@
 import { IconFileText, IconHourglass, IconX } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
+import { useOrganizationId } from '~/hooks/use-organization-id';
+import { authClient } from '~/lib/auth.client';
 import {
   permanentlyDismissNudge,
   softDismissNudge,
-} from '~/hooks/use-mid-trial-nudge';
-import { useOrganizationId } from '~/hooks/use-organization-id';
-import { authClient } from '~/lib/auth.client';
+} from '~/lib/interstitials/actions';
 import { NumberTicker } from './landing/hero-demo/animations/number-ticker';
 import { NotifyAdminButton } from './notify-admin-button';
 import { ArrowUpIcon } from './ui/arrow-up-icon';
