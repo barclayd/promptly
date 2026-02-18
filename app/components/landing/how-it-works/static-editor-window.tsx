@@ -37,7 +37,7 @@ export const StaticEditorWindow = () => {
           <span>3 variables</span>
           <span className="text-emerald-500">Saved ✓</span>
           <span className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-[10px]">
-            Claude Sonnet 4.5
+            Claude Sonnet 4.6
           </span>
         </div>
       }
