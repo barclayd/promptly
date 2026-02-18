@@ -181,6 +181,7 @@ Use the `/project:update-models` slash command for a guided walkthrough. The ful
 | `app/lib/model-dispatch.server.ts` | SDK ID mapping in `MODEL_ID_MAP` (if IDs differ) |
 | `app/components/landing/hero-demo/demo-editor-window.tsx` | Update model badge text (if flagship) |
 | `app/components/landing/how-it-works/static-editor-window.tsx` | Update model badge text (if flagship) |
+| `app/lib/landing-data.ts` | Update model names in FAQ copy (if flagship) |
 
 ### Files that auto-derive (no edits needed)
 - `app/components/ui/select-scrollable.tsx` — groups models by provider prefix
