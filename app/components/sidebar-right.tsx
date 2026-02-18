@@ -226,35 +226,6 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       );
     }, 1000);
 
-    // Generate input data for the current schema
-    const handleGenerateInputData = useCallback(async () => {
-      if (schemaFields.length === 0) return;
-
-      setIsGeneratingInputData(true);
-      try {
-        const response = await fetch('/api/generate-input-data', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ schema: schemaFields }),
-        });
-
-        if (response.ok) {
-          const result = (await response.json()) as {
-            inputData?: unknown;
-            rootName?: string | null;
-          };
-          if (result.inputData !== undefined) {
-            setInputData(result.inputData, result.rootName ?? null);
-            debouncedSaveConfig();
-          }
-        }
-      } catch (error) {
-        console.error('Failed to generate input data:', error);
-      } finally {
-        setIsGeneratingInputData(false);
-      }
-    }, [schemaFields, debouncedSaveConfig, setInputData]);
-
     const handleSchemaChange = useCallback(
       (fields: SchemaField[]) => {
         setSchemaFields(fields);
@@ -416,6 +387,58 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         { duration: 12000 },
       );
     }, [canManageBilling, navigate]);
+
+    // Generate input data for the current schema
+    const handleGenerateInputData = useCallback(async () => {
+      if (schemaFields.length === 0) return;
+
+      setIsGeneratingInputData(true);
+      try {
+        const response = await fetch('/api/generate-input-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ schema: schemaFields }),
+        });
+
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => ({}))) as {
+            error?: string;
+            errorType?: string;
+          };
+          if (errorData.errorType === 'AUTH_ERROR') {
+            showApiKeyErrorToast();
+            return;
+          }
+          if (errorData.errorType === 'NO_API_KEY') {
+            toast.error('No API key configured', {
+              description:
+                'Add an LLM API key in settings to generate test data.',
+            });
+            return;
+          }
+          toast.error('Failed to generate test data', {
+            description: errorData.error || `HTTP ${response.status}`,
+          });
+          return;
+        }
+
+        const result = (await response.json()) as {
+          inputData?: unknown;
+          rootName?: string | null;
+        };
+        if (result.inputData !== undefined) {
+          setInputData(result.inputData, result.rootName ?? null);
+          debouncedSaveConfig();
+        }
+      } catch (error) {
+        console.error('Failed to generate input data:', error);
+        toast.error('Failed to generate test data', {
+          description: 'An unexpected error occurred. Please try again.',
+        });
+      } finally {
+        setIsGeneratingInputData(false);
+      }
+    }, [schemaFields, debouncedSaveConfig, setInputData, showApiKeyErrorToast]);
 
     // Handle running the prompt
     const handleRunPrompt = useCallback(async () => {
@@ -666,6 +689,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                         onChange={isReadonly ? undefined : handleSchemaChange}
                         onGenerateTestData={handleGenerateInputData}
                         isGeneratingTestData={isGeneratingInputData}
+                        hasApiKeys={!hasNoModels}
                         disabled={isReadonly}
                       />
                     </div>

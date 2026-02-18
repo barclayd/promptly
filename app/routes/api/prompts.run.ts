@@ -1,14 +1,9 @@
-import { createAnthropic } from '@ai-sdk/anthropic';
-import type { LanguageModel } from 'ai';
 import { streamText } from 'ai';
 import { data } from 'react-router';
 import { orgContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
-import { decryptApiKey } from '~/lib/encryption.server';
-import { getLlmApiKeyForModel } from '~/lib/llm-api-keys.server';
-import { createModelInstance } from '~/lib/model-dispatch.server';
-import { getProviderFromModelId } from '~/lib/model-pricing';
 import { preparePrompts } from '~/lib/prompt-interpolation';
+import { resolveModelForOrg } from '~/lib/resolve-model.server';
 import type { Route } from './+types/prompts.run';
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
@@ -127,44 +122,23 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
   // Resolve model: try org LLM key first, then fall back to env var
   const modelId = requestedModel || 'claude-haiku-4.5';
-  let modelInstance: LanguageModel;
 
-  const orgKey = await getLlmApiKeyForModel(db, org.organizationId, modelId);
+  const modelResult = await resolveModelForOrg({
+    db,
+    organizationId: org.organizationId,
+    modelId,
+    encryptionKey: context.cloudflare.env.API_KEY_ENCRYPTION_KEY,
+    systemAnthropicKey: context.cloudflare.env.ANTHROPIC_API_KEY,
+  });
 
-  if (orgKey) {
-    try {
-      const encryptionKey = context.cloudflare.env.API_KEY_ENCRYPTION_KEY;
-      if (!encryptionKey) {
-        console.error(
-          'API_KEY_ENCRYPTION_KEY environment variable is not configured',
-        );
-        return data({ error: 'Server configuration error' }, { status: 500 });
-      }
-      const apiKey = await decryptApiKey(orgKey.encryptedKey, encryptionKey);
-      const provider = getProviderFromModelId(modelId);
-      modelInstance = createModelInstance(modelId, apiKey, provider);
-    } catch (err) {
-      console.error('Failed to decrypt/create model:', err);
-      return data(
-        {
-          error: 'Failed to initialize model with stored API key',
-          errorType: 'AUTH_ERROR',
-        },
-        { status: 500 },
-      );
-    }
-  } else if (context.cloudflare.env.ANTHROPIC_API_KEY) {
-    // Fallback: use env var for onboarding / default
-    const anthropic = createAnthropic({
-      apiKey: context.cloudflare.env.ANTHROPIC_API_KEY,
-    });
-    modelInstance = anthropic('claude-haiku-4-5-20251001');
-  } else {
+  if (!modelResult.ok) {
     return data(
-      { error: 'No API key configured for this model' },
-      { status: 400 },
+      { error: modelResult.error, errorType: modelResult.errorType },
+      { status: modelResult.status },
     );
   }
+
+  const modelInstance = modelResult.model;
 
   // Capture stream errors — onError swallows them so the textStream
   // iterator completes normally without throwing
