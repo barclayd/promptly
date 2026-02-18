@@ -162,6 +162,33 @@ Edit `app/lib/model-pricing.ts` and update the `MODEL_PRICING` object. Prices ar
 
 Price sources: [llm-prices.com](https://www.llm-prices.com/)
 
+## Adding a New Model (Full Process)
+
+Use the `/project:update-models` slash command for a guided walkthrough. The full process involves:
+
+1. **Research**: Verify the AI SDK model ID at https://github.com/vercel/ai (check PRs and provider source)
+2. **Package update**: `bun update @ai-sdk/<provider>` if the model is very new
+3. **Pricing entry**: Add to `MODEL_PRICING` in `app/lib/model-pricing.ts`
+4. **SDK mapping**: Add display-ID → SDK-ID mapping in `app/lib/model-dispatch.server.ts` (Anthropic uses dots in display IDs but hyphens in SDK IDs)
+5. **Landing page**: Update hardcoded model names in `app/components/landing/hero-demo/demo-editor-window.tsx` and `app/components/landing/how-it-works/static-editor-window.tsx` if the new model replaces the flagship
+6. **Automated checks**: `bun run lint:fix`, `bun run typecheck`, `bun run test:e2e`
+7. **Browser verification**: Add the model via Settings > LLM API Keys (using the provider key from `.env`), test a prompt to confirm streaming works, then verify cost calculator math
+
+### Files that need manual edits
+| File | What to add |
+|------|-------------|
+| `app/lib/model-pricing.ts` | Pricing entry in `MODEL_PRICING` |
+| `app/lib/model-dispatch.server.ts` | SDK ID mapping in `MODEL_ID_MAP` (if IDs differ) |
+| `app/components/landing/hero-demo/demo-editor-window.tsx` | Update model badge text (if flagship) |
+| `app/components/landing/how-it-works/static-editor-window.tsx` | Update model badge text (if flagship) |
+| `app/lib/landing-data.ts` | Update model names in FAQ copy (if flagship) |
+
+### Files that auto-derive (no edits needed)
+- `app/components/ui/select-scrollable.tsx` — groups models by provider prefix
+- `app/components/cost-calculator-popover.tsx` — reads from `getModelPricing()`
+- `app/components/create-llm-api-key-dialog.tsx` — reads from `getModelsByProvider()`
+- `app/components/sidebar-right.tsx` — uses `SelectScrollable`
+
 ## Token Counting
 Token counting uses character-based estimation as a fallback before tests are run.
 Real accurate values come from the AI SDK response after running a test.
