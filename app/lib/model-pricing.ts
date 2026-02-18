@@ -9,7 +9,7 @@
  * 2. Update the relevant model entry in MODEL_PRICING
  * 3. If adding a new model, add it to MODEL_PRICING and update select-scrollable.tsx
  *
- * Last updated: January 2025
+ * Last updated: February 2026
  */
 
 export type Provider = 'openai' | 'anthropic' | 'google';
@@ -101,6 +101,14 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     inputPrice: 5.0,
     cachedInputPrice: 0.5,
     outputPrice: 25.0,
+  },
+  'claude-sonnet-4.6': {
+    id: 'claude-sonnet-4.6',
+    displayName: 'Claude Sonnet 4.6',
+    provider: 'anthropic',
+    inputPrice: 3.0,
+    cachedInputPrice: 0.3,
+    outputPrice: 15.0,
   },
   'claude-sonnet-4.5': {
     id: 'claude-sonnet-4.5',
