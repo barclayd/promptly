@@ -1,9 +1,9 @@
-import { createAnthropic } from '@ai-sdk/anthropic';
 import { generateText, Output } from 'ai';
 import { data } from 'react-router';
-import { getAuth } from '~/lib/auth.server';
+import { orgContext, sessionContext } from '~/context';
 import { buildZodSchema } from '~/lib/build-zod-schema';
 import { generateZodSchema } from '~/lib/generate-schema';
+import { resolveModelForOrg } from '~/lib/resolve-model.server';
 import type { SchemaField } from '~/lib/schema-types';
 import type { Route } from './+types/generate-input-data';
 
@@ -34,17 +34,15 @@ const SYSTEM_PROMPT = `You are a placeholder content generator for structured JS
 Return only the valid JSON object. No markdown, no explanations.`;
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
-  const anthropic = createAnthropic({
-    apiKey: context.cloudflare.env.ANTHROPIC_API_KEY,
-  });
-
-  const auth = getAuth(context);
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
+  const session = context.get(sessionContext);
 
   if (!session?.user) {
     return data({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  const org = context.get(orgContext);
+  if (!org) {
+    return data({ error: 'Unauthorized' }, { status: 403 });
   }
 
   const body = (await request.json()) as {
@@ -62,12 +60,29 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     );
   }
 
+  // Use claude-haiku-4.5 as the default model for test data generation
+  const modelId = 'claude-haiku-4.5';
+  const result = await resolveModelForOrg({
+    db: context.cloudflare.env.promptly,
+    organizationId: org.organizationId,
+    modelId,
+    encryptionKey: context.cloudflare.env.API_KEY_ENCRYPTION_KEY,
+    systemAnthropicKey: context.cloudflare.env.ANTHROPIC_API_KEY,
+  });
+
+  if (!result.ok) {
+    return data(
+      { error: result.error, errorType: result.errorType },
+      { status: result.status },
+    );
+  }
+
   try {
     const zodSchema = buildZodSchema(schema);
     const schemaCode = generateZodSchema(schema);
 
     const { output } = await generateText({
-      model: anthropic('claude-haiku-4-5'),
+      model: result.model,
       output: Output.object({
         schema: zodSchema,
       }),
