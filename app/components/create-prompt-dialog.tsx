@@ -17,6 +17,7 @@ import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { Textarea } from '~/components/ui/textarea';
 import { useResourceLimits } from '~/hooks/use-resource-limits';
+import { useOnboardingStore } from '~/stores/onboarding-store';
 import { UpgradeGateModal } from './upgrade-gate-modal';
 
 type ActionData = {
@@ -39,10 +40,32 @@ export const CreatePromptDialog = ({ children }: CreatePromptDialogProps) => {
   const location = useLocation();
   const navigation = useNavigation();
   const { canCreatePrompt, promptCount, promptLimit } = useResourceLimits();
+  const isOnboarding = useOnboardingStore((s) => s.isActive);
+  const isCreatingPrompt = useOnboardingStore((s) => s.isCreatingPrompt);
   const [showUpgradeGate, setShowUpgradeGate] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const errors = actionData?.errors;
   const isSubmitting = navigation.state === 'submitting';
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    if (!isOnboarding) return; // Normal flow — let React Router handle it
+
+    const store = useOnboardingStore.getState();
+    if (store.isCreatingPrompt) {
+      e.preventDefault();
+      return;
+    }
+
+    e.preventDefault();
+    store.setIsCreatingPrompt(true);
+    setDialogOpen(false);
+
+    // Trigger tour advancement — routes through step 3 handler
+    const nextBtn = document.querySelector(
+      '[data-onboarding-next]',
+    ) as HTMLElement | null;
+    nextBtn?.click();
+  };
 
   // Server-side fallback: if the action returned limitExceeded, show the gate
   const serverLimitExceeded =
@@ -82,7 +105,11 @@ export const CreatePromptDialog = ({ children }: CreatePromptDialogProps) => {
               Checking plan limits...
             </div>
           ) : (
-            <Form method="post" action="/api/prompts/create">
+            <Form
+              method="post"
+              action="/api/prompts/create"
+              onSubmit={handleSubmit}
+            >
               <DialogHeader>
                 <DialogTitle>Create a new prompt</DialogTitle>
                 <DialogDescription>
@@ -113,7 +140,10 @@ export const CreatePromptDialog = ({ children }: CreatePromptDialogProps) => {
                     Cancel
                   </Button>
                 </DialogClose>
-                <Button type="submit" disabled={isSubmitting}>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || (isOnboarding && isCreatingPrompt)}
+                >
                   {isSubmitting ? 'Creating...' : 'Create'}
                 </Button>
               </DialogFooter>
