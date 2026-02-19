@@ -161,6 +161,7 @@ export const getAuth = (ctx: Readonly<RouterContextProvider>) => {
         },
       }),
       organization({
+        invitationExpiresIn: 3600 * 24 * 14, // 14 days
         async sendInvitationEmail(data) {
           // Skip email sending if no API key is configured
           if (!resendApiKey) {
