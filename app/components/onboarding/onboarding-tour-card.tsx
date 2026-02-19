@@ -4,6 +4,7 @@ import { IconArrowLeft, IconArrowRight, IconX } from '@tabler/icons-react';
 import type { CardComponentProps } from 'nextstepjs';
 import { Button } from '~/components/ui/button';
 import { cn } from '~/lib/utils';
+import { useOnboardingStore } from '~/stores/onboarding-store';
 
 export const OnboardingTourCard = ({
   step,
@@ -17,7 +18,9 @@ export const OnboardingTourCard = ({
   const isFirst = currentStep === 0;
   const isLast = currentStep === totalSteps - 1;
   const isWaiting = currentStep === 3; // Creating prompt
+  const isPostCreate = currentStep === 4; // No going back past prompt creation
   const isTestStep = currentStep === 7; // User must click Test
+  const isCreatingPrompt = useOnboardingStore((s) => s.isCreatingPrompt);
 
   return (
     <div className="relative w-[340px] max-w-[90vw] translate-y-2.5">
@@ -71,7 +74,7 @@ export const OnboardingTourCard = ({
           {/* Navigation buttons */}
           {step.showControls && !isWaiting && !isTestStep && (
             <div className="flex items-center gap-2">
-              {!isFirst && (
+              {!isFirst && !isPostCreate && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -81,7 +84,13 @@ export const OnboardingTourCard = ({
                   <IconArrowLeft className="size-4" />
                 </Button>
               )}
-              <Button size="sm" onClick={nextStep} className="h-8">
+              <Button
+                size="sm"
+                onClick={nextStep}
+                className="h-8"
+                data-onboarding-next
+                disabled={isCreatingPrompt}
+              >
                 {isLast ? 'Setup account' : 'Next'}
                 {!isLast && <IconArrowRight className="size-3.5" />}
               </Button>

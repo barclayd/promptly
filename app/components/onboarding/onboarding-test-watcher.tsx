@@ -22,7 +22,7 @@ export const OnboardingTestWatcher = ({
   useEffect(() => {
     if (!isActive || !isNextStepVisible || currentTour !== ONBOARDING_TOUR_NAME)
       return;
-    if (currentStep !== 7) {
+    if (currentStep !== 6 && currentStep !== 7) {
       hasAdvanced.current = false;
       return;
     }

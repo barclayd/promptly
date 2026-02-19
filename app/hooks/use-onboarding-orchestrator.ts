@@ -156,6 +156,7 @@ export const useOnboardingOrchestrator = (
       if (step === 3 && !processingRef.current) {
         // Step 3: Submit form via fetch, capture promptId, navigate
         processingRef.current = true;
+        useOnboardingStore.getState().setIsCreatingPrompt(true);
         const firstName = store.userName ?? 'there';
         try {
           const formData = new FormData();
@@ -195,6 +196,7 @@ export const useOnboardingOrchestrator = (
           useOnboardingStore.getState().reset();
         } finally {
           processingRef.current = false;
+          useOnboardingStore.getState().setIsCreatingPrompt(false);
         }
       }
 
