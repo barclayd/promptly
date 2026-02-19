@@ -47,29 +47,69 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
     const setCookie = response.headers.get('set-cookie');
 
-    // Create a default organization for the new user
     if (setCookie) {
-      const org = await auth.api.createOrganization({
-        body: {
-          name: `${result.data.name}'s Workspace`,
-          slug: nanoid(10),
-        },
-        headers: { Cookie: setCookie },
-      });
+      const db = context.cloudflare.env.promptly;
+      const now = Date.now();
 
-      // Backfill organization_id on the subscription created by the signup hook
-      if (org?.id) {
-        const session = await auth.api.getSession({
+      // Check for pending invitations matching the user's email
+      const pendingInvitations = await db
+        .prepare(
+          `SELECT id, organization_id FROM invitation
+           WHERE LOWER(email) = LOWER(?) AND status = 'pending' AND expires_at > ?`,
+        )
+        .bind(result.data.email, now)
+        .all<{ id: string; organization_id: string }>();
+
+      let joinedOrgId: string | null = null;
+
+      if (pendingInvitations.results?.length) {
+        // Auto-accept all pending invitations
+        for (const inv of pendingInvitations.results) {
+          try {
+            await auth.api.acceptInvitation({
+              body: { invitationId: inv.id },
+              headers: { Cookie: setCookie },
+            });
+            if (!joinedOrgId) {
+              joinedOrgId = inv.organization_id;
+            }
+          } catch (error) {
+            console.error(`Failed to auto-accept invitation ${inv.id}:`, error);
+          }
+        }
+
+        // Set the first successfully accepted org as active
+        if (joinedOrgId) {
+          await auth.api.setActiveOrganization({
+            body: { organizationId: joinedOrgId },
+            headers: { Cookie: setCookie },
+          });
+        }
+      }
+
+      // If no invitations were accepted, create a default workspace
+      if (!joinedOrgId) {
+        const org = await auth.api.createOrganization({
+          body: {
+            name: `${result.data.name}'s Workspace`,
+            slug: nanoid(10),
+          },
           headers: { Cookie: setCookie },
         });
-        if (session?.user?.id) {
-          const db = context.cloudflare.env.promptly;
-          await db
-            .prepare(
-              'UPDATE subscription SET organization_id = ? WHERE user_id = ? AND organization_id IS NULL',
-            )
-            .bind(org.id, session.user.id)
-            .run();
+
+        // Backfill organization_id on the subscription created by the signup hook
+        if (org?.id) {
+          const session = await auth.api.getSession({
+            headers: { Cookie: setCookie },
+          });
+          if (session?.user?.id) {
+            await db
+              .prepare(
+                'UPDATE subscription SET organization_id = ? WHERE user_id = ? AND organization_id IS NULL',
+              )
+              .bind(org.id, session.user.id)
+              .run();
+          }
         }
       }
     }
