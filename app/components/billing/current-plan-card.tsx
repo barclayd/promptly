@@ -3,6 +3,7 @@
 import {
   IconAlertTriangle,
   IconArrowDown,
+  IconBuildingSkyscraper,
   IconCheck,
   IconClock,
   IconExternalLink,
@@ -53,6 +54,17 @@ const getPlanDisplay = (
   subscription: SubscriptionStatus,
 ): PlanDisplayConfig => {
   const { status, daysLeft, cancelAtPeriodEnd, periodEnd } = subscription;
+
+  if (subscription.plan === 'enterprise' && status === 'active') {
+    return {
+      title: 'Enterprise Plan',
+      subtitle: 'Managed account',
+      icon: <IconBuildingSkyscraper className="size-5" />,
+      accentColor: 'text-amber-600 dark:text-amber-400',
+      badgeClasses:
+        'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+    };
+  }
 
   if (status === 'trialing') {
     return {
@@ -367,7 +379,7 @@ export const CurrentPlanCard = () => {
                 'flex size-10 shrink-0 items-center justify-center rounded-xl',
                 status === 'past_due'
                   ? 'bg-red-500/10 text-red-500 dark:bg-red-500/15'
-                  : status === 'trialing'
+                  : status === 'trialing' || subscription.plan === 'enterprise'
                     ? 'bg-amber-500/10 text-amber-500 dark:bg-amber-500/15'
                     : 'bg-indigo-500/10 text-indigo-500 dark:bg-indigo-500/15',
               )}
@@ -447,7 +459,14 @@ export const CurrentPlanCard = () => {
           </div>
 
           {/* CTAs */}
-          {canManageBilling ? (
+          {subscription.plan === 'enterprise' ? (
+            <div className="mt-4 rounded-lg bg-muted/50 px-4 py-3 text-center">
+              <p className="text-sm text-muted-foreground">
+                Billing for your enterprise account is managed externally.
+                Contact support for changes.
+              </p>
+            </div>
+          ) : canManageBilling ? (
             <div className="mt-4 flex flex-wrap items-center gap-2">
               {/* Trialing: Upgrade + Manage billing */}
               {status === 'trialing' && (

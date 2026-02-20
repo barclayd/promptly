@@ -1,9 +1,10 @@
-import type { SubscriptionStatus } from '~/plugins/trial-stripe/types';
+import type { Plan, SubscriptionStatus } from '~/plugins/trial-stripe/types';
 
 // Plan limits must match auth.server.ts trialStripe() config
 const PLAN_LIMITS = {
   free: { prompts: 3, teamMembers: 1, apiCalls: 5000 },
   pro: { prompts: -1, teamMembers: 5, apiCalls: 50000 },
+  enterprise: { prompts: -1, teamMembers: -1, apiCalls: -1 },
 } as const;
 
 const FREE_STATUS: SubscriptionStatus = {
@@ -65,7 +66,7 @@ export const getSubscriptionStatus = async (
       : PLAN_LIMITS.free;
 
   return {
-    plan: row.plan,
+    plan: row.plan as Plan,
     status: row.status as SubscriptionStatus['status'],
     isTrial,
     hadTrial: true,

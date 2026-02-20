@@ -1,5 +1,6 @@
 import {
   IconAlertTriangle,
+  IconBuildingSkyscraper,
   IconChevronRight,
   IconCircleCheck,
   IconClock,
@@ -38,6 +39,18 @@ const formatCancelDate = (periodEnd: number | null): string => {
 const getBadgeConfig = (
   subscription: SubscriptionStatus | null,
 ): BadgeConfig => {
+  if (subscription?.plan === 'enterprise' && subscription.status === 'active') {
+    return {
+      label: 'ENTERPRISE',
+      subtext: null,
+      colorClasses:
+        'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+      subtextClasses: '',
+      icon: <IconBuildingSkyscraper />,
+      tooltipBase: 'Enterprise plan - active',
+    };
+  }
+
   if (!subscription || subscription.status === 'expired') {
     return {
       label: 'FREE',

@@ -1,3 +1,5 @@
+export type Plan = 'free' | 'pro' | 'enterprise';
+
 export type SubscriptionStatusValue =
   | 'trialing'
   | 'active'
@@ -12,20 +14,20 @@ export interface PlanLimits {
 }
 
 export interface PlanConfig {
-  name: string;
+  name: Plan;
   priceId: string;
   yearlyPriceId?: string;
   limits: PlanLimits;
 }
 
 export interface FreePlanConfig {
-  name: string;
+  name: Plan;
   limits: PlanLimits;
 }
 
 export interface TrialConfig {
   days: number;
-  plan: string;
+  plan: Plan;
 }
 
 export interface TrialStripePluginOptions {
@@ -38,14 +40,14 @@ export interface TrialStripePluginOptions {
     onTrialStart?: (userId: string) => Promise<void> | void;
     onSubscriptionChange?: (
       userId: string,
-      plan: string,
+      plan: Plan,
       status: SubscriptionStatusValue,
     ) => Promise<void> | void;
   };
 }
 
 export interface SubscriptionStatus {
-  plan: string;
+  plan: Plan;
   status: SubscriptionStatusValue;
   isTrial: boolean;
   hadTrial: boolean;
@@ -59,7 +61,7 @@ export interface SubscriptionRecord {
   id: string;
   userId: string;
   organizationId: string | null;
-  plan: string;
+  plan: Plan;
   status: SubscriptionStatusValue;
   trialStart: number | null;
   trialEnd: number | null;
