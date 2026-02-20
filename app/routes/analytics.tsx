@@ -337,7 +337,7 @@ const TeamMeter = ({
                             y={(viewBox.cy ?? 0) + 24}
                             className="fill-muted-foreground"
                           >
-                            of {limit}
+                            {isUnlimited ? 'Unlimited' : `of ${limit}`}
                           </tspan>
                         </text>
                       );
@@ -369,6 +369,10 @@ const TeamMeter = ({
                 Ask your admin to add more seats
               </p>
             )
+          ) : isUnlimited ? (
+            <p className="text-sm text-muted-foreground">
+              No limit on your plan
+            </p>
           ) : (
             (() => {
               const remaining = limit - count;
