@@ -1,5 +1,6 @@
 import type { BetterAuthClientPlugin } from 'better-auth/client';
 import type { trialStripe } from './index';
+import type { Plan } from './types';
 
 export const trialStripeClient = () => {
   return {
@@ -18,7 +19,7 @@ export const trialStripeClient = () => {
             method: 'GET',
           }),
         upgrade: (body: {
-          plan: string;
+          plan: Plan;
           billingPeriod?: 'monthly' | 'yearly';
           successUrl: string;
           cancelUrl: string;

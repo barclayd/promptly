@@ -2,7 +2,11 @@ import { createAuthEndpoint } from '@better-auth/core/api';
 import { APIError } from 'better-call';
 import Stripe from 'stripe';
 import { ERROR_CODES } from '../error-codes';
-import type { SubscriptionRecord, TrialStripePluginOptions } from '../types';
+import type {
+  Plan,
+  SubscriptionRecord,
+  TrialStripePluginOptions,
+} from '../types';
 
 const getItemPeriod = (sub: Stripe.Subscription) => {
   const item = sub.items.data[0];
@@ -83,7 +87,8 @@ export const webhookEndpoint = (options: TrialStripePluginOptions) =>
         const planConfig = options.plans.find(
           (p) => p.priceId === priceId || p.yearlyPriceId === priceId,
         );
-        const planName = planConfig?.name ?? session.metadata?.plan ?? 'pro';
+        const planName =
+          planConfig?.name ?? (session.metadata?.plan as Plan) ?? 'pro';
 
         const subscription =
           await ctx.context.adapter.findOne<SubscriptionRecord>({

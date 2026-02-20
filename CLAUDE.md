@@ -1442,6 +1442,38 @@ Access-Control-Max-Age: 86400
 | 405 | Non-GET request to `/prompts/get` |
 | 500 | Unexpected error (logged) |
 
+# Enterprise Plan
+
+## Overview
+Enterprise is the highest tier with no resource restrictions (all limits `-1`). Enterprise subscriptions are manually provisioned — no Stripe checkout flow exists yet.
+
+## Provisioning
+Manually UPDATE an existing org's subscription row in D1:
+
+```sql
+UPDATE subscription
+SET plan = 'enterprise', status = 'active', updated_at = <timestamp_ms>
+WHERE organization_id = '<org_id>';
+```
+
+## Future Stripe Connection
+The enterprise plan has a placeholder `priceId` (`enterprise_placeholder`) in `auth.server.ts`. When connecting to Stripe:
+1. Create a Stripe product + price for Enterprise
+2. Replace `enterprise_placeholder` with the real price ID
+3. Build upgrade UI if needed
+
+## Plan Limits
+| Plan | Prompts | Team Members | API Calls |
+|------|---------|-------------|-----------|
+| Free | 3 | 1 | 5,000/mo |
+| Pro | Unlimited | 5 | 50,000/mo |
+| Enterprise | Unlimited | Unlimited | Unlimited |
+
+## Frontend Behavior
+- Enterprise users see a gold/amber "ENTERPRISE" badge in the sidebar
+- No upsell CTAs, upgrade modals, trial banners, or interstitial modals
+- Settings > Billing shows a minimal "Enterprise Plan" card with no usage stats or plan comparison
+
 # Interstitial Modal System
 
 The app uses a priority-based interstitial system for modals, banners, and drawers that communicate subscription state to users. All interstitials are wired in `app/routes/layouts/app.tsx`.

@@ -74,6 +74,11 @@ export const getAuth = (ctx: Readonly<RouterContextProvider>) => {
             priceId: ctx.cloudflare.env.STRIPE_PRICE_ID,
             limits: { prompts: -1, teamMembers: 5, apiCalls: 50000 },
           },
+          {
+            name: 'enterprise',
+            priceId: 'enterprise_placeholder',
+            limits: { prompts: -1, teamMembers: -1, apiCalls: -1 },
+          },
         ],
         hooks: {
           async onSubscriptionChange(userId, plan, status) {

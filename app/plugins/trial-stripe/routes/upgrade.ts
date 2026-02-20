@@ -14,7 +14,7 @@ export const upgradeEndpoint = (options: TrialStripePluginOptions) =>
       method: 'POST',
       use: [sessionMiddleware],
       body: z.object({
-        plan: z.string(),
+        plan: z.enum(['free', 'pro', 'enterprise']),
         billingPeriod: z.enum(['monthly', 'yearly']).optional(),
         successUrl: z.string(),
         cancelUrl: z.string(),
