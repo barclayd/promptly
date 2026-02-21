@@ -6,7 +6,6 @@ import {
   IconFileAi,
   IconFileDescription,
   IconFileText,
-  IconFolder,
   IconHelp,
   IconSearch,
   IconSettings,
@@ -46,7 +45,7 @@ const data = {
     {
       title: 'Prompts',
       url: '/prompts',
-      icon: IconFolder,
+      icon: IconFileAi,
     },
     {
       title: 'Team',
