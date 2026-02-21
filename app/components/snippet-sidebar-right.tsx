@@ -84,11 +84,6 @@ export const SnippetSidebarRight = forwardRef<
     const testVersionOverride = useSnippetEditorStore(
       (s) => s.testVersionOverride,
     );
-    const lastOutputTokens = useSnippetEditorStore((s) => s.lastOutputTokens);
-    const lastSystemInputTokens = useSnippetEditorStore(
-      (s) => s.lastSystemInputTokens,
-    );
-
     // Get actions from the store
     const setTestModel = useSnippetEditorStore((s) => s.setTestModel);
     const setTestUserMessage = useSnippetEditorStore(
@@ -553,25 +548,6 @@ export const SnippetSidebarRight = forwardRef<
                           error={streamError}
                         />
                       </div>
-
-                      {/* Token counts */}
-                      {lastSystemInputTokens != null &&
-                        lastOutputTokens != null && (
-                          <div className="text-xs text-muted-foreground pt-2 space-y-1">
-                            <div className="flex justify-between">
-                              <span>System input</span>
-                              <span>
-                                {lastSystemInputTokens.toLocaleString()} tokens
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Output</span>
-                              <span>
-                                {lastOutputTokens.toLocaleString()} tokens
-                              </span>
-                            </div>
-                          </div>
-                        )}
                     </div>
                   </SidebarGroupContent>
                 </CollapsibleContent>

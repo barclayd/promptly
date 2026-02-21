@@ -13,6 +13,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { PromptEditor } from '~/components/prompt-editor';
 import { PublishSnippetDialog } from '~/components/publish-snippet-dialog';
 import { RemoteCursorsOverlay } from '~/components/remote-cursors-overlay';
+import { SnippetCostCalculatorPopover } from '~/components/snippet-cost-calculator-popover';
 import { SnippetEditorMenubar } from '~/components/snippet-editor-menubar';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -737,6 +738,7 @@ export default function SnippetDetail({ loaderData }: Route.ComponentProps) {
                 )
               }
               disabled={isReadOnly}
+              costCalculator={<SnippetCostCalculatorPopover />}
             />
             {!isReadOnly && (
               <div className="mt-4 md:hidden">

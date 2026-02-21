@@ -131,6 +131,7 @@ export const PromptEditor = ({
   textareaRef,
   onSelectionChange,
   disabled,
+  costCalculator,
 }: {
   title: string;
   value?: string;
@@ -145,6 +146,7 @@ export const PromptEditor = ({
   textareaRef?: (el: HTMLTextAreaElement | null) => void;
   onSelectionChange?: (position: number) => void;
   disabled?: boolean;
+  costCalculator?: React.ReactNode;
 }) => {
   const isCurrentlySaving = isPendingSave || isSaving;
   const [copied, setCopied] = useState(false);
@@ -241,7 +243,9 @@ export const PromptEditor = ({
               )}
             </TooltipContent>
           </Tooltip>
-          <CostCalculatorPopover title={title} value={value ?? ''} />
+          {costCalculator ?? (
+            <CostCalculatorPopover title={title} value={value ?? ''} />
+          )}
           <InputGroupButton
             variant="ghost"
             size="icon-xs"
