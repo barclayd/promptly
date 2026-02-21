@@ -92,13 +92,13 @@ export const BreadcrumbWithDropdown = () => {
                   <ChevronDownIcon />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  {SECTIONS.filter(
-                    (s) => s.path !== activeSection.path,
-                  ).map((section) => (
-                    <DropdownMenuItem key={section.path} asChild>
-                      <NavLink to={section.path}>{section.name}</NavLink>
-                    </DropdownMenuItem>
-                  ))}
+                  {SECTIONS.filter((s) => s.path !== activeSection.path).map(
+                    (section) => (
+                      <DropdownMenuItem key={section.path} asChild>
+                        <NavLink to={section.path}>{section.name}</NavLink>
+                      </DropdownMenuItem>
+                    ),
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </BreadcrumbItem>
