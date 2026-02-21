@@ -97,8 +97,6 @@ export default function SnippetDetailLayout() {
               key={params.snippetId}
               context={{
                 triggerTest: () => sidebarRightRef.current?.triggerTest(),
-                getIsTestRunning: () =>
-                  sidebarRightRef.current?.isStreaming ?? false,
               }}
             />
           </SidebarInset>
@@ -131,8 +129,6 @@ export default function SnippetDetailLayout() {
                   key={params.snippetId}
                   context={{
                     triggerTest: () => sidebarRightRef.current?.triggerTest(),
-                    getIsTestRunning: () =>
-                      sidebarRightRef.current?.isStreaming ?? false,
                   }}
                 />
               </div>

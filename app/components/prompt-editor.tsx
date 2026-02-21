@@ -126,7 +126,6 @@ export const PromptEditor = ({
   isSaving,
   lastSavedAt,
   onTest,
-  isTestRunning,
   cursorOverlay,
   textareaRef,
   onSelectionChange,
@@ -141,7 +140,6 @@ export const PromptEditor = ({
   isSaving?: boolean;
   lastSavedAt?: number | null;
   onTest?: () => void;
-  isTestRunning?: boolean;
   cursorOverlay?: React.ReactNode;
   textareaRef?: (el: HTMLTextAreaElement | null) => void;
   onSelectionChange?: (position: number) => void;
@@ -200,18 +198,8 @@ export const PromptEditor = ({
             className="ml-auto"
             variant="default"
             onClick={onTest}
-            disabled={isTestRunning}
           >
-            {isTestRunning ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                Running...
-              </>
-            ) : (
-              <>
-                Test <IconCornerDownLeft />
-              </>
-            )}
+            Test <IconCornerDownLeft />
           </InputGroupButton>
         </InputGroupAddon>
         <InputGroupAddon align="block-start" className="border-b">

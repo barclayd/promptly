@@ -32,7 +32,6 @@ import type { Route } from './+types/snippets.snippetId';
 
 type SnippetDetailContext = {
   triggerTest: () => void;
-  getIsTestRunning: () => boolean;
 };
 
 type OrgMember = {
@@ -406,8 +405,7 @@ export const action = async ({
 
 export default function SnippetDetail({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher<typeof action>();
-  const { triggerTest, getIsTestRunning } =
-    useOutletContext<SnippetDetailContext>();
+  const { triggerTest } = useOutletContext<SnippetDetailContext>();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -723,7 +721,6 @@ export default function SnippetDetail({ loaderData }: Route.ComponentProps) {
               isSaving={false}
               lastSavedAt={lastSavedAtRef.current}
               onTest={triggerTest}
-              isTestRunning={getIsTestRunning()}
               textareaRef={(el) => {
                 systemTextareaRef.current = el;
               }}
