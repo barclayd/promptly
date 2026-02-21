@@ -22,20 +22,28 @@ type ActionData = {
 };
 
 type CreateSnippetDialogProps = {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export const CreateSnippetDialog = ({ children }: CreateSnippetDialogProps) => {
+export const CreateSnippetDialog = ({
+  children,
+  open: controlledOpen,
+  onOpenChange,
+}: CreateSnippetDialogProps) => {
   const actionData = useActionData<ActionData>();
   const navigation = useNavigation();
   const location = useLocation();
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const dialogOpen = controlledOpen ?? internalOpen;
+  const setDialogOpen = onOpenChange ?? setInternalOpen;
   const errors = actionData?.errors;
   const isSubmitting = navigation.state === 'submitting';
 
   return (
     <Dialog key={location.key} open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      {children && <DialogTrigger asChild>{children}</DialogTrigger>}
       <DialogContent className="sm:max-w-106.25">
         <Form method="post" action="/api/snippets/create">
           <DialogHeader>
