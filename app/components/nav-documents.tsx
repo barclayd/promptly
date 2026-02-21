@@ -52,8 +52,8 @@ export const NavDocuments = ({ items }: { items: NavDocumentItem[] }) => {
     toast.success('Link copied to clipboard', { position: 'bottom-center' });
   };
 
-  const handleDelete = (promptId: string, name: string) => {
-    removeRecent(promptId);
+  const handleDelete = (url: string, name: string) => {
+    removeRecent(url);
     toast.success(`Removed "${name}" from recents`, {
       position: 'bottom-center',
     });
@@ -117,7 +117,7 @@ export const NavDocuments = ({ items }: { items: NavDocumentItem[] }) => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant="destructive"
-                  onClick={() => handleDelete(item.promptId, item.name)}
+                  onClick={() => handleDelete(item.url, item.name)}
                 >
                   <IconTrash />
                   <span>Delete</span>

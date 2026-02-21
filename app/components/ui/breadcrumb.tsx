@@ -11,11 +11,13 @@ import {
 
 import { cn } from '~/lib/utils';
 import type { loader as promptLoader } from '~/routes/prompts.promptId';
+import type { loader as snippetLoader } from '~/routes/snippets.snippetId';
 
 const SECTIONS = [
   { name: 'Analytics', path: '/analytics' },
   { name: 'Team', path: '/team' },
   { name: 'Prompts', path: '/prompts' },
+  { name: 'Snippets', path: '/snippets' },
   { name: 'Settings', path: '/settings' },
 ];
 
@@ -34,6 +36,8 @@ const Breadcrumb = ({ ...props }: ComponentProps<'nav'>) => (
 export const BreadcrumbWithDropdown = () => {
   const location = useLocation();
   const promptData = useRouteLoaderData<typeof promptLoader>('prompt-detail');
+  const snippetData =
+    useRouteLoaderData<typeof snippetLoader>('snippet-detail');
 
   const segments = location.pathname.split('/').filter(Boolean);
 
@@ -42,7 +46,7 @@ export const BreadcrumbWithDropdown = () => {
     (s) => s.path.slice(1).toLowerCase() === currentSection.toLowerCase(),
   );
 
-  const folder = promptData?.folder;
+  const folder = promptData?.folder ?? snippetData?.folder;
 
   const deepSegments = segments
     .slice(1)
@@ -56,6 +60,8 @@ export const BreadcrumbWithDropdown = () => {
         acc.push({ label: folder.name, path });
       } else if (promptData?.prompt && segment === promptData.prompt.id) {
         acc.push({ label: promptData.prompt.name, path });
+      } else if (snippetData?.snippet && segment === snippetData.snippet.id) {
+        acc.push({ label: snippetData.snippet.name, path });
       } else {
         acc.push({ label: toTitleCase(segment), path });
       }
@@ -81,12 +87,14 @@ export const BreadcrumbWithDropdown = () => {
             </BreadcrumbSeparator>
             <BreadcrumbItem>
               <DropdownMenu>
-                <DropdownMenuTrigger className="flex items-center gap-1 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5">
+                <DropdownMenuTrigger className="flex items-center gap-1 focus:outline-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5">
                   {activeSection.name}
                   <ChevronDownIcon />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  {SECTIONS.map((section) => (
+                  {SECTIONS.filter(
+                    (s) => s.path !== activeSection.path,
+                  ).map((section) => (
                     <DropdownMenuItem key={section.path} asChild>
                       <NavLink to={section.path}>{section.name}</NavLink>
                     </DropdownMenuItem>

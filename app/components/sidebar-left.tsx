@@ -7,6 +7,7 @@ import {
   IconFileDescription,
   IconFileText,
   IconHelp,
+  IconPuzzle,
   IconSearch,
   IconSettings,
   IconUsers,
@@ -46,6 +47,11 @@ const data = {
       title: 'Prompts',
       url: '/prompts',
       icon: IconFileAi,
+    },
+    {
+      title: 'Snippets',
+      url: '/snippets',
+      icon: IconPuzzle,
     },
     {
       title: 'Team',
@@ -140,9 +146,9 @@ export const SidebarLeft = ({
   // Transform recents to NavDocuments format
   const recentItems = recents.map((r) => ({
     promptId: r.promptId,
-    name: r.promptName,
+    name: r.promptName ?? r.snippetName ?? '',
     url: r.url,
-    icon: IconFileText,
+    icon: r.type === 'snippet' ? IconPuzzle : IconFileText,
     folderName: r.folderName,
     version: r.version,
   }));
