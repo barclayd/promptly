@@ -11,8 +11,16 @@ import {
   useRef,
   useState,
 } from 'react';
-import { NavLink, useNavigate, useParams, useSearchParams } from 'react-router';
+import {
+  NavLink,
+  useFetcher,
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router';
 import { toast } from 'sonner';
+import { useDebouncedCallback } from 'use-debounce';
 import { NoLlmApiKeysModal } from '~/components/no-llm-api-keys-modal';
 import { NoModelsWarning } from '~/components/no-models-warning';
 import { SelectScrollable } from '~/components/select-scrollable';
@@ -85,7 +93,7 @@ export const SnippetSidebarRight = forwardRef<
       (s) => s.testVersionOverride,
     );
     // Get actions from the store
-    const setTestModel = useSnippetEditorStore((s) => s.setTestModel);
+    const setModel = useSnippetEditorStore((s) => s.setModel);
     const setTestUserMessage = useSnippetEditorStore(
       (s) => s.setTestUserMessage,
     );
@@ -102,11 +110,25 @@ export const SnippetSidebarRight = forwardRef<
     const [testOpen, setTestOpen] = useState(true);
     const testSectionRef = useRef<HTMLDivElement>(null);
 
+    const configFetcher = useFetcher();
+    const location = useLocation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const params = useParams();
     const isMobile = useIsMobile();
     const { canManageBilling } = useCanManageBilling();
+
+    const debouncedSaveConfig = useDebouncedCallback(() => {
+      const state = useSnippetEditorStore.getState();
+      const config = {
+        model: state.model,
+        testUserMessage: state.testUserMessage,
+      };
+      configFetcher.submit(
+        { intent: 'saveConfig', config: JSON.stringify(config) },
+        { method: 'post', action: location.pathname },
+      );
+    }, 1000);
 
     // Streaming state
     const [streamText, setStreamText] = useState('');
@@ -206,8 +228,17 @@ export const SnippetSidebarRight = forwardRef<
     const handleTestUserMessageChange = useCallback(
       (value: string) => {
         setTestUserMessage(value);
+        debouncedSaveConfig();
       },
-      [setTestUserMessage],
+      [setTestUserMessage, debouncedSaveConfig],
+    );
+
+    const handleModelChange = useCallback(
+      (value: string) => {
+        setModel(value);
+        debouncedSaveConfig();
+      },
+      [setModel, debouncedSaveConfig],
     );
 
     // Handle running the snippet test
@@ -460,7 +491,7 @@ export const SnippetSidebarRight = forwardRef<
                         ) : (
                           <SelectScrollable
                             value={testModelToUse}
-                            onChange={setTestModel}
+                            onChange={handleModelChange}
                             enabledModels={enabledModels}
                           />
                         )}

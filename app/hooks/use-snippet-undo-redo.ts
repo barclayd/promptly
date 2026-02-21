@@ -15,7 +15,7 @@ const setupUndoRedoListener = () => {
         return;
 
       const target = e.target as HTMLElement;
-      const isManagedUndo = target.dataset.managedSnippetUndo !== undefined;
+      const isManagedUndo = target.dataset.managedUndo !== undefined;
 
       if (!isManagedUndo) return;
 
@@ -39,12 +39,10 @@ const setupUndoRedoListener = () => {
       const target = e.target as HTMLElement;
       const isTextInput =
         target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
-      const isManagedUndo = target.dataset.managedSnippetUndo !== undefined;
+      const isManagedUndo = target.dataset.managedUndo !== undefined;
 
       if (isTextInput && !isManagedUndo) return;
-
-      const snippetEditorEl = target.closest('[data-snippet-editor]');
-      if (!snippetEditorEl && !isManagedUndo) return;
+      if (!isManagedUndo) return;
 
       e.preventDefault();
 
