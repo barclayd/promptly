@@ -112,8 +112,6 @@ export default function PromptDetailLayout() {
               key={params.promptId}
               context={{
                 triggerTest: () => sidebarRightRef.current?.triggerTest(),
-                getIsTestRunning: () =>
-                  sidebarRightRef.current?.isStreaming ?? false,
               }}
             />
           </SidebarInset>
@@ -151,8 +149,6 @@ export default function PromptDetailLayout() {
                   key={params.promptId}
                   context={{
                     triggerTest: () => sidebarRightRef.current?.triggerTest(),
-                    getIsTestRunning: () =>
-                      sidebarRightRef.current?.isStreaming ?? false,
                   }}
                 />
               </div>

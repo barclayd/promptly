@@ -37,7 +37,6 @@ import type { Route } from './+types/prompts.promptId';
 
 type PromptDetailContext = {
   triggerTest: () => void;
-  getIsTestRunning: () => boolean;
 };
 
 type OrgMember = {
@@ -513,8 +512,7 @@ export const action = async ({
 
 export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher<typeof action>();
-  const { triggerTest, getIsTestRunning } =
-    useOutletContext<PromptDetailContext>();
+  const { triggerTest } = useOutletContext<PromptDetailContext>();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -988,7 +986,6 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               isSaving={false}
               lastSavedAt={lastSystemSavedAtRef.current}
               onTest={triggerTest}
-              isTestRunning={getIsTestRunning()}
               textareaRef={(el) => {
                 systemTextareaRef.current = el;
               }}
@@ -1015,7 +1012,6 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               isSaving={false}
               lastSavedAt={lastUserSavedAtRef.current}
               onTest={triggerTest}
-              isTestRunning={getIsTestRunning()}
               textareaRef={(el) => {
                 userTextareaRef.current = el;
               }}
