@@ -585,7 +585,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       setLastUserInputTokens,
     ]);
 
-    // Trigger test from external source (e.g., PromptReview)
+    // Trigger test from external source (e.g., PromptEditor)
     const triggerTest = useCallback(() => {
       setTestOpen(true);
       testSectionRef.current?.scrollIntoView({
