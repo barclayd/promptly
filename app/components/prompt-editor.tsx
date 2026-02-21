@@ -117,7 +117,7 @@ const SaveStatus = ({
   );
 };
 
-export const PromptReview = ({
+export const PromptEditor = ({
   title,
   value,
   onChange,

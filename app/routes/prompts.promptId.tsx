@@ -10,8 +10,8 @@ import {
   useSearchParams,
 } from 'react-router';
 import { useDebouncedCallback } from 'use-debounce';
+import { PromptEditor } from '~/components/prompt-editor';
 import { PromptEditorMenubar } from '~/components/prompt-editor-menubar';
-import { PromptReview } from '~/components/prompt-review';
 import { PublishPromptDialog } from '~/components/publish-prompt-dialog';
 import { ReadOnlyPlanBanner } from '~/components/read-only-plan-banner';
 import { RemoteCursorsOverlay } from '~/components/remote-cursors-overlay';
@@ -979,7 +979,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               </p>
             )}
             <Separator className="my-4" />
-            <PromptReview
+            <PromptEditor
               title="System Prompt"
               value={systemMessage}
               onChange={isReadOnly ? undefined : handleSystemChange}
@@ -1006,7 +1006,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               }
               disabled={isReadOnly}
             />
-            <PromptReview
+            <PromptEditor
               title="User Prompt"
               value={userMessage}
               onChange={isReadOnly ? undefined : handleUserChange}
