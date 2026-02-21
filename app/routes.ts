@@ -20,6 +20,14 @@ export default [
   route('api/prompts/update', './routes/api/prompts.update.ts'),
   route('api/prompts/delete', './routes/api/prompts.delete.ts'),
   route('api/prompt-info', './routes/api/prompt-info.ts'),
+  // Snippet API routes
+  route('api/snippets/create', './routes/api/snippets.create.ts'),
+  route('api/snippets/run', './routes/api/snippets.run.ts'),
+  route('api/snippets/usage', './routes/api/snippets.usage.ts'),
+  route('api/snippets/publish', './routes/api/snippets.publish.ts'),
+  route('api/snippets/update', './routes/api/snippets.update.ts'),
+  route('api/snippets/delete', './routes/api/snippets.delete.ts'),
+  route('api/snippet-info', './routes/api/snippet-info.ts'),
   route('api/generate-input-data', './routes/api/generate-input-data.ts'),
   route('api/team/invite', './routes/api/team.invite.ts'),
   route('api/team/cancel-invite', './routes/api/team.cancel-invite.ts'),
@@ -63,6 +71,7 @@ export default [
     route('home', './routes/home.tsx'),
     route('logout', './routes/logout.tsx'),
     route('prompts', './routes/prompts.tsx'),
+    route('snippets', './routes/snippets.tsx'),
     route('analytics', './routes/analytics.tsx'),
     route('team', './routes/team.tsx'),
     route('settings', './routes/settings.tsx'),
@@ -70,6 +79,11 @@ export default [
   layout('./routes/layouts/prompt-detail.tsx', [
     route('prompts/:promptId', './routes/prompts.promptId.tsx', {
       id: 'prompt-detail',
+    }),
+  ]),
+  layout('./routes/layouts/snippet-detail.tsx', [
+    route('snippets/:snippetId', './routes/snippets.snippetId.tsx', {
+      id: 'snippet-detail',
     }),
   ]),
 ] satisfies RouteConfig;
