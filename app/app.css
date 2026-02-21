@@ -175,6 +175,120 @@ body {
   }
 }
 
+/* Dashboard puzzle pieces */
+.puzzle-grid {
+  --pz-a: #60a5fa;
+  --pz-b: #2563eb;
+  --pz-bg: var(--background);
+  position: relative;
+  width: 200px;
+  height: 200px;
+}
+
+.puzzle-pc {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+}
+
+.puzzle-pc::before,
+.puzzle-pc::after {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  position: absolute;
+}
+
+/* TL: blue-400 — nub top + indent right, nub bottom + indent left */
+.puzzle-tl {
+  top: 0;
+  left: 0;
+  z-index: 3;
+  background-color: var(--pz-a);
+}
+
+.puzzle-tl::before {
+  top: -18px;
+  left: 32px;
+  background-color: var(--pz-a);
+  box-shadow: 50px 50px 0 var(--pz-bg);
+}
+
+.puzzle-tl::after {
+  top: 82px;
+  left: 32px;
+  background-color: var(--pz-a);
+  box-shadow: -50px -50px 0 var(--pz-bg);
+}
+
+/* TR: blue-600 — nub left + indent top, nub right + nub bottom */
+.puzzle-tr {
+  top: 0;
+  left: 100px;
+  z-index: 4;
+  background-color: var(--pz-b);
+}
+
+.puzzle-tr::before {
+  top: 32px;
+  left: -18px;
+  background-color: var(--pz-b);
+  box-shadow: 50px -50px 0 var(--pz-bg);
+}
+
+.puzzle-tr::after {
+  top: 32px;
+  left: 82px;
+  background-color: var(--pz-b);
+  box-shadow: -50px 50px 0 var(--pz-b);
+}
+
+/* BL: blue-600 — indent top + indent left, nub bottom + nub right */
+.puzzle-bl {
+  top: 100px;
+  left: 0;
+  z-index: 2;
+  background-color: var(--pz-b);
+}
+
+.puzzle-bl::before {
+  top: -18px;
+  left: 32px;
+  background-color: var(--pz-bg);
+  box-shadow: -50px 50px 0 var(--pz-bg);
+}
+
+.puzzle-bl::after {
+  top: 82px;
+  left: 32px;
+  background-color: var(--pz-b);
+  box-shadow: 50px -50px 0 var(--pz-b);
+}
+
+/* BR: blue-400 — indent top + indent bottom, indent left + nub right */
+.puzzle-br {
+  top: 100px;
+  left: 100px;
+  z-index: 1;
+  background-color: var(--pz-a);
+}
+
+.puzzle-br::before {
+  top: -18px;
+  left: 32px;
+  background-color: var(--pz-bg);
+  box-shadow: 0 100px 0 var(--pz-bg);
+}
+
+.puzzle-br::after {
+  top: 32px;
+  left: -18px;
+  background-color: var(--pz-bg);
+  box-shadow: 100px 0 0 var(--pz-a);
+}
+
 /* Landing page scroll animations */
 @keyframes fade-in-up {
   from {

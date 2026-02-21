@@ -9,6 +9,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from '~/components/ui/item';
+import { PuzzlePieces } from '~/components/ui/puzzle-pieces';
 import type { Route } from './+types/dashboard';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
@@ -66,12 +67,20 @@ export default function Home() {
             <div className="font-semibold text-muted-foreground mb-4">
               Folders
             </div>
-            <NavLink to="/prompts">
-              <div className="flex flex-col">
-                <Folder />
-                <h4 className="w-48 text-center my-4">All prompts</h4>
-              </div>
-            </NavLink>
+            <div className="flex flex-wrap gap-4">
+              <NavLink to="/prompts">
+                <div className="flex flex-col">
+                  <Folder />
+                  <h4 className="w-48 text-center my-4">All prompts</h4>
+                </div>
+              </NavLink>
+              <NavLink to="/snippets">
+                <div className="flex flex-col">
+                  <PuzzlePieces />
+                  <h4 className="w-48 text-center my-4">All snippets</h4>
+                </div>
+              </NavLink>
+            </div>
           </div>
         </div>
       </div>
