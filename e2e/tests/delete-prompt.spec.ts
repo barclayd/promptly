@@ -131,6 +131,58 @@ test('cancel button in delete dialog preserves prompt', async ({
   await expect(authenticatedPage.locator('h1')).toContainText(promptName ?? '');
 });
 
+test('copy prompt ID via File > Share menu copies ID to clipboard', async ({
+  authenticatedPage,
+  context,
+}) => {
+  // Grant clipboard permissions
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+
+  // Navigate to prompts page and open first prompt
+  await authenticatedPage.goto(ROUTES.prompts);
+  await authenticatedPage.waitForLoadState('networkidle');
+
+  const firstPromptLink = authenticatedPage
+    .locator('a[href^="/prompts/"]')
+    .first();
+  await firstPromptLink.waitFor({ state: 'visible', timeout: 15000 });
+  await firstPromptLink.click();
+
+  await expect(authenticatedPage).toHaveURL(/\/prompts\/[a-zA-Z0-9_-]+$/, {
+    timeout: 15000,
+  });
+
+  // Extract the prompt ID from the URL
+  const url = authenticatedPage.url();
+  const expectedPromptId = url.split('/prompts/')[1];
+
+  // Open File > Share > Copy Prompt ID
+  const fileMenuTrigger = authenticatedPage
+    .getByRole('menubar')
+    .getByText('File');
+  await fileMenuTrigger.click();
+
+  const shareItem = authenticatedPage.getByRole('menuitem', { name: 'Share' });
+  await shareItem.click();
+
+  const copyPromptIdItem = authenticatedPage.getByRole('menuitem', {
+    name: 'Copy Prompt ID',
+  });
+  await expect(copyPromptIdItem).toBeVisible();
+  await copyPromptIdItem.click();
+
+  // Verify toast appears
+  await expect(
+    authenticatedPage.getByText('Prompt ID copied to clipboard'),
+  ).toBeVisible({ timeout: 5000 });
+
+  // Verify clipboard contains the prompt ID
+  const clipboardText = await authenticatedPage.evaluate(() =>
+    navigator.clipboard.readText(),
+  );
+  expect(clipboardText).toBe(expectedPromptId);
+});
+
 test('delete dialog shows warning about production impact', async ({
   authenticatedPage,
 }) => {

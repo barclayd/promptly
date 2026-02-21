@@ -1,6 +1,7 @@
-import { IconLink, IconShare, IconTrash } from '@tabler/icons-react';
+import { IconCopy, IconLink, IconShare, IconTrash } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useLocation } from 'react-router';
+import { toast } from 'sonner';
 import { DeletePromptDialog } from '~/components/delete-prompt-dialog';
 import { EditPromptDetailsDialog } from '~/components/edit-prompt-details-dialog';
 import {
@@ -40,6 +41,13 @@ export const PromptEditorMenubar = ({
     await navigator.clipboard.writeText(url);
   };
 
+  const handleCopyPromptId = async () => {
+    await navigator.clipboard.writeText(prompt.id);
+    toast.success('Prompt ID copied to clipboard', {
+      position: 'bottom-center',
+    });
+  };
+
   return (
     <Menubar className="w-fit">
       <MenubarMenu>
@@ -54,6 +62,10 @@ export const PromptEditorMenubar = ({
               <MenubarItem onClick={handleCopyLink}>
                 <IconLink className="size-4" />
                 Copy link
+              </MenubarItem>
+              <MenubarItem onClick={handleCopyPromptId}>
+                <IconCopy className="size-4" />
+                Copy Prompt ID
               </MenubarItem>
             </MenubarSubContent>
           </MenubarSub>
