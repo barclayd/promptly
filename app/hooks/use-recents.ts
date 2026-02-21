@@ -20,6 +20,8 @@ const MAX_RECENTS = 10;
 export interface RecentPrompt {
   promptId: string;
   promptName: string;
+  snippetName?: string;
+  type?: 'prompt' | 'snippet';
   folderId: string;
   folderName: string;
   version: string | null;
@@ -41,7 +43,7 @@ const getRecentsFromStorage = (): RecentPrompt[] => {
 
 const addRecentToStorage = (prompt: PromptInfo) => {
   const current = getRecentsFromStorage();
-  const filtered = current.filter((r) => r.promptId !== prompt.promptId);
+  const filtered = current.filter((r) => r.url !== prompt.url);
   const updated = [{ ...prompt, lastSeenAt: Date.now() }, ...filtered].slice(
     0,
     MAX_RECENTS,
@@ -50,20 +52,24 @@ const addRecentToStorage = (prompt: PromptInfo) => {
   window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }));
 };
 
-const removeRecentFromStorage = (promptId: string) => {
+const removeRecentFromStorage = (url: string) => {
   const current = getRecentsFromStorage();
-  const updated = current.filter((r) => r.promptId !== promptId);
+  const updated = current.filter((r) => r.url !== url);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }));
 };
 
-// Parse prompt URL to extract promptId
-const parsePromptUrl = (url: string): { promptId: string } | null => {
+// Parse resource URL to extract id and type
+const parseResourceUrl = (
+  url: string,
+): { id: string; type: 'prompt' | 'snippet' } | null => {
   try {
     const { pathname } = new URL(url);
-    const match = pathname.match(/^\/prompts\/([^/]+)$/);
-    if (!match) return null;
-    return { promptId: match[1] };
+    const promptMatch = pathname.match(/^\/prompts\/([^/]+)$/);
+    if (promptMatch) return { id: promptMatch[1], type: 'prompt' };
+    const snippetMatch = pathname.match(/^\/snippets\/([^/]+)$/);
+    if (snippetMatch) return { id: snippetMatch[1], type: 'snippet' };
+    return null;
   } catch {
     return null;
   }
@@ -77,6 +83,36 @@ const fetchPromptInfo = async (
     const response = await fetch(`/api/prompt-info?promptId=${promptId}`);
     if (!response.ok) return null;
     return response.json();
+  } catch {
+    return null;
+  }
+};
+
+// Fetch snippet info from server
+const fetchSnippetInfo = async (
+  snippetId: string,
+): Promise<PromptInfo | null> => {
+  try {
+    const response = await fetch(`/api/snippet-info?snippetId=${snippetId}`);
+    if (!response.ok) return null;
+    const info = (await response.json()) as {
+      snippetId: string;
+      snippetName: string;
+      folderId: string;
+      folderName: string;
+      version: string | null;
+      url: string;
+    };
+    return {
+      promptId: info.snippetId,
+      promptName: info.snippetName,
+      snippetName: info.snippetName,
+      type: 'snippet' as const,
+      folderId: info.folderId,
+      folderName: info.folderName,
+      version: info.version,
+      url: info.url,
+    };
   } catch {
     return null;
   }
@@ -101,10 +137,12 @@ const setupNavigationListener = () => {
     const fromUrl = fromEntry.url;
     if (!fromUrl) return;
 
-    const parsed = parsePromptUrl(fromUrl);
+    const parsed = parseResourceUrl(fromUrl);
     if (!parsed) return;
 
-    fetchPromptInfo(parsed.promptId).then((info) => {
+    const fetchFn =
+      parsed.type === 'snippet' ? fetchSnippetInfo : fetchPromptInfo;
+    fetchFn(parsed.id).then((info) => {
       if (info) {
         addRecentToStorage(info);
       }
@@ -145,8 +183,8 @@ export const useRecents = () => {
     }
   })();
 
-  const removeRecent = (promptId: string) => {
-    removeRecentFromStorage(promptId);
+  const removeRecent = (url: string) => {
+    removeRecentFromStorage(url);
   };
 
   return { recents, removeRecent };

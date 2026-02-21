@@ -13,6 +13,7 @@ export const ROUTES = {
   login: '/login',
   dashboard: '/dashboard',
   prompts: '/prompts',
+  snippets: '/snippets',
   analytics: '/analytics',
   team: '/team',
   settings: '/settings',

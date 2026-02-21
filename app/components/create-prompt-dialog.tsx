@@ -32,10 +32,16 @@ type ActionData = {
 };
 
 interface CreatePromptDialogProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export const CreatePromptDialog = ({ children }: CreatePromptDialogProps) => {
+export const CreatePromptDialog = ({
+  children,
+  open: controlledOpen,
+  onOpenChange,
+}: CreatePromptDialogProps) => {
   const actionData = useActionData<ActionData>();
   const location = useLocation();
   const navigation = useNavigation();
@@ -43,7 +49,9 @@ export const CreatePromptDialog = ({ children }: CreatePromptDialogProps) => {
   const isOnboarding = useOnboardingStore((s) => s.isActive);
   const isCreatingPrompt = useOnboardingStore((s) => s.isCreatingPrompt);
   const [showUpgradeGate, setShowUpgradeGate] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const dialogOpen = controlledOpen ?? internalOpen;
+  const setDialogOpen = onOpenChange ?? setInternalOpen;
   const errors = actionData?.errors;
   const isSubmitting = navigation.state === 'submitting';
 
@@ -74,6 +82,8 @@ export const CreatePromptDialog = ({ children }: CreatePromptDialogProps) => {
   const handleDialogOpenChange = (open: boolean) => {
     if (open && !canCreatePrompt) {
       setShowUpgradeGate(true);
+      // Also close the controlled dialog if it was opened
+      if (controlledOpen) setDialogOpen(false);
       return;
     }
     setDialogOpen(open);
@@ -94,7 +104,7 @@ export const CreatePromptDialog = ({ children }: CreatePromptDialogProps) => {
           handleDialogOpenChange(open);
         }}
       >
-        <DialogTrigger asChild>{children}</DialogTrigger>
+        {children && <DialogTrigger asChild>{children}</DialogTrigger>}
         <DialogContent
           id="onboarding-create-dialog"
           className="sm:max-w-106.25"
