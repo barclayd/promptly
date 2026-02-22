@@ -2,7 +2,10 @@ import { nanoid } from 'nanoid';
 import { data } from 'react-router';
 import { orgContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
-import { extractPromptIds } from '~/lib/composer-content-parser';
+import {
+  extractPromptIds,
+  extractPromptVersionPins,
+} from '~/lib/composer-content-parser';
 import { syncComposerPromptRefs } from '~/lib/composer-junction-sync.server';
 import type { Route } from './+types/composers.save-content';
 
@@ -102,9 +105,10 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       .run();
   }
 
-  // Parse prompt refs from content and sync junction table
+  // Parse prompt refs and version pins from content, sync junction table
   const promptIds = extractPromptIds(content);
-  await syncComposerPromptRefs(db, versionId, promptIds);
+  const versionPins = extractPromptVersionPins(content);
+  await syncComposerPromptRefs(db, versionId, promptIds, versionPins);
 
   return { success: true, savedAt: now };
 };

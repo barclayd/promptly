@@ -11,9 +11,9 @@ export const VariableRefBadge = ({ node, selected }: ReactNodeViewProps) => {
       <span
         className={cn(
           'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium align-baseline cursor-grab',
-          'bg-blue-500/10 text-blue-600 border-blue-500/20',
-          'dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/30',
-          selected && 'ring-2 ring-blue-500/40 ring-offset-1',
+          'bg-orange-500/10 text-orange-600 border-orange-500/20',
+          'dark:bg-orange-500/15 dark:text-orange-400 dark:border-orange-500/30',
+          selected && 'ring-2 ring-orange-500/40 ring-offset-1',
         )}
         contentEditable={false}
         data-drag-handle
