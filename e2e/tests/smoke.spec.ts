@@ -17,5 +17,7 @@ test('user can login and reach dashboard', async ({ authenticatedPage }) => {
   // App redirects to dashboard after successful login
   await expect(authenticatedPage).toHaveURL(ROUTES.dashboard);
   // Verify we're authenticated by checking for user-specific elements
-  await expect(authenticatedPage.getByText('Create')).toBeVisible();
+  await expect(
+    authenticatedPage.getByRole('button', { name: 'Create' }),
+  ).toBeVisible();
 });
