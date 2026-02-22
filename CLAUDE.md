@@ -104,16 +104,11 @@ The app uses cookie-based themes, **not** `prefers-color-scheme` media queries. 
 2. Or inject the class directly via Chrome DevTools: `document.documentElement.classList.add('dark')` / `.remove('dark')`
 3. Check contrast, readability, and visual consistency in both modes
 
-# Local Testing
-- Test user email: test@promptlycms.com
-- Test user password: Testing123
+# Testing
+- Test user: test@promptlycms.com / Testing123
 - Local dev server: http://localhost:5173
-
-# Production Testing
 - App URL: https://app.promptlycms.com (authenticated app)
 - Landing page URL: https://promptlycms.com (marketing site)
-- Test user email: test@promptlycms.com
-- Test user password: Testing123
 - To test prompts: Create a new prompt via the "Create" button in the sidebar or navigate to /prompts
 
 # Database & Migrations
@@ -631,6 +626,136 @@ console.log('Has horizontal overflow:', hasOverflow,
 2. Test both light and dark modes
 3. Scroll entire page - no horizontal scroll should be possible
 
+# Composers Feature
+
+Composers are rich-text documents that orchestrate multiple prompts into a single assembled output. Unlike prompts (system/user message pairs for a single LLM call), a composer is a free-form TipTap HTML document where you embed **prompt references** and **variable references** as inline badges. Running a composer executes all referenced prompts in parallel, then streams back the assembled document with static HTML and LLM-generated output interleaved.
+
+## Architecture Overview
+
+| Aspect | Prompts | Composers |
+|--------|---------|-----------|
+| Editor | Plain `<textarea>` | TipTap rich text (WYSIWYG) |
+| Content format | Plain text templates | HTML with custom `<span>` node embeddings |
+| Variables | `{{variable}}` mustache syntax | `VariableRefNode` — draggable inline badges |
+| Prompt refs | N/A | `PromptRefNode` — inline badges linking to other prompts |
+| Undo/redo | Zundo only | Dual: ProseMirror history for content; Zundo for schema/inputData |
+| Right sidebar | Config, model, tokens, versions, test | Schema Builder, Input Data (JSON), Generated Code, Versions, Test |
+
+## Database Schema
+
+Migration: `migrations/drizzle/0019_add_composer_tables.sql`
+
+| Table | Purpose |
+|-------|---------|
+| `composer_folder` | Org-scoped folder grouping (mirrors `snippet_folder`) |
+| `composer` | Top-level record: name, description, folder_id, organization_id, deleted_at |
+| `composer_version` | Versioned content: `content` (HTML), `config` (JSON), semver fields, published_at |
+| `composer_version_prompt` | Junction: links version → prompt. `auto_update` flag, `prompt_version_id` (NULL=latest, pinned on publish) |
+
+Key invariants:
+- Only one draft per composer (where `published_at IS NULL`)
+- Saving to a published version auto-creates a new draft
+- Publishing pins all prompt version references to their current latest published version
+- `prompt_id` FK is `ON DELETE RESTRICT` — can't delete a prompt referenced by a composer
+
+## Directory Structure
+
+```
+app/components/composer-editor/
+├── composer-editor.tsx         # Main TipTap editor component
+├── composer-toolbar.tsx        # Overflow-responsive toolbar with priority system
+├── extensions/
+│   ├── index.ts                # getComposerExtensions() — all extension config
+│   ├── prompt-ref-extension.ts # Custom inline atom: data-prompt-ref spans
+│   ├── variable-ref-extension.ts # Custom inline atom: data-variable-ref spans
+│   └── atom-gap-extension.ts   # ProseMirror plugin: drop targets between atoms
+├── prompt-ref-badge.tsx        # NodeView renderer for prompt references
+├── variable-ref-badge.tsx      # NodeView renderer for variable references
+├── prompt-ref-picker.tsx       # Command popover to insert prompt refs
+├── variable-ref-picker.tsx     # Command popover to insert variable refs
+├── toolbar-*.tsx               # Toolbar sub-components (heading, list, marks, etc.)
+└── index.ts                    # Re-exports ComposerEditor
+
+app/stores/composer-editor-store.ts  # Zustand + Zundo temporal
+app/hooks/use-composer-undo-redo.ts  # Keyboard undo/redo delegation
+app/lib/validations/composer.ts      # Zod schemas
+app/lib/composer-content-parser.ts   # Regex HTML parser (no DOM — Workers-safe)
+app/lib/composer-junction-sync.server.ts # Syncs junction table on content save
+```
+
+## API Routes
+
+All under `/api/composers/`:
+
+| Route file | Purpose |
+|------------|---------|
+| `composers.create.ts` | Create composer + initial empty draft; redirect to `/composers/:id` |
+| `composers.update.ts` | Update name/description |
+| `composers.delete.ts` | Soft delete (owner-only) |
+| `composers.save-content.ts` | Auto-save HTML; creates new draft if current is published; syncs junction table |
+| `composers.save-config.ts` | Auto-save config JSON (schema + inputData); same draft logic |
+| `composers.publish.ts` | Publish draft with semver; pins prompt version refs |
+| `composers.run.ts` | Execute composer — resolve prompts, run LLMs in parallel, stream NDJSON |
+| `composer-info.ts` | GET loader — name, folder, latest published version |
+
+## Page Routes
+
+| Route | File | Purpose |
+|-------|------|---------|
+| `/composers` | `composers.tsx` | List page with cards grid + folders |
+| `/composers/:composerId` | `composers.composerId.tsx` | Detail page with editor |
+| Layout | `layouts/composer-detail.tsx` | Resizable two-panel layout (editor + right sidebar) |
+
+## TipTap Extensions
+
+`getComposerExtensions()` in `extensions/index.ts` configures:
+
+StarterKit (H1-H3, bold, italic, strike, code, blockquote, lists, hr, code block), Underline, TextStyle + Color, Highlight (multicolor), TextAlign, Link (openOnClick: false), Table + Row + Cell + Header (resizable), TaskList + TaskItem (nested), Placeholder, **PromptRefNode** (custom), **VariableRefNode** (custom), **AtomGap** (custom ProseMirror plugin)
+
+### Custom Nodes
+
+- **PromptRefNode**: Inline atom → `<span data-prompt-ref data-prompt-id="..." data-prompt-name="...">`. Command: `editor.commands.insertPromptRef({ promptId, promptName })`
+- **VariableRefNode**: Inline atom → `<span data-variable-ref data-field-id="..." data-field-path="...">`. Command: `editor.commands.insertVariableRef({ fieldId, fieldPath })`
+- **AtomGap**: ProseMirror `Decoration.widget` — inserts invisible spans between adjacent atoms for drag-and-drop targets
+
+## Store (`composer-editor-store.ts`)
+
+Zustand with Zundo temporal middleware. Key state: `content` (HTML), `schemaFields`, `inputData`, `inputDataRootName`, `testVersionOverride`.
+
+Design decisions:
+- `content` is **excluded from Zundo snapshots** — TipTap's ProseMirror history handles editor undo/redo
+- `setContentFromRemote()` pauses temporal tracking to avoid WebSocket updates polluting undo history
+- Temporal snapshots throttled at 500ms
+- `initialize()` clears temporal history when navigating to a new composer
+
+## Content Serialization
+
+Content is stored as **HTML strings** (via `editor.getHTML()`). On the server, `composer-content-parser.ts` uses regex parsing (no DOM — Workers have no DOM API):
+- `parseComposerContent(html)` → splits into `ComposerSegment[]` (`static` | `prompt`) at `data-prompt-ref` boundaries
+- `replaceVariableRefs(html, inputData, rootName)` → interpolates variable spans with values from input data
+- `extractPromptIds(html)` / `extractVariableIds(html)` — used for junction table sync
+
+## Execution Flow (`composers.run.ts`)
+
+1. Parse HTML into ordered segments (static / prompt)
+2. Resolve each prompt's version (pinned > latest published > latest draft)
+3. Run all prompts **in parallel** via `generateText()` from AI SDK
+4. Stream assembled document as NDJSON in document order:
+   - `{type:'static', content, index}` — HTML with variable refs already replaced
+   - `{type:'prompt_ref', promptId, promptName, index}` — signals a prompt slot
+   - `{type:'prompt_start', promptId}` → `{type:'prompt_chunk', promptId, chunk}` → `{type:'prompt_done', promptId}`
+   - `{type:'complete', errors: []}`
+
+Duplicate prompt IDs in the document share the same output (de-duplicated by `streamedPrompts` set).
+
+## Toolbar Overflow System
+
+The toolbar uses `useToolbarOverflow` (ResizeObserver-based) with priority levels. Items with `overflowPriority: Infinity` are pinned; others cascade into a `ToolbarOverflowMenu` (`...` button). "Add prompt" and "Add variable" buttons progressively collapse: text disappears → merge into single `ToolbarInsertPicker` sparkles button → overflow entirely.
+
+## Version Suggestion Logic
+
+When publishing, the suggested version auto-increments based on change type: schema changed → major bump (e.g., `2.0.0`), only content changed → minor bump (e.g., `1.1.0`).
+
 # Authentication
 
 ## Password Hashing
@@ -850,172 +975,6 @@ The CLI outputs a webhook signing secret (`whsec_...`) — put this in `STRIPE_W
    ```
 3. Optionally add `yearlyPriceId` for annual billing
 
-## Production Deployment Guide
-
-### Prerequisites
-
-Before deploying, ensure you have:
-- A Stripe account with live mode activated (identity verification complete)
-- Access to the Cloudflare dashboard for the `promptly` Worker
-- The Stripe CLI installed (for webhook secret retrieval)
-
-### Step 1: Create Live Stripe Product & Price
-
-The test product (`prod_TvT5WGDqvZ9udw`) only works with test API keys. You need live equivalents.
-
-**Option A — Stripe Dashboard:**
-1. Go to [Stripe Dashboard > Products](https://dashboard.stripe.com/products) (ensure **Live mode** toggle is on)
-2. Create product "Promptly Pro" with a recurring price of $29/month
-3. Copy the live price ID (`price_live_...`)
-
-**Option B — Stripe API:**
-```bash
-# Create product
-curl https://api.stripe.com/v1/products \
-  -u "sk_live_YOUR_KEY:" \
-  -d "name=Promptly Pro" \
-  -d "description=Professional plan for prompt management"
-
-# Create price (use the product ID from above)
-curl https://api.stripe.com/v1/prices \
-  -u "sk_live_YOUR_KEY:" \
-  -d "product=prod_LIVE_ID" \
-  -d "unit_amount=2900" \
-  -d "currency=usd" \
-  -d "recurring[interval]=month"
-```
-
-### Step 2: Update Price ID in Code
-
-Update `app/lib/auth.server.ts` with the live price ID:
-
-```typescript
-plans: [
-  {
-    name: 'pro',
-    priceId: 'price_LIVE_ID_HERE',  // ← Replace with live price ID
-    limits: { prompts: -1, teamMembers: 5, apiCalls: 50000 },
-  },
-],
-```
-
-**Important:** The price ID is hardcoded in the source. When switching between test and live environments, you must deploy with the correct price ID. Consider using an environment variable if you need to run test and live from the same branch.
-
-### Step 3: Create Stripe Webhook Endpoint
-
-1. Go to [Stripe Dashboard > Developers > Webhooks](https://dashboard.stripe.com/webhooks)
-2. Click **Add endpoint**
-3. Set endpoint URL: `https://app.promptlycms.com/api/auth/subscription/webhook`
-4. Select events to listen to:
-   - `checkout.session.completed`
-   - `customer.subscription.updated`
-   - `customer.subscription.deleted`
-5. Click **Add endpoint**
-6. Copy the **Signing secret** (`whsec_...`) from the endpoint detail page
-
-### Step 4: Set Environment Variables in Cloudflare
-
-In the Cloudflare dashboard for the `promptly` Worker:
-
-1. Go to **Settings > Variables and Secrets**
-2. Add/update these secrets:
-
-| Variable | Value | Notes |
-|----------|-------|-------|
-| `STRIPE_SECRET_KEY` | `sk_live_...` | Live secret key from Stripe Dashboard > API keys |
-| `STRIPE_WEBHOOK_SECRET` | `whsec_...` | From Step 3 (the webhook endpoint signing secret) |
-
-**Do NOT use the Stripe CLI `whsec_` for production** — the CLI generates a temporary local forwarding secret. Production must use the signing secret from the Stripe Dashboard webhook endpoint.
-
-### Step 5: Apply Database Migration
-
-```bash
-bunx wrangler d1 migrations apply promptly --remote
-```
-
-This creates the `subscription` table in the production D1 database.
-
-### Step 6: Deploy
-
-```bash
-bun run build && wrangler deploy
-```
-
-### Step 7: Verify End-to-End
-
-**Test signup creates Stripe trial:**
-1. Sign up a new user at `https://app.promptlycms.com/sign-up`
-2. Check the [Stripe Dashboard > Customers](https://dashboard.stripe.com/customers) for the new customer
-3. Verify the customer has a subscription in `trialing` status with a 14-day trial
-
-**Test subscription status endpoint:**
-```bash
-# Login and get session cookie, then:
-curl https://app.promptlycms.com/api/auth/subscription/status \
-  -H "Cookie: <session_cookie>"
-# Should return: { plan: "pro", status: "trialing", isTrial: true, daysLeft: 14, ... }
-```
-
-**Test webhook delivery:**
-1. Go to Stripe Dashboard > Developers > Webhooks > your endpoint
-2. Click **Send test webhook** > select `checkout.session.completed` > Send
-3. Check the endpoint response shows `200` with `{ received: true }`
-4. Check Cloudflare Worker logs for any errors
-
-**Test upgrade flow (Stripe Checkout):**
-1. As a logged-in user, call the upgrade endpoint (or build UI for it)
-2. Verify redirect to Stripe Checkout page
-3. Use Stripe test card `4242 4242 4242 4242` to complete
-4. Verify subscription status changes to `active`
-
-### Webhook Security Notes
-
-- The webhook endpoint (`/api/auth/subscription/webhook`) has **no session middleware** — it's called directly by Stripe's servers
-- Better Auth's CSRF/origin check is **automatically skipped** for the webhook because Stripe sends no browser cookies. Requests without cookies bypass origin validation.
-- Webhook authenticity is verified via Stripe's signature verification (`stripe.webhooks.constructEventAsync` with `SubtleCryptoProvider` for Workers compatibility)
-- If you see `403 Forbidden` errors on webhook delivery, check Cloudflare Worker logs. If it's an origin check issue, add to `auth.server.ts`:
-  ```typescript
-  advanced: { disableCSRFCheck: true }
-  ```
-  This is a last resort — it disables CSRF checks globally. Investigate the root cause first.
-
-### Monitoring & Troubleshooting
-
-**Stripe Dashboard:**
-- [Webhook logs](https://dashboard.stripe.com/webhooks) — Check delivery status and response codes
-- [Events](https://dashboard.stripe.com/events) — See all Stripe events
-- [Customers](https://dashboard.stripe.com/customers) — Verify customer/subscription creation
-
-**Cloudflare Worker logs:**
-```bash
-wrangler tail
-# Or check: Cloudflare Dashboard > Workers > promptly > Logs
-```
-
-**Common production issues:**
-
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| Signup hangs or is slow | Stripe API call in the `databaseHooks.user.create.after` adds latency | Expected ~1-2s. If Stripe is down, signup will fail. Consider wrapping in try/catch to allow signup without trial. |
-| Webhook returns 403 | Better Auth CSRF check rejecting Stripe request | Check if Stripe is unexpectedly sending cookies. See Webhook Security Notes above. |
-| Webhook returns 400 | Signature verification failed | Ensure `STRIPE_WEBHOOK_SECRET` matches the Dashboard endpoint secret (not the CLI secret). |
-| Subscription status shows `expired` but Stripe shows `trialing` | Lazy expiration updated local record | The local DB is the source of truth for the app. If out of sync, the next webhook event will correct it. |
-| `price_xxx not found` during signup | Wrong price ID in code | Ensure the price ID in `auth.server.ts` matches the live Stripe price. |
-| Customer created but no subscription | Stripe subscription creation failed | Check Cloudflare Worker logs. The price might be archived or the product inactive. |
-
-### Going Live Checklist
-
-- [ ] Live Stripe product and price created
-- [ ] Price ID updated in `app/lib/auth.server.ts`
-- [ ] `STRIPE_SECRET_KEY` set to `sk_live_...` in Cloudflare
-- [ ] Webhook endpoint created in Stripe Dashboard pointing to `https://app.promptlycms.com/api/auth/subscription/webhook`
-- [ ] `STRIPE_WEBHOOK_SECRET` set to the Dashboard webhook signing secret in Cloudflare
-- [ ] D1 migration applied remotely (`0011_add_subscription_table.sql`)
-- [ ] App deployed (`bun run build && wrangler deploy`)
-- [ ] Test signup creates Stripe customer + trialing subscription
-- [ ] Test webhook delivery returns 200
-- [ ] Cloudflare Worker logs show no errors during signup/webhook
-
 # Deployment
 
 ## Deployment Architecture
@@ -1134,10 +1093,6 @@ bunx wrangler d1 migrations apply promptly --local
 
 ## Common Deployment Issues
 
-### "Legacy Scrypt hash detected"
-- **Cause**: Password hash format mismatch (see Authentication section)
-- **Fix**: Update user's password hash in D1 database
-
 ### OAuth redirect_uri mismatch
 - **Cause**: `BETTER_AUTH_URL` has wrong value or extra spaces
 - **Fix**: Check env var in Cloudflare dashboard, ensure exact match with Google Console
@@ -1157,290 +1112,6 @@ bunx wrangler d1 migrations apply promptly --local
 ### Wrangler pages deploy fails
 - **Cause**: Wrong project name or not authenticated
 - **Fix**: Run `bunx wrangler login` and verify project name is `promptly-landing-pages`
-
-# Promptly API Worker (Separate Repo)
-
-A dedicated Cloudflare Worker for serving prompts to 3rd party applications via API. This runs as a **separate service** from the main app for performance isolation.
-
-## Overview
-
-| Property | Value |
-|----------|-------|
-| **URL** | `https://api.promptlycms.com` |
-| **Platform** | Cloudflare Workers (separate from main app) |
-| **Database** | Same D1 database (`promptly`) |
-| **Caching** | KV namespace with 60-second TTL |
-| **Bundle Size** | ~20KB (no ORM, no framework) |
-
-## Endpoint
-
-```
-GET https://api.promptlycms.com/prompts/get?promptId=<id>&version=<optional-semver>
-Authorization: Bearer <api_key>
-```
-
-**Success Response (200):**
-```json
-{
-  "promptId": "xxx",
-  "promptName": "My Prompt",
-  "version": "1.0.0",
-  "systemMessage": "...",
-  "userMessage": "...",
-  "config": {}
-}
-```
-
-**Error Response (4xx):**
-```json
-{
-  "error": "Error message",
-  "code": "ERROR_CODE"
-}
-```
-
-Error codes: `INVALID_KEY`, `DISABLED`, `EXPIRED`, `FORBIDDEN`, `NO_ORG`
-
-## Database Schema (Reference)
-
-The API worker queries the existing Promptly D1 database directly (no ORM).
-
-### `apikey` table (Better Auth)
-```sql
--- Better Auth stores API keys with SHA-256 hashing
-CREATE TABLE apikey (
-  id TEXT PRIMARY KEY,
-  key TEXT NOT NULL,           -- SHA-256 hash of the API key (NOT the raw key)
-  permissions TEXT,            -- JSON: {"prompt": ["read"]}
-  metadata TEXT,               -- JSON: {"organizationId": "xxx"}
-  enabled INTEGER DEFAULT 1,
-  expires_at INTEGER,          -- Unix timestamp (milliseconds)
-  -- other Better Auth fields omitted
-);
-CREATE INDEX idx_apikey_key ON apikey(key);
-```
-
-**Important**: The `key` column stores `SHA-256(rawApiKey)`, not the raw key. When verifying:
-```typescript
-const hashedKey = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawApiKey));
-// Convert to hex string, then query: SELECT * FROM apikey WHERE key = ?
-```
-
-### `prompt` table
-```sql
-CREATE TABLE prompt (
-  id TEXT PRIMARY KEY,         -- nanoid
-  name TEXT NOT NULL,
-  organization_id TEXT NOT NULL,
-  deleted_at INTEGER,          -- Soft delete timestamp
-  -- other fields omitted
-);
-```
-
-### `prompt_version` table
-```sql
-CREATE TABLE prompt_version (
-  id TEXT PRIMARY KEY,
-  prompt_id TEXT NOT NULL,
-  major INTEGER,               -- NULL for drafts
-  minor INTEGER,
-  patch INTEGER,
-  system_message TEXT,
-  user_message TEXT,
-  config TEXT DEFAULT '{}',    -- JSON string
-  published_at INTEGER,        -- NULL for drafts, timestamp for published
-  -- other fields omitted
-);
-```
-
-**Version Query Logic:**
-- If `version` param provided: exact match on `major.minor.patch`
-- If no version: get latest by `ORDER BY (published_at IS NULL), major DESC, minor DESC, patch DESC LIMIT 1`
-  - This prioritizes published versions over drafts, then sorts by semver
-
-## API Key Verification Flow
-
-1. Extract Bearer token from `Authorization` header
-2. Hash the token with SHA-256 (same as Better Auth storage)
-3. Check KV cache for `apikey:{hashedKey}`
-4. If cache miss, query D1: `SELECT * FROM apikey WHERE key = ?`
-5. Validate:
-   - `enabled = 1`
-   - `expires_at` is null or in the future
-   - `permissions` JSON contains `{"prompt": ["read"]}`
-   - `metadata` JSON contains `organizationId`
-6. Cache the validated key data in KV (60s TTL)
-7. Return `organizationId` for prompt access check
-
-## KV Caching Strategy
-
-| Key Pattern | Value | TTL |
-|-------------|-------|-----|
-| `apikey:{sha256Hash}` | `{organizationId, permissions, expiresAt, enabled}` | 60s |
-| `prompt:{promptId}` | `{id, name, organizationId}` | 60s |
-| `version:{promptId}:latest` | `{systemMessage, userMessage, config, version}` | 60s |
-| `version:{promptId}:{semver}` | `{systemMessage, userMessage, config, version}` | 60s |
-
-**Cache Logging**: All cache hits/misses are logged as JSON for observability:
-```json
-{"event": "cache", "type": "apikey", "hit": true, "key": "apikey:abc123...", "timestamp": 1234567890}
-```
-
-## Cache Invalidation (Main App Responsibility)
-
-The main Promptly app must invalidate KV cache when data changes. Add the same KV namespace binding to the main app's `wrangler.jsonc`:
-
-```jsonc
-"kv_namespaces": [
-  {
-    "binding": "PROMPTS_CACHE",
-    "id": "<SAME_KV_NAMESPACE_ID_AS_API_WORKER>"
-  }
-]
-```
-
-### When to Invalidate
-
-| Action | Keys to Delete |
-|--------|---------------|
-| Update prompt name | `prompt:{promptId}` |
-| Publish version | `version:{promptId}:latest` |
-| Delete prompt | `prompt:{promptId}`, `version:{promptId}:latest` |
-| Disable/delete API key | `apikey:{hashedKey}` |
-
-### Invalidation Helper
-
-```typescript
-// Add to main app: app/lib/cache-invalidation.server.ts
-export const invalidatePromptCache = async (
-  cache: KVNamespace,
-  promptId: string,
-) => {
-  await cache.delete(`prompt:${promptId}`);
-  await cache.delete(`version:${promptId}:latest`);
-  // Specific version keys expire naturally (60s TTL)
-};
-
-export const invalidateApiKeyCache = async (
-  cache: KVNamespace,
-  rawApiKey: string,
-) => {
-  const encoder = new TextEncoder();
-  const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(rawApiKey));
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashedKey = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-  await cache.delete(`apikey:${hashedKey}`);
-};
-```
-
-## Worker Configuration
-
-### `wrangler.jsonc`
-```jsonc
-{
-  "name": "promptly-api",
-  "main": "./src/index.ts",
-  "compatibility_date": "2025-10-08",
-  "compatibility_flags": ["nodejs_compat_v2"],
-  "observability": { "enabled": true },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "promptly",
-      "database_id": "eadc5f7c-e195-4bd0-bcb1-8e4d2950606b"
-    }
-  ],
-  "kv_namespaces": [
-    {
-      "binding": "CACHE",
-      "id": "<CREATE_WITH: bunx wrangler kv namespace create PROMPTS_CACHE>",
-      "preview_id": "<CREATE_WITH: bunx wrangler kv namespace create PROMPTS_CACHE --preview>"
-    }
-  ],
-  "routes": [
-    {
-      "pattern": "api.promptlycms.com/*",
-      "zone_name": "promptlycms.com"
-    }
-  ]
-}
-```
-
-### DNS Setup
-After deploying, add DNS record in Cloudflare:
-1. Go to Cloudflare Dashboard → DNS
-2. Add AAAA record: `api` → `100::` (proxied)
-3. The worker route pattern handles requests
-
-## File Structure
-
-```
-promptly-api/
-├── src/
-│   ├── index.ts           # Worker entry point
-│   ├── handler.ts         # Request routing
-│   ├── verify-api-key.ts  # API key verification
-│   ├── fetch-prompt.ts    # Prompt data fetching
-│   ├── cache.ts           # KV cache helpers
-│   └── types.ts           # TypeScript interfaces
-├── wrangler.jsonc
-├── tsconfig.json
-└── package.json
-```
-
-## Testing
-
-### Local Development
-```bash
-bunx wrangler dev
-# Test: curl "http://localhost:8787/prompts/get?promptId=XXX" -H "Authorization: Bearer promptly_xxx"
-```
-
-### Production Test
-```bash
-curl "https://api.promptlycms.com/prompts/get?promptId=<id>" \
-  -H "Authorization: Bearer <api_key>"
-```
-
-### Get Test Data
-To find valid test data, query the main app's D1 database:
-```bash
-# Get a prompt ID
-bunx wrangler d1 execute promptly --remote --command "SELECT id, name FROM prompt LIMIT 5"
-
-# Get an API key (you'll need the raw key from when it was created)
-bunx wrangler d1 execute promptly --remote --command "SELECT id, metadata FROM apikey WHERE enabled = 1 LIMIT 5"
-```
-
-## Performance Targets
-
-| Metric | Target |
-|--------|--------|
-| Cold start | <5ms |
-| Warm request (cache hit) | <10ms |
-| Warm request (cache miss) | <50ms |
-| Bundle size | <25KB |
-
-## CORS Configuration
-
-The API allows cross-origin requests:
-```
-Access-Control-Allow-Origin: *
-Access-Control-Allow-Methods: GET, OPTIONS
-Access-Control-Allow-Headers: Authorization, Content-Type
-Access-Control-Max-Age: 86400
-```
-
-## Error Handling
-
-| HTTP Status | When |
-|-------------|------|
-| 400 | Missing `promptId` parameter |
-| 401 | Missing/invalid Authorization header, invalid API key |
-| 403 | API key lacks permission, wrong organization |
-| 404 | Prompt or version not found |
-| 405 | Non-GET request to `/prompts/get` |
-| 500 | Unexpected error (logged) |
 
 # Enterprise Plan
 
