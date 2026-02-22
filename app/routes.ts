@@ -12,7 +12,6 @@ export default [
   // API routes
   route('api/set-theme', './routes/api/set-theme.ts'),
   route('api/auth/*', './routes/api/auth.ts'),
-  route('api/prompts/get', './routes/api/prompts.get.ts'),
   route('api/prompts/create', './routes/api/prompts.create.ts'),
   route('api/prompts/run', './routes/api/prompts.run.ts'),
   route('api/prompts/usage', './routes/api/prompts.usage.ts'),
@@ -28,6 +27,14 @@ export default [
   route('api/snippets/update', './routes/api/snippets.update.ts'),
   route('api/snippets/delete', './routes/api/snippets.delete.ts'),
   route('api/snippet-info', './routes/api/snippet-info.ts'),
+  // Composer API routes
+  route('api/composers/create', './routes/api/composers.create.ts'),
+  route('api/composers/run', './routes/api/composers.run.ts'),
+  route('api/composers/publish', './routes/api/composers.publish.ts'),
+  route('api/composers/update', './routes/api/composers.update.ts'),
+  route('api/composers/delete', './routes/api/composers.delete.ts'),
+  route('api/composers/save-content', './routes/api/composers.save-content.ts'),
+  route('api/composers/save-config', './routes/api/composers.save-config.ts'),
   route('api/generate-input-data', './routes/api/generate-input-data.ts'),
   route('api/team/invite', './routes/api/team.invite.ts'),
   route('api/team/cancel-invite', './routes/api/team.cancel-invite.ts'),
