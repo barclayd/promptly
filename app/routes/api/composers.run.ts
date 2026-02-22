@@ -1,12 +1,13 @@
-import { streamText } from 'ai';
+import { generateText } from 'ai';
 import { data } from 'react-router';
 import { orgContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
 import {
   type ComposerSegment,
   parseComposerContent,
+  replaceVariableRefs,
 } from '~/lib/composer-content-parser';
-import { interpolatePrompt, preparePrompts } from '~/lib/prompt-interpolation';
+import { preparePrompts } from '~/lib/prompt-interpolation';
 import { resolveModelForOrg } from '~/lib/resolve-model.server';
 import type { Route } from './+types/composers.run';
 
@@ -244,19 +245,112 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
   const pumpStream = async () => {
     try {
-      // Emit structure messages (static + prompt_ref) in document order
+      // Phase 1: Execute all prompts in parallel, collecting full outputs.
+      // Nothing is streamed to the client during this phase — the UI shows "Thinking...".
+      const promptOutputs = new Map<string, string>();
+      const errors: Array<{ promptId: string; error: string }> = [];
+
+      const executions = uniquePromptIds.map(async (promptId) => {
+        const info = promptInfoMap.get(promptId);
+        if (!info) {
+          errors.push({ promptId, error: 'Failed to resolve prompt' });
+          return;
+        }
+
+        try {
+          const prepared = preparePrompts({
+            systemMessage: info.systemMessage,
+            userMessage: info.userMessage,
+            inputDataJson,
+            inputDataRootName,
+          });
+
+          const systemLength = prepared.systemMessage.length;
+          const userLength = prepared.userMessage.length;
+          const totalLength = systemLength + userLength;
+
+          const modelResult = await resolveModelForOrg({
+            db,
+            organizationId: org.organizationId,
+            modelId: info.model,
+            encryptionKey: context.cloudflare.env.API_KEY_ENCRYPTION_KEY,
+            systemAnthropicKey: context.cloudflare.env.ANTHROPIC_API_KEY,
+          });
+
+          if (!modelResult.ok) {
+            errors.push({ promptId, error: modelResult.error });
+            return;
+          }
+
+          const result = await generateText({
+            model: modelResult.model,
+            system: prepared.systemMessage,
+            prompt: prepared.userMessage,
+            temperature: info.temperature,
+          });
+
+          promptOutputs.set(promptId, result.text);
+
+          // Update token counts (waitUntil — doesn't block response)
+          const { usage } = result;
+          if (info.versionId && usage) {
+            context.cloudflare.ctx.waitUntil(
+              (async () => {
+                const { inputTokens, outputTokens } = usage;
+                let systemInputTokens: number | null = null;
+                let userInputTokens: number | null = null;
+
+                if (inputTokens && totalLength > 0) {
+                  const systemRatio = systemLength / totalLength;
+                  systemInputTokens = Math.round(inputTokens * systemRatio);
+                  userInputTokens = inputTokens - systemInputTokens;
+                }
+
+                await db
+                  .prepare(
+                    `UPDATE prompt_version
+                     SET last_output_tokens = ?,
+                         last_system_input_tokens = ?,
+                         last_user_input_tokens = ?
+                     WHERE id = ?`,
+                  )
+                  .bind(
+                    outputTokens ?? null,
+                    systemInputTokens,
+                    userInputTokens,
+                    info.versionId,
+                  )
+                  .run();
+              })().catch((err) => {
+                console.error('waitUntil usage error:', err);
+              }),
+            );
+          }
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : 'Unknown execution error';
+          console.error(`Prompt execution error for ${promptId}:`, message);
+          errors.push({ promptId, error: message });
+        }
+      });
+
+      await Promise.all(executions);
+
+      // Phase 2: All prompts resolved. Stream the assembled document in order.
+      // Emit structure + content for each segment sequentially.
+      const streamedPrompts = new Set<string>();
+
       for (let i = 0; i < segments.length; i++) {
         const segment = segments[i];
+
         if (segment.type === 'static') {
-          // Interpolate variables in static text
           let interpolatedContent = segment.content;
           if (inputData !== null) {
-            const result = interpolatePrompt(
-              segment.content,
+            interpolatedContent = replaceVariableRefs(
+              interpolatedContent,
               inputData,
               inputDataRootName,
             );
-            interpolatedContent = result.text;
           }
           await writeLine({
             type: 'static',
@@ -271,129 +365,42 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
             promptName: info?.promptName ?? segment.promptId,
             index: i,
           });
+
+          // Stream this prompt's output (only on first occurrence — duplicates
+          // share the same promptId so the client updates all matching segments)
+          if (!streamedPrompts.has(segment.promptId)) {
+            streamedPrompts.add(segment.promptId);
+            const output = promptOutputs.get(segment.promptId);
+
+            await writeLine({
+              type: 'prompt_start',
+              promptId: segment.promptId,
+              promptName: info?.promptName ?? segment.promptId,
+            });
+
+            if (output) {
+              // Stream in word-groups with a small delay for a natural LLM-like feel
+              const words = output.split(/(?<=\s)/);
+              const delay = () => new Promise<void>((r) => setTimeout(r, 20));
+              for (let j = 0; j < words.length; j += 3) {
+                const chunk = words.slice(j, j + 3).join('');
+                await writeLine({
+                  type: 'prompt_chunk',
+                  promptId: segment.promptId,
+                  chunk,
+                });
+                await delay();
+              }
+            }
+
+            await writeLine({
+              type: 'prompt_done',
+              promptId: segment.promptId,
+            });
+          }
         }
       }
 
-      // Fire all prompt executions in parallel
-      const errors: Array<{ promptId: string; error: string }> = [];
-
-      const executions = uniquePromptIds.map(async (promptId) => {
-        const info = promptInfoMap.get(promptId);
-        if (!info) {
-          errors.push({ promptId, error: 'Failed to resolve prompt' });
-          return;
-        }
-
-        try {
-          // Prepare prompts with variable interpolation
-          const prepared = preparePrompts({
-            systemMessage: info.systemMessage,
-            userMessage: info.userMessage,
-            inputDataJson,
-            inputDataRootName,
-          });
-
-          // Calculate character lengths for proportional token distribution
-          const systemLength = prepared.systemMessage.length;
-          const userLength = prepared.userMessage.length;
-          const totalLength = systemLength + userLength;
-
-          // Resolve model for this prompt
-          const modelResult = await resolveModelForOrg({
-            db,
-            organizationId: org.organizationId,
-            modelId: info.model,
-            encryptionKey: context.cloudflare.env.API_KEY_ENCRYPTION_KEY,
-            systemAnthropicKey: context.cloudflare.env.ANTHROPIC_API_KEY,
-          });
-
-          if (!modelResult.ok) {
-            errors.push({ promptId, error: modelResult.error });
-            return;
-          }
-
-          await writeLine({
-            type: 'prompt_start',
-            promptId,
-            promptName: info.promptName,
-          });
-
-          let streamError: string | null = null;
-
-          const result = streamText({
-            model: modelResult.model,
-            system: prepared.systemMessage,
-            prompt: prepared.userMessage,
-            temperature: info.temperature,
-            onError: ({ error }) => {
-              console.error(`streamText error for prompt ${promptId}:`, error);
-              const message =
-                error instanceof Error
-                  ? error.message
-                  : 'Unknown streaming error';
-              streamError = message;
-            },
-          });
-
-          for await (const chunk of result.textStream) {
-            await writeLine({ type: 'prompt_chunk', promptId, chunk });
-          }
-
-          if (streamError) {
-            errors.push({ promptId, error: streamError });
-          }
-
-          await writeLine({ type: 'prompt_done', promptId });
-
-          // Update token counts for the prompt version (waitUntil pattern)
-          context.cloudflare.ctx.waitUntil(
-            Promise.resolve(result.usage)
-              .then(async (usage) => {
-                if (info.versionId && usage) {
-                  const { inputTokens, outputTokens } = usage;
-
-                  let systemInputTokens: number | null = null;
-                  let userInputTokens: number | null = null;
-
-                  if (inputTokens && totalLength > 0) {
-                    const systemRatio = systemLength / totalLength;
-                    systemInputTokens = Math.round(inputTokens * systemRatio);
-                    userInputTokens = inputTokens - systemInputTokens;
-                  }
-
-                  await db
-                    .prepare(
-                      `UPDATE prompt_version
-                       SET last_output_tokens = ?,
-                           last_system_input_tokens = ?,
-                           last_user_input_tokens = ?
-                       WHERE id = ?`,
-                    )
-                    .bind(
-                      outputTokens ?? null,
-                      systemInputTokens,
-                      userInputTokens,
-                      info.versionId,
-                    )
-                    .run();
-                }
-              })
-              .catch((err) => {
-                console.error('waitUntil usage error:', err);
-              }),
-          );
-        } catch (err) {
-          const message =
-            err instanceof Error ? err.message : 'Unknown execution error';
-          console.error(`Prompt execution error for ${promptId}:`, message);
-          errors.push({ promptId, error: message });
-          await writeLine({ type: 'prompt_done', promptId });
-        }
-      });
-
-      await Promise.all(executions);
-
-      // Add resolve errors to the final error list
       const allErrors = [
         ...resolveErrors.map((e) => ({ promptId: '', error: e })),
         ...errors,

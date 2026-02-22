@@ -3,6 +3,9 @@
  * Must work in Cloudflare Workers (no DOM APIs) — uses regex on deterministic renderHTML output.
  */
 
+import { reconstructFullData } from './input-data-utils';
+import { formatValue, getNestedValue } from './prompt-interpolation';
+
 const PROMPT_REF_TAG_REGEX =
   /<span[^>]*\sdata-prompt-ref(?:="[^"]*")?[^>]*\sdata-prompt-id="([a-zA-Z0-9_-]+)"[^>]*><\/span>/g;
 
@@ -80,4 +83,28 @@ export const extractVariableIds = (content: string): string[] => {
     ids.add(match[1]);
   }
   return [...ids];
+};
+
+const VARIABLE_REF_TAG_REGEX =
+  /<span[^>]*\sdata-variable-ref(?:="[^"]*")?[^>]*\sdata-field-path="([^"]+)"[^>]*><\/span>/g;
+
+const VARIABLE_REF_TAG_ALT_REGEX =
+  /<span[^>]*\sdata-field-path="([^"]+)"[^>]*\sdata-variable-ref(?:="[^"]*")?[^>]*><\/span>/g;
+
+export const replaceVariableRefs = (
+  html: string,
+  inputData: unknown,
+  rootName: string | null,
+): string => {
+  const data = reconstructFullData(inputData, rootName);
+
+  const replace = (_match: string, fieldPath: string): string => {
+    const value = getNestedValue(data, fieldPath);
+    if (value === undefined) return _match;
+    return formatValue(value);
+  };
+
+  let result = html.replace(VARIABLE_REF_TAG_REGEX, replace);
+  result = result.replace(VARIABLE_REF_TAG_ALT_REGEX, replace);
+  return result;
 };
