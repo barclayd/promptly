@@ -1,5 +1,6 @@
 'use client';
 
+import { IconAlertTriangle } from '@tabler/icons-react';
 import { JsonEditor, type Theme } from 'json-edit-react';
 import { ChevronRight } from 'lucide-react';
 import type * as React from 'react';
@@ -26,6 +27,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '~/components/ui/collapsible';
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+} from '~/components/ui/item';
 import { Label } from '~/components/ui/label';
 import {
   Select,
@@ -624,14 +631,28 @@ export const ComposerSidebarRight = forwardRef<
                     </div>
 
                     {hasNoPromptRefs && (
-                      <p className="text-xs text-amber-600 dark:text-amber-400 px-0.5">
-                        No prompt references found in content. Add{' '}
-                        <code className="font-mono bg-muted px-1 rounded">
-                          {'$'}
-                          {'{prompt:id}'}
-                        </code>{' '}
-                        references to test.
-                      </p>
+                      <Item
+                        variant="outline"
+                        size="sm"
+                        className="border-amber-500/40 bg-amber-500/5"
+                      >
+                        <ItemMedia
+                          variant="icon"
+                          className="border-amber-500/30 bg-amber-500/10"
+                        >
+                          <IconAlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
+                        </ItemMedia>
+                        <ItemContent>
+                          <ItemDescription className="line-clamp-none text-amber-700 dark:text-amber-300">
+                            No prompt references found. Add{' '}
+                            <code className="font-mono text-[11px] bg-amber-500/10 px-1 py-0.5 rounded">
+                              {'$'}
+                              {'{prompt:id}'}
+                            </code>{' '}
+                            references to test.
+                          </ItemDescription>
+                        </ItemContent>
+                      </Item>
                     )}
 
                     <Button
