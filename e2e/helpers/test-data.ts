@@ -14,6 +14,7 @@ export const ROUTES = {
   dashboard: '/dashboard',
   prompts: '/prompts',
   snippets: '/snippets',
+  composers: '/composers',
   analytics: '/analytics',
   team: '/team',
   settings: '/settings',

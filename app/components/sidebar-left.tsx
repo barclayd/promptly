@@ -5,6 +5,7 @@ import {
   IconChartBar,
   IconFileAi,
   IconFileDescription,
+  IconFiles,
   IconFileText,
   IconHelp,
   IconPuzzle,
@@ -47,6 +48,11 @@ const data = {
       title: 'Prompts',
       url: '/prompts',
       icon: IconFileAi,
+    },
+    {
+      title: 'Composers',
+      url: '/composers',
+      icon: IconFiles,
     },
     {
       title: 'Snippets',
@@ -148,7 +154,12 @@ export const SidebarLeft = ({
     promptId: r.promptId,
     name: r.promptName ?? r.snippetName ?? '',
     url: r.url,
-    icon: r.type === 'snippet' ? IconPuzzle : IconFileText,
+    icon:
+      r.type === 'composer'
+        ? IconFiles
+        : r.type === 'snippet'
+          ? IconPuzzle
+          : IconFileText,
     folderName: r.folderName,
     version: r.version,
   }));

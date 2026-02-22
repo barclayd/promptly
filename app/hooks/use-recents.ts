@@ -21,7 +21,8 @@ export interface RecentPrompt {
   promptId: string;
   promptName: string;
   snippetName?: string;
-  type?: 'prompt' | 'snippet';
+  composerName?: string;
+  type?: 'prompt' | 'snippet' | 'composer';
   folderId: string;
   folderName: string;
   version: string | null;
@@ -62,13 +63,15 @@ const removeRecentFromStorage = (url: string) => {
 // Parse resource URL to extract id and type
 const parseResourceUrl = (
   url: string,
-): { id: string; type: 'prompt' | 'snippet' } | null => {
+): { id: string; type: 'prompt' | 'snippet' | 'composer' } | null => {
   try {
     const { pathname } = new URL(url);
     const promptMatch = pathname.match(/^\/prompts\/([^/]+)$/);
     if (promptMatch) return { id: promptMatch[1], type: 'prompt' };
     const snippetMatch = pathname.match(/^\/snippets\/([^/]+)$/);
     if (snippetMatch) return { id: snippetMatch[1], type: 'snippet' };
+    const composerMatch = pathname.match(/^\/composers\/([^/]+)$/);
+    if (composerMatch) return { id: composerMatch[1], type: 'composer' };
     return null;
   } catch {
     return null;
@@ -118,6 +121,36 @@ const fetchSnippetInfo = async (
   }
 };
 
+// Fetch composer info from server
+const fetchComposerInfo = async (
+  composerId: string,
+): Promise<PromptInfo | null> => {
+  try {
+    const response = await fetch(`/api/composer-info?composerId=${composerId}`);
+    if (!response.ok) return null;
+    const info = (await response.json()) as {
+      composerId: string;
+      composerName: string;
+      folderId: string;
+      folderName: string;
+      version: string | null;
+      url: string;
+    };
+    return {
+      promptId: info.composerId,
+      promptName: info.composerName,
+      composerName: info.composerName,
+      type: 'composer' as const,
+      folderId: info.folderId,
+      folderName: info.folderName,
+      version: info.version,
+      url: info.url,
+    };
+  } catch {
+    return null;
+  }
+};
+
 // Set up navigation listener (called once on module load)
 let listenerSetup = false;
 
@@ -141,7 +174,11 @@ const setupNavigationListener = () => {
     if (!parsed) return;
 
     const fetchFn =
-      parsed.type === 'snippet' ? fetchSnippetInfo : fetchPromptInfo;
+      parsed.type === 'composer'
+        ? fetchComposerInfo
+        : parsed.type === 'snippet'
+          ? fetchSnippetInfo
+          : fetchPromptInfo;
     fetchFn(parsed.id).then((info) => {
       if (info) {
         addRecentToStorage(info);

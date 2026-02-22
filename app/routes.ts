@@ -35,6 +35,7 @@ export default [
   route('api/composers/delete', './routes/api/composers.delete.ts'),
   route('api/composers/save-content', './routes/api/composers.save-content.ts'),
   route('api/composers/save-config', './routes/api/composers.save-config.ts'),
+  route('api/composer-info', './routes/api/composer-info.ts'),
   route('api/generate-input-data', './routes/api/generate-input-data.ts'),
   route('api/team/invite', './routes/api/team.invite.ts'),
   route('api/team/cancel-invite', './routes/api/team.cancel-invite.ts'),
@@ -79,6 +80,7 @@ export default [
     route('logout', './routes/logout.tsx'),
     route('prompts', './routes/prompts.tsx'),
     route('snippets', './routes/snippets.tsx'),
+    route('composers', './routes/composers.tsx'),
     route('analytics', './routes/analytics.tsx'),
     route('team', './routes/team.tsx'),
     route('settings', './routes/settings.tsx'),
@@ -91,6 +93,11 @@ export default [
   layout('./routes/layouts/snippet-detail.tsx', [
     route('snippets/:snippetId', './routes/snippets.snippetId.tsx', {
       id: 'snippet-detail',
+    }),
+  ]),
+  layout('./routes/layouts/composer-detail.tsx', [
+    route('composers/:composerId', './routes/composers.composerId.tsx', {
+      id: 'composer-detail',
     }),
   ]),
 ] satisfies RouteConfig;
