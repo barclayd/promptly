@@ -160,9 +160,9 @@ test('composer appears in sidebar navigation', async ({
   await authenticatedPage.waitForLoadState('networkidle');
 
   // Verify Composers nav item exists in sidebar
-  const composersNav = authenticatedPage.locator('a[href="/composers"]', {
-    hasText: 'Composers',
-  });
+  const composersNav = authenticatedPage
+    .locator('[data-sidebar="menu-button"]')
+    .filter({ hasText: 'Composers' });
   await expect(composersNav).toBeVisible();
 });
 

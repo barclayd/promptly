@@ -1,5 +1,5 @@
 import { IconCheck, IconX } from '@tabler/icons-react';
-import { NavLink, useSearchParams } from 'react-router';
+import { NavLink, useLoaderData, useSearchParams } from 'react-router';
 import { Button } from '~/components/ui/button';
 import { Folder } from '~/components/ui/folder';
 import {
@@ -9,7 +9,9 @@ import {
   ItemMedia,
   ItemTitle,
 } from '~/components/ui/item';
+import { PaperStack } from '~/components/ui/paper-stack';
 import { PuzzlePieces } from '~/components/ui/puzzle-pieces';
+import { orgContext } from '~/context';
 import type { Route } from './+types/dashboard';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
@@ -21,7 +23,42 @@ export const meta = ({}: Route.MetaArgs) => [
   },
 ];
 
+export const loader = async ({ context }: Route.LoaderArgs) => {
+  const org = context.get(orgContext);
+  if (!org) {
+    return { latestComposer: null };
+  }
+
+  const db = context.cloudflare.env.promptly;
+
+  const result = await db
+    .prepare(
+      `SELECT c.name, cv.content
+       FROM composer c
+       JOIN composer_version cv ON cv.composer_id = c.id
+         AND cv.id = (
+           SELECT id FROM composer_version
+           WHERE composer_id = c.id
+           ORDER BY major DESC, minor DESC, patch DESC
+           LIMIT 1
+         )
+       WHERE c.organization_id = ?
+         AND c.deleted_at IS NULL
+       ORDER BY c.updated_at DESC
+       LIMIT 1`,
+    )
+    .bind(org.organizationId)
+    .first<{ name: string; content: string | null }>();
+
+  return {
+    latestComposer: result
+      ? { name: result.name, content: result.content ?? '' }
+      : null,
+  };
+};
+
 export default function Home() {
+  const { latestComposer } = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
   const hasJoined = searchParams.get('joined') === 'true';
 
@@ -67,7 +104,7 @@ export default function Home() {
             <div className="font-semibold text-muted-foreground mb-4">
               Folders
             </div>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap items-end gap-8">
               <NavLink to="/prompts">
                 <div className="flex flex-col">
                   <Folder />
@@ -78,6 +115,15 @@ export default function Home() {
                 <div className="flex flex-col">
                   <PuzzlePieces />
                   <h4 className="w-48 text-center my-4">All snippets</h4>
+                </div>
+              </NavLink>
+              <NavLink to="/composers">
+                <div className="flex flex-col">
+                  <PaperStack
+                    title={latestComposer?.name}
+                    content={latestComposer?.content}
+                  />
+                  <h4 className="w-48 text-center my-4">All composers</h4>
                 </div>
               </NavLink>
             </div>

@@ -564,3 +564,58 @@ body {
   );
   background-size: 200% 100%;
 }
+
+/* Paper stack effect — stacked pages with hover animation */
+.paper-stack {
+  overflow: hidden;
+  padding: 10px;
+  color: #303030;
+  font-size: 0.65vw;
+  background: #ffffff;
+  box-shadow:
+    1px 1px 7px rgba(34, 34, 34, 0.15),
+    13px -7px 0px #ffffff,
+    13px -7px 4px rgba(34, 34, 34, 0.15),
+    -7px 7px 0px #ffffff,
+    -7px 7px 4px rgba(34, 34, 34, 0.15),
+    -13px -5px 0px #ffffff,
+    -13px -5px 4px rgba(34, 34, 34, 0.15);
+  -webkit-backface-visibility: hidden;
+  transform: rotate(-8deg);
+  transition: all 0.5s;
+}
+
+.paper-stack:hover {
+  box-shadow:
+    -1px -4px 13px rgba(34, 34, 34, 0.2),
+    20px -13px 0px #ffffff,
+    20px -13px 4px rgba(34, 34, 34, 0.2),
+    -13px 10px 0px #ffffff,
+    -13px 10px 4px rgba(34, 34, 34, 0.2),
+    -10px -5px 0px #ffffff,
+    -10px -5px 4px rgba(34, 34, 34, 0.2);
+  transform: rotate(0deg);
+}
+
+/* Dark mode — paper stays white, stronger shadows for contrast */
+:is(.dark *) .paper-stack {
+  box-shadow:
+    1px 1px 7px rgba(0, 0, 0, 0.4),
+    13px -7px 0px #ffffff,
+    13px -7px 4px rgba(0, 0, 0, 0.4),
+    -7px 7px 0px #ffffff,
+    -7px 7px 4px rgba(0, 0, 0, 0.4),
+    -13px -5px 0px #ffffff,
+    -13px -5px 4px rgba(0, 0, 0, 0.4);
+}
+
+:is(.dark *) .paper-stack:hover {
+  box-shadow:
+    -1px -4px 13px rgba(0, 0, 0, 0.5),
+    20px -13px 0px #ffffff,
+    20px -13px 4px rgba(0, 0, 0, 0.5),
+    -13px 10px 0px #ffffff,
+    -13px 10px 4px rgba(0, 0, 0, 0.5),
+    -10px -5px 0px #ffffff,
+    -10px -5px 4px rgba(0, 0, 0, 0.5);
+}
