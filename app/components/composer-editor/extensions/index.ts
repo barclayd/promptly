@@ -12,6 +12,7 @@ import { TextAlign } from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Underline } from '@tiptap/extension-underline';
 import { StarterKit } from '@tiptap/starter-kit';
+import { AtomGap } from './atom-gap-extension';
 import { PromptRefNode } from './prompt-ref-extension';
 import { VariableRefNode } from './variable-ref-extension';
 
@@ -36,4 +37,5 @@ export const getComposerExtensions = () => [
   }),
   PromptRefNode,
   VariableRefNode,
+  AtomGap,
 ];

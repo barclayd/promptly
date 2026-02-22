@@ -276,3 +276,12 @@
 .composer-editor .ProseMirror-gapcursor::after {
   border-top-color: var(--color-foreground);
 }
+
+/* Invisible spacer between adjacent inline atoms for drop targeting */
+.composer-editor .ProseMirror-atom-gap {
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+  vertical-align: baseline;
+  pointer-events: auto;
+}

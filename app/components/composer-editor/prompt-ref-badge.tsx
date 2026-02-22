@@ -10,12 +10,13 @@ export const PromptRefBadge = ({ node, selected }: ReactNodeViewProps) => {
     <NodeViewWrapper as="span" className="inline mx-1">
       <span
         className={cn(
-          'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium align-baseline cursor-default',
+          'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium align-baseline cursor-grab',
           'bg-primary/10 text-primary border-primary/20',
           'dark:bg-primary/15 dark:border-primary/30',
           selected && 'ring-2 ring-primary/40 ring-offset-1',
         )}
         contentEditable={false}
+        data-drag-handle
       >
         <IconFileText className="size-3 shrink-0" />
         <span className="truncate max-w-[150px]">{promptName || promptId}</span>
