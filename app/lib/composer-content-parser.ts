@@ -71,3 +71,13 @@ export const extractPromptIds = (content: string): string[] => {
   }
   return [...ids];
 };
+
+const VARIABLE_FIELD_ID_REGEX = /data-field-id="([a-zA-Z0-9_-]+)"/g;
+
+export const extractVariableIds = (content: string): string[] => {
+  const ids = new Set<string>();
+  for (const match of content.matchAll(VARIABLE_FIELD_ID_REGEX)) {
+    ids.add(match[1]);
+  }
+  return [...ids];
+};

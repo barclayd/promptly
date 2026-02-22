@@ -7,7 +7,8 @@ const SEPARATOR_WIDTH = 9; // 1px + mx-0.5 margins
 const ITEM_GAP = 2; // gap-0.5
 const OVERFLOW_BUTTON_WIDTH = 28; // chevron button
 const ADD_PROMPT_FULL_WIDTH = 120; // icon + text
-const ADD_PROMPT_COLLAPSED_WIDTH = 28; // icon only
+const ADD_VARIABLE_FULL_WIDTH = 120; // icon + text
+const SPARKLES_MERGED_WIDTH = 28; // icon-only merged button
 
 type ToolbarItemDef = {
   id: string;
@@ -22,6 +23,8 @@ type ToolbarOverflowResult = {
   overflowIds: Set<string>;
   hasOverflow: boolean;
   addPromptCollapsed: boolean;
+  addVariableCollapsed: boolean;
+  insertMerged: boolean;
 };
 
 export const useToolbarOverflow = (
@@ -33,6 +36,8 @@ export const useToolbarOverflow = (
   const [overflowIds, setOverflowIds] = useState<Set<string>>(new Set());
   const [hasOverflow, setHasOverflow] = useState(false);
   const [addPromptCollapsed, setAddPromptCollapsed] = useState(false);
+  const [addVariableCollapsed, setAddVariableCollapsed] = useState(false);
+  const [insertMerged, setInsertMerged] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<ResizeObserver | null>(null);
@@ -55,6 +60,10 @@ export const useToolbarOverflow = (
       // Sort by priority descending — highest priority stays visible longest
       .sort((a, b) => b.overflowPriority - a.overflowPriority);
 
+    // Separate insert items (special merge behavior) from other overflowable items
+    const insertItems = overflowable.filter((i) => i.groupId === 'insert');
+    const nonInsertItems = overflowable.filter((i) => i.groupId !== 'insert');
+
     // Calculate pinned width (always visible)
     let pinnedWidth = 0;
     const pinnedGroups = new Set<string>();
@@ -63,21 +72,7 @@ export const useToolbarOverflow = (
       pinnedGroups.add(item.groupId);
     }
 
-    // Account for the add-prompt button in collapsed form for overflow check
-    // The add-prompt button is part of the pinned items but we need to handle
-    // its width change separately
-    const addPromptItem = pinned.find((i) => i.id === 'add-prompt');
-    if (addPromptItem) {
-      // Remove its full width and add collapsed width for the overflow check
-      pinnedWidth =
-        pinnedWidth -
-        addPromptItem.estimatedWidth -
-        ITEM_GAP +
-        ADD_PROMPT_COLLAPSED_WIDTH +
-        ITEM_GAP;
-    }
-
-    // Greedily add overflowable items (highest priority first)
+    // Greedily add non-insert overflowable items (highest priority first)
     const visible = new Set<string>(pinned.map((i) => i.id));
     const overflow = new Set<string>();
     let usedWidth = pinnedWidth;
@@ -85,7 +80,7 @@ export const useToolbarOverflow = (
     // Track groups that have visible items (for separator calculation)
     const visibleGroups = new Set(pinnedGroups);
 
-    for (const item of overflowable) {
+    for (const item of nonInsertItems) {
       // Would adding this item require a separator?
       const needsSeparator =
         visibleGroups.size > 0 && !visibleGroups.has(item.groupId);
@@ -110,35 +105,74 @@ export const useToolbarOverflow = (
       }
     }
 
-    // Once we've determined overflow, also push remaining items into overflow
+    // Push remaining lower-priority non-insert items into overflow after first overflow
     let hitOverflow = false;
-    for (const item of overflowable) {
+    for (const item of nonInsertItems) {
       if (overflow.has(item.id)) {
         hitOverflow = true;
       }
       if (hitOverflow && !overflow.has(item.id)) {
-        // This shouldn't happen with sorted priority, but safety net
         overflow.add(item.id);
         visible.delete(item.id);
       }
     }
 
-    const hasAnyOverflow = overflow.size > 0;
+    // Handle insert items with special merge behavior:
+    // Full text → merge into single sparkles → overflow
+    let merged = false;
 
-    // Determine if add-prompt should be collapsed
-    // Only show full width when everything fits
-    let promptCollapsed = hasAnyOverflow;
-    if (!hasAnyOverflow && addPromptItem) {
-      // Check if using full width still fits
-      const fullPromptWidth =
-        usedWidth - ADD_PROMPT_COLLAPSED_WIDTH + ADD_PROMPT_FULL_WIDTH;
-      promptCollapsed = fullPromptWidth > containerWidth;
+    if (insertItems.length > 0) {
+      // Calculate separator cost for insert group
+      const needsInsertSep = !visibleGroups.has('insert');
+      const insertSepCost = needsInsertSep ? SEPARATOR_WIDTH + ITEM_GAP : 0;
+
+      // Calculate full-text width for all insert items
+      const insertFullWidth =
+        insertItems.reduce(
+          (sum, item) => sum + item.estimatedWidth + ITEM_GAP,
+          0,
+        ) + insertSepCost;
+
+      // Try full text first
+      if (usedWidth + insertFullWidth <= containerWidth) {
+        // Full text fits
+        for (const item of insertItems) {
+          visible.add(item.id);
+        }
+        visibleGroups.add('insert');
+      } else {
+        // Try merged sparkles button (single icon button replaces both)
+        const mergedCost = SPARKLES_MERGED_WIDTH + ITEM_GAP + insertSepCost;
+        const overflowReserve =
+          overflow.size === 0 ? OVERFLOW_BUTTON_WIDTH + ITEM_GAP : 0;
+
+        if (usedWidth + mergedCost + overflowReserve <= containerWidth) {
+          // Merged fits — mark both as visible but merged
+          merged = true;
+          for (const item of insertItems) {
+            visible.add(item.id);
+          }
+          visibleGroups.add('insert');
+        } else {
+          // Insert items overflow entirely
+          for (const item of insertItems) {
+            overflow.add(item.id);
+            if (overflow.size === 1) {
+              usedWidth += OVERFLOW_BUTTON_WIDTH + ITEM_GAP;
+            }
+          }
+        }
+      }
     }
+
+    const hasAnyOverflow = overflow.size > 0;
 
     setVisibleIds(visible);
     setOverflowIds(overflow);
     setHasOverflow(hasAnyOverflow);
-    setAddPromptCollapsed(promptCollapsed);
+    setAddPromptCollapsed(false);
+    setAddVariableCollapsed(false);
+    setInsertMerged(merged);
   }, []);
 
   const ref = useCallback(
@@ -160,7 +194,21 @@ export const useToolbarOverflow = (
     [calculate],
   );
 
-  return { ref, visibleIds, overflowIds, hasOverflow, addPromptCollapsed };
+  return {
+    ref,
+    visibleIds,
+    overflowIds,
+    hasOverflow,
+    addPromptCollapsed,
+    addVariableCollapsed,
+    insertMerged,
+  };
 };
 
-export { ICON_BUTTON_WIDTH, DROPDOWN_TRIGGER_WIDTH, ADD_PROMPT_FULL_WIDTH };
+export {
+  ICON_BUTTON_WIDTH,
+  DROPDOWN_TRIGGER_WIDTH,
+  ADD_PROMPT_FULL_WIDTH,
+  ADD_VARIABLE_FULL_WIDTH,
+  SPARKLES_MERGED_WIDTH,
+};

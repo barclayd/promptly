@@ -5,16 +5,12 @@ import {
   IconAlignLeft,
   IconAlignRight,
   IconBlockquote,
-  IconBold,
   IconCode,
   IconHighlight,
-  IconItalic,
   IconLetterCase,
   IconLine,
   IconLink,
-  IconStrikethrough,
   IconTable,
-  IconUnderline,
 } from '@tabler/icons-react';
 import type { Editor } from '@tiptap/react';
 import { Fragment, useCallback, useMemo, useState } from 'react';
@@ -25,12 +21,8 @@ import {
   PopoverTrigger,
 } from '~/components/ui/popover';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '~/components/ui/tooltip';
-import {
   ADD_PROMPT_FULL_WIDTH,
+  ADD_VARIABLE_FULL_WIDTH,
   DROPDOWN_TRIGGER_WIDTH,
   ICON_BUTTON_WIDTH,
   useToolbarOverflow,
@@ -42,9 +34,12 @@ import { PromptRefPicker } from './prompt-ref-picker';
 import { TableInsertPopover } from './table-insert-popover';
 import { ToolbarAlignmentDropdown } from './toolbar-alignment-dropdown';
 import { ToolbarHeadingDropdown } from './toolbar-heading-dropdown';
+import { ToolbarInsertPicker } from './toolbar-insert-picker';
 import { ToolbarListDropdown } from './toolbar-list-dropdown';
+import { ToolbarMarksDropdown } from './toolbar-marks-dropdown';
 import { ToolbarOverflowMenu } from './toolbar-overflow-menu';
 import { ToolbarToolsDropdown } from './toolbar-tools-dropdown';
+import { VariableRefPicker } from './variable-ref-picker';
 
 // Exported so the overflow menu can use it
 export type OverflowItemDef = {
@@ -56,43 +51,6 @@ export type OverflowItemDef = {
   isActive?: (editor: Editor) => boolean;
   action: (editor: Editor) => void;
 };
-
-type ToolbarButtonProps = {
-  icon: React.ReactNode;
-  tooltip: string;
-  isActive?: boolean;
-  onClick: () => void;
-  disabled?: boolean;
-};
-
-const ToolbarButton = ({
-  icon,
-  tooltip,
-  isActive,
-  onClick,
-  disabled,
-}: ToolbarButtonProps) => (
-  <Tooltip>
-    <TooltipTrigger asChild>
-      <Button
-        variant="ghost"
-        size="icon"
-        className={cn(
-          'size-7 rounded-sm focus-visible:ring-0',
-          isActive && 'bg-accent text-accent-foreground',
-        )}
-        onClick={onClick}
-        disabled={disabled}
-        type="button"
-      >
-        {icon}
-      </Button>
-    </TooltipTrigger>
-    <TooltipContent side="bottom" className="text-xs">
-      {tooltip}
-    </TooltipContent>
-  </Tooltip>
-);
 
 const ToolbarSeparator = () => (
   <div className="mx-1 h-4 w-px shrink-0 bg-border" />
@@ -115,35 +73,23 @@ const TOOLBAR_ITEMS = [
     estimatedWidth: DROPDOWN_TRIGGER_WIDTH,
   },
   {
-    id: 'bold',
+    id: 'marks-dropdown',
     groupId: 'marks',
     overflowPriority: Number.POSITIVE_INFINITY,
-    estimatedWidth: ICON_BUTTON_WIDTH,
-  },
-  {
-    id: 'add-prompt',
-    groupId: 'prompt',
-    overflowPriority: Number.POSITIVE_INFINITY,
-    estimatedWidth: ADD_PROMPT_FULL_WIDTH,
+    estimatedWidth: DROPDOWN_TRIGGER_WIDTH,
   },
   // --- Overflowable (ordered by priority, highest = stays longest) ---
   {
-    id: 'italic',
-    groupId: 'marks',
-    overflowPriority: 7,
-    estimatedWidth: ICON_BUTTON_WIDTH,
+    id: 'add-prompt',
+    groupId: 'insert',
+    overflowPriority: 6,
+    estimatedWidth: ADD_PROMPT_FULL_WIDTH,
   },
   {
-    id: 'underline',
-    groupId: 'marks',
+    id: 'add-variable',
+    groupId: 'insert',
     overflowPriority: 6,
-    estimatedWidth: ICON_BUTTON_WIDTH,
-  },
-  {
-    id: 'strikethrough',
-    groupId: 'marks',
-    overflowPriority: 6,
-    estimatedWidth: ICON_BUTTON_WIDTH,
+    estimatedWidth: ADD_VARIABLE_FULL_WIDTH,
   },
   {
     id: 'link',
@@ -185,33 +131,6 @@ const TOOLBAR_ITEMS = [
 
 // Overflow definitions for items that can appear in the overflow dropdown
 const OVERFLOW_DEFS: OverflowItemDef[] = [
-  {
-    id: 'italic',
-    groupId: 'marks',
-    groupLabel: 'Text',
-    label: 'Italic',
-    Icon: IconItalic,
-    isActive: (e) => e.isActive('italic'),
-    action: (e) => e.chain().focus().toggleItalic().run(),
-  },
-  {
-    id: 'underline',
-    groupId: 'marks',
-    groupLabel: 'Text',
-    label: 'Underline',
-    Icon: IconUnderline,
-    isActive: (e) => e.isActive('underline'),
-    action: (e) => e.chain().focus().toggleUnderline().run(),
-  },
-  {
-    id: 'strikethrough',
-    groupId: 'marks',
-    groupLabel: 'Text',
-    label: 'Strikethrough',
-    Icon: IconStrikethrough,
-    isActive: (e) => e.isActive('strike'),
-    action: (e) => e.chain().focus().toggleStrike().run(),
-  },
   {
     id: 'link',
     groupId: 'link',
@@ -313,14 +232,11 @@ const OVERFLOW_DEFS: OverflowItemDef[] = [
 ];
 
 // The ordered list of items to render in the toolbar
-// Order: H∨ | List∨ | B I U S | Link | TextColor Highlight | Align∨ | Tools∨ | Table | + Add prompt | ▸ overflow
+// Order: H∨ | List∨ | BIUS∨ | Link | TextColor Highlight | Align∨ | Tools∨ | Table | ✨ Add prompt | ✨ Add variable
 const RENDER_ORDER = [
   'heading-dropdown',
   'list-dropdown',
-  'bold',
-  'italic',
-  'underline',
-  'strikethrough',
+  'marks-dropdown',
   'link',
   'text-color',
   'highlight',
@@ -328,6 +244,7 @@ const RENDER_ORDER = [
   'tools-dropdown',
   'table',
   'add-prompt',
+  'add-variable',
 ];
 
 // Map dropdown IDs to the overflow group IDs they expand into
@@ -344,8 +261,15 @@ type ComposerToolbarProps = {
 export const ComposerToolbar = ({ editor, prompts }: ComposerToolbarProps) => {
   const [linkOpen, setLinkOpen] = useState(false);
 
-  const { ref, visibleIds, overflowIds, hasOverflow, addPromptCollapsed } =
-    useToolbarOverflow(TOOLBAR_ITEMS);
+  const {
+    ref,
+    visibleIds,
+    overflowIds,
+    hasOverflow,
+    addPromptCollapsed,
+    addVariableCollapsed,
+    insertMerged,
+  } = useToolbarOverflow(TOOLBAR_ITEMS);
 
   const handleSetLink = useCallback(
     (url: string) => {
@@ -397,11 +321,19 @@ export const ComposerToolbar = ({ editor, prompts }: ComposerToolbarProps) => {
   const currentLinkUrl = editor.getAttributes('link').href ?? '';
 
   // Build the visible items to render, based on RENDER_ORDER
-  const visibleOrderedIds = RENDER_ORDER.filter((id) => visibleIds.has(id));
+  // When insertMerged is true, skip individual add-prompt/add-variable
+  const visibleOrderedIds = RENDER_ORDER.filter((id) => {
+    if (!visibleIds.has(id)) return false;
+    if (insertMerged && (id === 'add-prompt' || id === 'add-variable'))
+      return false;
+    return true;
+  });
 
   // Get groupId for an item id
-  const getGroupId = (id: string) =>
-    TOOLBAR_ITEMS.find((i) => i.id === id)?.groupId ?? '';
+  const getGroupId = (id: string) => {
+    if (id === 'insert-merged') return 'insert';
+    return TOOLBAR_ITEMS.find((i) => i.id === id)?.groupId ?? '';
+  };
 
   // Render an inline toolbar item by id
   const renderItem = (id: string) => {
@@ -410,42 +342,8 @@ export const ComposerToolbar = ({ editor, prompts }: ComposerToolbarProps) => {
         return <ToolbarHeadingDropdown editor={editor} />;
       case 'list-dropdown':
         return <ToolbarListDropdown editor={editor} />;
-      case 'bold':
-        return (
-          <ToolbarButton
-            icon={<IconBold className="size-4" />}
-            tooltip="Bold"
-            isActive={editor.isActive('bold')}
-            onClick={() => editor.chain().focus().toggleBold().run()}
-          />
-        );
-      case 'italic':
-        return (
-          <ToolbarButton
-            icon={<IconItalic className="size-4" />}
-            tooltip="Italic"
-            isActive={editor.isActive('italic')}
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-          />
-        );
-      case 'underline':
-        return (
-          <ToolbarButton
-            icon={<IconUnderline className="size-4" />}
-            tooltip="Underline"
-            isActive={editor.isActive('underline')}
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
-          />
-        );
-      case 'strikethrough':
-        return (
-          <ToolbarButton
-            icon={<IconStrikethrough className="size-4" />}
-            tooltip="Strikethrough"
-            isActive={editor.isActive('strike')}
-            onClick={() => editor.chain().focus().toggleStrike().run()}
-          />
-        );
+      case 'marks-dropdown':
+        return <ToolbarMarksDropdown editor={editor} />;
       case 'link':
         return (
           <Popover open={linkOpen} onOpenChange={setLinkOpen}>
@@ -528,18 +426,29 @@ export const ComposerToolbar = ({ editor, prompts }: ComposerToolbarProps) => {
             collapsed={addPromptCollapsed}
           />
         );
+      case 'add-variable':
+        return (
+          <VariableRefPicker editor={editor} collapsed={addVariableCollapsed} />
+        );
+      case 'insert-merged':
+        return <ToolbarInsertPicker editor={editor} prompts={prompts} />;
       default:
         return null;
     }
   };
+
+  // If insertMerged, append the merged button id to the visible list
+  const finalOrderedIds = insertMerged
+    ? [...visibleOrderedIds, 'insert-merged']
+    : visibleOrderedIds;
 
   return (
     <div
       ref={ref}
       className="flex flex-1 min-w-0 items-center gap-0.5 overflow-hidden"
     >
-      {visibleOrderedIds.map((id, i) => {
-        const prevId = visibleOrderedIds[i - 1];
+      {finalOrderedIds.map((id, i) => {
+        const prevId = finalOrderedIds[i - 1];
         const needsSep =
           i > 0 && prevId && getGroupId(prevId) !== getGroupId(id);
         return (

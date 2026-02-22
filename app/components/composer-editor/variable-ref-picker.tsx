@@ -1,6 +1,6 @@
 'use client';
 
-import { IconFileText, IconPlus, IconSparkles } from '@tabler/icons-react';
+import { IconCode, IconSparkles } from '@tabler/icons-react';
 import type { Editor } from '@tiptap/react';
 import { useCallback, useMemo, useState } from 'react';
 import { Button } from '~/components/ui/button';
@@ -22,32 +22,37 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '~/components/ui/tooltip';
+import { flattenSchemaFields } from '~/lib/flatten-schema-fields';
 import { cn } from '~/lib/utils';
+import { useComposerEditorStore } from '~/stores/composer-editor-store';
 
-type PromptRefPickerProps = {
+type VariableRefPickerProps = {
   editor: Editor;
-  prompts?: Array<{ id: string; name: string }>;
   collapsed?: boolean;
 };
 
-export const PromptRefPicker = ({
+export const VariableRefPicker = ({
   editor,
-  prompts,
   collapsed,
-}: PromptRefPickerProps) => {
+}: VariableRefPickerProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
-  const filteredPrompts = useMemo(() => {
-    if (!prompts) return [];
-    if (!search) return prompts;
+  const schemaFields = useComposerEditorStore((s) => s.schemaFields);
+  const variables = useMemo(
+    () => flattenSchemaFields(schemaFields),
+    [schemaFields],
+  );
+
+  const filteredVariables = useMemo(() => {
+    if (!search) return variables;
     const lower = search.toLowerCase();
-    return prompts.filter((p) => p.name.toLowerCase().includes(lower));
-  }, [prompts, search]);
+    return variables.filter((v) => v.path.toLowerCase().includes(lower));
+  }, [variables, search]);
 
   const handleSelect = useCallback(
-    (promptId: string, promptName: string) => {
-      editor.chain().focus().insertPromptRef({ promptId, promptName }).run();
+    (fieldId: string, fieldPath: string) => {
+      editor.chain().focus().insertVariableRef({ fieldId, fieldPath }).run();
       setOpen(false);
       setSearch('');
     },
@@ -68,40 +73,37 @@ export const PromptRefPicker = ({
               type="button"
             >
               <IconSparkles className="size-3.5" />
-              {!collapsed && <span>Add prompt</span>}
+              {!collapsed && <span>Add variable</span>}
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="text-xs">
-          Add prompt reference
+          Add variable reference
         </TooltipContent>
       </Tooltip>
       <PopoverContent className="w-64 p-0" side="bottom" align="start">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search prompts..."
+            placeholder="Search variables..."
             value={search}
             onValueChange={setSearch}
           />
           <CommandList>
             <CommandEmpty className="py-3 text-center text-xs text-muted-foreground">
-              {!prompts
-                ? 'Loading prompts...'
-                : prompts.length === 0
-                  ? 'No prompts available'
-                  : 'No matching prompts'}
+              {variables.length === 0
+                ? 'No variables defined. Add fields in Schema Builder.'
+                : 'No matching variables'}
             </CommandEmpty>
             <CommandGroup>
-              {filteredPrompts.map((prompt) => (
+              {filteredVariables.map((variable) => (
                 <CommandItem
-                  key={prompt.id}
-                  value={prompt.id}
-                  onSelect={() => handleSelect(prompt.id, prompt.name)}
+                  key={variable.id}
+                  value={variable.id}
+                  onSelect={() => handleSelect(variable.id, variable.path)}
                   className="gap-2 text-sm cursor-pointer"
                 >
-                  <IconFileText className="size-3.5 text-muted-foreground shrink-0" />
-                  <span className="truncate">{prompt.name}</span>
-                  <IconPlus className="size-3 ml-auto text-muted-foreground/60 shrink-0" />
+                  <IconCode className="size-3.5 text-muted-foreground shrink-0" />
+                  <span className="truncate">{variable.path}</span>
                 </CommandItem>
               ))}
             </CommandGroup>

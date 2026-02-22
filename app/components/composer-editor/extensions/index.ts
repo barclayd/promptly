@@ -13,6 +13,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Underline } from '@tiptap/extension-underline';
 import { StarterKit } from '@tiptap/starter-kit';
 import { PromptRefNode } from './prompt-ref-extension';
+import { VariableRefNode } from './variable-ref-extension';
 
 export const getComposerExtensions = () => [
   StarterKit.configure({
@@ -34,4 +35,5 @@ export const getComposerExtensions = () => [
     placeholder: 'Start writing your composer content...',
   }),
   PromptRefNode,
+  VariableRefNode,
 ];
