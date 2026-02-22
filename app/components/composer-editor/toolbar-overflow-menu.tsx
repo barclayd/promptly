@@ -59,7 +59,7 @@ export const ToolbarOverflowMenu = ({
             <Button
               variant="ghost"
               size="icon"
-              className="size-7 rounded-sm"
+              className="size-7 rounded-sm focus-visible:ring-0"
               type="button"
             >
               <IconChevronRight className="size-4" />

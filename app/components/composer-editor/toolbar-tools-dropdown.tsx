@@ -1,10 +1,10 @@
 'use client';
 
 import {
+  IconBlockquote,
   IconChevronDown,
-  IconList,
-  IconListCheck,
-  IconListNumbers,
+  IconCode,
+  IconLine,
 } from '@tabler/icons-react';
 import type { Editor } from '@tiptap/react';
 import { Button } from '~/components/ui/button';
@@ -21,36 +21,39 @@ import {
 } from '~/components/ui/tooltip';
 import { cn } from '~/lib/utils';
 
-const LISTS = [
+const TOOLS = [
   {
-    type: 'bulletList' as const,
-    label: 'Bullet List',
-    Icon: IconList,
-    toggle: (editor: Editor) => editor.chain().focus().toggleBulletList().run(),
+    id: 'blockquote' as const,
+    label: 'Blockquote',
+    Icon: IconBlockquote,
+    isActive: (editor: Editor) => editor.isActive('blockquote'),
+    action: (editor: Editor) => editor.chain().focus().toggleBlockquote().run(),
   },
   {
-    type: 'orderedList' as const,
-    label: 'Ordered List',
-    Icon: IconListNumbers,
-    toggle: (editor: Editor) =>
-      editor.chain().focus().toggleOrderedList().run(),
+    id: 'code-block' as const,
+    label: 'Code Block',
+    Icon: IconCode,
+    isActive: (editor: Editor) => editor.isActive('codeBlock'),
+    action: (editor: Editor) => editor.chain().focus().toggleCodeBlock().run(),
   },
   {
-    type: 'taskList' as const,
-    label: 'Task List',
-    Icon: IconListCheck,
-    toggle: (editor: Editor) => editor.chain().focus().toggleTaskList().run(),
+    id: 'horizontal-rule' as const,
+    label: 'Horizontal Rule',
+    Icon: IconLine,
+    isActive: () => false,
+    action: (editor: Editor) =>
+      editor.chain().focus().setHorizontalRule().run(),
   },
 ];
 
-type ToolbarListDropdownProps = {
+type ToolbarToolsDropdownProps = {
   editor: Editor;
 };
 
-export const ToolbarListDropdown = ({ editor }: ToolbarListDropdownProps) => {
-  const activeList = LISTS.find((l) => editor.isActive(l.type));
-  const TriggerIcon = activeList?.Icon ?? IconList;
-  const isActive = !!activeList;
+export const ToolbarToolsDropdown = ({ editor }: ToolbarToolsDropdownProps) => {
+  const activeTool = TOOLS.find((t) => t.isActive(editor));
+  const TriggerIcon = activeTool?.Icon ?? IconBlockquote;
+  const isActive = !!activeTool;
 
   return (
     <DropdownMenu>
@@ -71,15 +74,15 @@ export const ToolbarListDropdown = ({ editor }: ToolbarListDropdownProps) => {
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="text-xs">
-          List
+          Blocks
         </TooltipContent>
       </Tooltip>
-      <DropdownMenuContent align="start" className="min-w-[140px]">
-        {LISTS.map(({ type, label, Icon, toggle }) => (
+      <DropdownMenuContent align="start" className="min-w-[160px]">
+        {TOOLS.map(({ id, label, Icon, isActive: checkActive, action }) => (
           <DropdownMenuItem
-            key={type}
-            className={cn('gap-2', editor.isActive(type) && 'bg-accent')}
-            onSelect={() => toggle(editor)}
+            key={id}
+            className={cn('gap-2', checkActive(editor) && 'bg-accent')}
+            onSelect={() => action(editor)}
           >
             <Icon className="size-4" />
             {label}

@@ -62,7 +62,7 @@ export const PromptRefPicker = ({
             <Button
               variant="ghost"
               className={cn(
-                'h-7 rounded-sm',
+                'h-7 rounded-sm focus-visible:ring-0',
                 collapsed ? 'w-7 px-0' : 'gap-1 px-2 text-xs font-medium',
               )}
               type="button"

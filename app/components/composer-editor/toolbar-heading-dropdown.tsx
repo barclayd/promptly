@@ -49,7 +49,7 @@ export const ToolbarHeadingDropdown = ({
             <Button
               variant="ghost"
               className={cn(
-                'h-7 gap-0.5 rounded-sm px-1.5',
+                'h-7 gap-0.5 rounded-sm px-1.5 focus-visible:ring-0',
                 isActive && 'bg-accent text-accent-foreground',
               )}
               type="button"

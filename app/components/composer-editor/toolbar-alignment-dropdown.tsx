@@ -1,10 +1,10 @@
 'use client';
 
 import {
+  IconAlignCenter,
+  IconAlignLeft,
+  IconAlignRight,
   IconChevronDown,
-  IconList,
-  IconListCheck,
-  IconListNumbers,
 } from '@tabler/icons-react';
 import type { Editor } from '@tiptap/react';
 import { Button } from '~/components/ui/button';
@@ -21,36 +21,37 @@ import {
 } from '~/components/ui/tooltip';
 import { cn } from '~/lib/utils';
 
-const LISTS = [
+const ALIGNMENTS = [
   {
-    type: 'bulletList' as const,
-    label: 'Bullet List',
-    Icon: IconList,
-    toggle: (editor: Editor) => editor.chain().focus().toggleBulletList().run(),
+    value: 'left' as const,
+    label: 'Align Left',
+    Icon: IconAlignLeft,
   },
   {
-    type: 'orderedList' as const,
-    label: 'Ordered List',
-    Icon: IconListNumbers,
-    toggle: (editor: Editor) =>
-      editor.chain().focus().toggleOrderedList().run(),
+    value: 'center' as const,
+    label: 'Align Center',
+    Icon: IconAlignCenter,
   },
   {
-    type: 'taskList' as const,
-    label: 'Task List',
-    Icon: IconListCheck,
-    toggle: (editor: Editor) => editor.chain().focus().toggleTaskList().run(),
+    value: 'right' as const,
+    label: 'Align Right',
+    Icon: IconAlignRight,
   },
 ];
 
-type ToolbarListDropdownProps = {
+type ToolbarAlignmentDropdownProps = {
   editor: Editor;
 };
 
-export const ToolbarListDropdown = ({ editor }: ToolbarListDropdownProps) => {
-  const activeList = LISTS.find((l) => editor.isActive(l.type));
-  const TriggerIcon = activeList?.Icon ?? IconList;
-  const isActive = !!activeList;
+export const ToolbarAlignmentDropdown = ({
+  editor,
+}: ToolbarAlignmentDropdownProps) => {
+  const activeAlignment = ALIGNMENTS.find((a) =>
+    editor.isActive({ textAlign: a.value }),
+  );
+  const TriggerIcon = activeAlignment?.Icon ?? IconAlignLeft;
+  // "left" is the default — only show active state for center/right
+  const isActive = !!activeAlignment && activeAlignment.value !== 'left';
 
   return (
     <DropdownMenu>
@@ -71,15 +72,18 @@ export const ToolbarListDropdown = ({ editor }: ToolbarListDropdownProps) => {
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="text-xs">
-          List
+          Alignment
         </TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="start" className="min-w-[140px]">
-        {LISTS.map(({ type, label, Icon, toggle }) => (
+        {ALIGNMENTS.map(({ value, label, Icon }) => (
           <DropdownMenuItem
-            key={type}
-            className={cn('gap-2', editor.isActive(type) && 'bg-accent')}
-            onSelect={() => toggle(editor)}
+            key={value}
+            className={cn(
+              'gap-2',
+              editor.isActive({ textAlign: value }) && 'bg-accent',
+            )}
+            onSelect={() => editor.chain().focus().setTextAlign(value).run()}
           >
             <Icon className="size-4" />
             {label}

@@ -57,7 +57,7 @@ export const TableInsertPopover = ({ editor }: TableInsertPopoverProps) => {
               variant="ghost"
               size="icon"
               className={cn(
-                'size-7 rounded-sm',
+                'size-7 rounded-sm focus-visible:ring-0',
                 isInTable && 'bg-accent text-accent-foreground',
               )}
               type="button"

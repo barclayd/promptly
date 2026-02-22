@@ -24,7 +24,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '~/components/ui/popover';
-import { Separator } from '~/components/ui/separator';
 import {
   Tooltip,
   TooltipContent,
@@ -41,9 +40,11 @@ import { ColorPalettePopover } from './color-palette-popover';
 import { LinkEditPopover } from './link-edit-popover';
 import { PromptRefPicker } from './prompt-ref-picker';
 import { TableInsertPopover } from './table-insert-popover';
+import { ToolbarAlignmentDropdown } from './toolbar-alignment-dropdown';
 import { ToolbarHeadingDropdown } from './toolbar-heading-dropdown';
 import { ToolbarListDropdown } from './toolbar-list-dropdown';
 import { ToolbarOverflowMenu } from './toolbar-overflow-menu';
+import { ToolbarToolsDropdown } from './toolbar-tools-dropdown';
 
 // Exported so the overflow menu can use it
 export type OverflowItemDef = {
@@ -77,7 +78,7 @@ const ToolbarButton = ({
         variant="ghost"
         size="icon"
         className={cn(
-          'size-7 rounded-sm',
+          'size-7 rounded-sm focus-visible:ring-0',
           isActive && 'bg-accent text-accent-foreground',
         )}
         onClick={onClick}
@@ -94,7 +95,7 @@ const ToolbarButton = ({
 );
 
 const ToolbarSeparator = () => (
-  <Separator orientation="vertical" className="mx-0.5 h-5" />
+  <div className="mx-1 h-4 w-px shrink-0 bg-border" />
 );
 
 // Define all overflowable items with their overflow priority and group info.
@@ -163,40 +164,16 @@ const TOOLBAR_ITEMS = [
     estimatedWidth: ICON_BUTTON_WIDTH,
   },
   {
-    id: 'align-left',
+    id: 'alignment-dropdown',
     groupId: 'alignment',
     overflowPriority: 3,
-    estimatedWidth: ICON_BUTTON_WIDTH,
+    estimatedWidth: DROPDOWN_TRIGGER_WIDTH,
   },
   {
-    id: 'align-center',
-    groupId: 'alignment',
-    overflowPriority: 3,
-    estimatedWidth: ICON_BUTTON_WIDTH,
-  },
-  {
-    id: 'align-right',
-    groupId: 'alignment',
-    overflowPriority: 3,
-    estimatedWidth: ICON_BUTTON_WIDTH,
-  },
-  {
-    id: 'blockquote',
-    groupId: 'blocks',
+    id: 'tools-dropdown',
+    groupId: 'tools',
     overflowPriority: 2,
-    estimatedWidth: ICON_BUTTON_WIDTH,
-  },
-  {
-    id: 'code-block',
-    groupId: 'blocks',
-    overflowPriority: 2,
-    estimatedWidth: ICON_BUTTON_WIDTH,
-  },
-  {
-    id: 'horizontal-rule',
-    groupId: 'blocks',
-    overflowPriority: 2,
-    estimatedWidth: ICON_BUTTON_WIDTH,
+    estimatedWidth: DROPDOWN_TRIGGER_WIDTH,
   },
   {
     id: 'table',
@@ -264,6 +241,7 @@ const OVERFLOW_DEFS: OverflowItemDef[] = [
     isActive: (e) => e.isActive('highlight'),
     action: () => {},
   },
+  // Alignment items — shown in overflow when alignment-dropdown overflows
   {
     id: 'align-left',
     groupId: 'alignment',
@@ -291,6 +269,7 @@ const OVERFLOW_DEFS: OverflowItemDef[] = [
     isActive: (e) => e.isActive({ textAlign: 'right' }),
     action: (e) => e.chain().focus().setTextAlign('right').run(),
   },
+  // Block items — shown in overflow when tools-dropdown overflows
   {
     id: 'blockquote',
     groupId: 'blocks',
@@ -334,7 +313,7 @@ const OVERFLOW_DEFS: OverflowItemDef[] = [
 ];
 
 // The ordered list of items to render in the toolbar
-// Order: H∨ | List∨ | B I U S | Link | TextColor Highlight | AlignL AlignC AlignR | Blockquote Code HR | Table | + Add prompt | ▸ overflow
+// Order: H∨ | List∨ | B I U S | Link | TextColor Highlight | Align∨ | Tools∨ | Table | + Add prompt | ▸ overflow
 const RENDER_ORDER = [
   'heading-dropdown',
   'list-dropdown',
@@ -345,15 +324,17 @@ const RENDER_ORDER = [
   'link',
   'text-color',
   'highlight',
-  'align-left',
-  'align-center',
-  'align-right',
-  'blockquote',
-  'code-block',
-  'horizontal-rule',
+  'alignment-dropdown',
+  'tools-dropdown',
   'table',
   'add-prompt',
 ];
+
+// Map dropdown IDs to the overflow group IDs they expand into
+const DROPDOWN_TO_GROUP: Record<string, string> = {
+  'alignment-dropdown': 'alignment',
+  'tools-dropdown': 'blocks',
+};
 
 type ComposerToolbarProps = {
   editor: Editor | null;
@@ -392,13 +373,21 @@ export const ComposerToolbar = ({ editor, prompts }: ComposerToolbarProps) => {
 
   // Build overflow items with link action wired up
   const overflowItems = useMemo(() => {
-    const items = OVERFLOW_DEFS.filter((d) => overflowIds.has(d.id));
+    // Collect overflow group IDs from overflowed dropdowns
+    const expandedGroups = new Set<string>();
+    for (const id of overflowIds) {
+      const group = DROPDOWN_TO_GROUP[id];
+      if (group) expandedGroups.add(group);
+    }
+
+    const items = OVERFLOW_DEFS.filter(
+      (d) => overflowIds.has(d.id) || expandedGroups.has(d.groupId),
+    );
     // Wire up link action to open the popover
     return items.map((item) => {
       if (item.id === 'link') {
         return { ...item, action: () => setLinkOpen(true) };
       }
-      // Colors and table in overflow just use their simple actions
       return item;
     });
   }, [overflowIds]);
@@ -465,7 +454,7 @@ export const ComposerToolbar = ({ editor, prompts }: ComposerToolbarProps) => {
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  'size-7 rounded-sm',
+                  'size-7 rounded-sm focus-visible:ring-0',
                   editor.isActive('link') && 'bg-accent text-accent-foreground',
                 )}
                 type="button"
@@ -493,7 +482,7 @@ export const ComposerToolbar = ({ editor, prompts }: ComposerToolbarProps) => {
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  'size-7 rounded-sm',
+                  'size-7 rounded-sm focus-visible:ring-0',
                   editor.isActive('textStyle') &&
                     'bg-accent text-accent-foreground',
                 )}
@@ -514,7 +503,7 @@ export const ComposerToolbar = ({ editor, prompts }: ComposerToolbarProps) => {
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  'size-7 rounded-sm',
+                  'size-7 rounded-sm focus-visible:ring-0',
                   editor.isActive('highlight') &&
                     'bg-accent text-accent-foreground',
                 )}
@@ -525,59 +514,10 @@ export const ComposerToolbar = ({ editor, prompts }: ComposerToolbarProps) => {
             }
           />
         );
-      case 'align-left':
-        return (
-          <ToolbarButton
-            icon={<IconAlignLeft className="size-4" />}
-            tooltip="Align Left"
-            isActive={editor.isActive({ textAlign: 'left' })}
-            onClick={() => editor.chain().focus().setTextAlign('left').run()}
-          />
-        );
-      case 'align-center':
-        return (
-          <ToolbarButton
-            icon={<IconAlignCenter className="size-4" />}
-            tooltip="Align Center"
-            isActive={editor.isActive({ textAlign: 'center' })}
-            onClick={() => editor.chain().focus().setTextAlign('center').run()}
-          />
-        );
-      case 'align-right':
-        return (
-          <ToolbarButton
-            icon={<IconAlignRight className="size-4" />}
-            tooltip="Align Right"
-            isActive={editor.isActive({ textAlign: 'right' })}
-            onClick={() => editor.chain().focus().setTextAlign('right').run()}
-          />
-        );
-      case 'blockquote':
-        return (
-          <ToolbarButton
-            icon={<IconBlockquote className="size-4" />}
-            tooltip="Blockquote"
-            isActive={editor.isActive('blockquote')}
-            onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          />
-        );
-      case 'code-block':
-        return (
-          <ToolbarButton
-            icon={<IconCode className="size-4" />}
-            tooltip="Code Block"
-            isActive={editor.isActive('codeBlock')}
-            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-          />
-        );
-      case 'horizontal-rule':
-        return (
-          <ToolbarButton
-            icon={<IconLine className="size-4" />}
-            tooltip="Horizontal Rule"
-            onClick={() => editor.chain().focus().setHorizontalRule().run()}
-          />
-        );
+      case 'alignment-dropdown':
+        return <ToolbarAlignmentDropdown editor={editor} />;
+      case 'tools-dropdown':
+        return <ToolbarToolsDropdown editor={editor} />;
       case 'table':
         return <TableInsertPopover editor={editor} />;
       case 'add-prompt':
@@ -594,7 +534,10 @@ export const ComposerToolbar = ({ editor, prompts }: ComposerToolbarProps) => {
   };
 
   return (
-    <div ref={ref} className="flex flex-1 min-w-0 items-center gap-0.5 overflow-hidden">
+    <div
+      ref={ref}
+      className="flex flex-1 min-w-0 items-center gap-0.5 overflow-hidden"
+    >
       {visibleOrderedIds.map((id, i) => {
         const prevId = visibleOrderedIds[i - 1];
         const needsSep =
