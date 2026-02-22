@@ -71,6 +71,28 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return data({ error: 'Prompt not found' }, { status: 404 });
   }
 
+  // Check if prompt is referenced by any active composer
+  const composerRef = await db
+    .prepare(
+      `SELECT cvp.id, c.name
+       FROM composer_version_prompt cvp
+       JOIN composer_version cv ON cvp.composer_version_id = cv.id
+       JOIN composer c ON cv.composer_id = c.id
+       WHERE cvp.prompt_id = ? AND c.deleted_at IS NULL
+       LIMIT 1`,
+    )
+    .bind(promptId)
+    .first<{ id: string; name: string }>();
+
+  if (composerRef) {
+    return data(
+      {
+        error: `Cannot delete: this prompt is referenced by composer "${composerRef.name}"`,
+      },
+      { status: 409 },
+    );
+  }
+
   // Soft delete the prompt
   await db
     .prepare('UPDATE prompt SET deleted_at = ? WHERE id = ?')

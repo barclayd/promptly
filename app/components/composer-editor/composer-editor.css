@@ -1,0 +1,287 @@
+/* ProseMirror editor styles scoped to .composer-editor */
+
+.composer-editor .tiptap {
+  outline: none;
+  min-height: 12rem;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.625;
+  color: var(--color-foreground);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.composer-editor .tiptap:focus {
+  outline: none;
+}
+
+/* Placeholder */
+.composer-editor .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--color-muted-foreground);
+  opacity: 0.5;
+  pointer-events: none;
+  height: 0;
+}
+
+/* Headings */
+.composer-editor .tiptap h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.composer-editor .tiptap h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.composer-editor .tiptap h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.composer-editor .tiptap h1:first-child,
+.composer-editor .tiptap h2:first-child,
+.composer-editor .tiptap h3:first-child {
+  margin-top: 0;
+}
+
+/* Paragraphs */
+.composer-editor .tiptap p {
+  margin-bottom: 0.5rem;
+}
+
+.composer-editor .tiptap p:last-child {
+  margin-bottom: 0;
+}
+
+/* Lists */
+.composer-editor .tiptap ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.composer-editor .tiptap ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.composer-editor .tiptap li {
+  margin-bottom: 0.125rem;
+}
+
+.composer-editor .tiptap li p {
+  margin-bottom: 0;
+}
+
+/* Task Lists */
+.composer-editor .tiptap ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.composer-editor .tiptap ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.composer-editor .tiptap ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.composer-editor
+  .tiptap
+  ul[data-type="taskList"]
+  li
+  > label
+  input[type="checkbox"] {
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--color-border);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  position: relative;
+  background: transparent;
+}
+
+.composer-editor
+  .tiptap
+  ul[data-type="taskList"]
+  li
+  > label
+  input[type="checkbox"]:checked {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.composer-editor
+  .tiptap
+  ul[data-type="taskList"]
+  li
+  > label
+  input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.composer-editor .tiptap ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+/* Blockquote */
+.composer-editor .tiptap blockquote {
+  border-left: 3px solid var(--color-border);
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-bottom: 0.5rem;
+  color: var(--color-muted-foreground);
+}
+
+/* Code inline */
+.composer-editor .tiptap code {
+  background-color: var(--color-muted);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.8em;
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* Code block */
+.composer-editor .tiptap pre {
+  background-color: var(--color-muted);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  overflow-x: auto;
+}
+
+.composer-editor .tiptap pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.8rem;
+}
+
+/* Horizontal rule */
+.composer-editor .tiptap hr {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 1rem 0;
+}
+
+/* Links */
+.composer-editor .tiptap a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.composer-editor .tiptap a:hover {
+  opacity: 0.8;
+}
+
+/* Tables */
+.composer-editor .tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  table-layout: fixed;
+  overflow: hidden;
+}
+
+.composer-editor .tiptap table td,
+.composer-editor .tiptap table th {
+  border: 1px solid var(--color-border);
+  padding: 0.375rem 0.5rem;
+  vertical-align: top;
+  position: relative;
+  min-width: 1em;
+}
+
+.composer-editor .tiptap table th {
+  background-color: var(--color-muted);
+  font-weight: 600;
+}
+
+.composer-editor .tiptap table .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-primary);
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+/* Table column resize handle */
+.composer-editor .tiptap .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: var(--color-primary);
+  pointer-events: none;
+}
+
+.composer-editor .tiptap.resize-cursor {
+  cursor: col-resize;
+}
+
+/* Highlight */
+.composer-editor .tiptap mark {
+  border-radius: 0.125rem;
+  padding: 0.0625rem 0;
+}
+
+/* Strikethrough */
+.composer-editor .tiptap s {
+  text-decoration: line-through;
+}
+
+/* Selection / cursor styles */
+.composer-editor .tiptap ::selection {
+  background: oklch(from var(--color-primary) l c h / 0.2);
+}
+
+/* Dropcursor */
+.composer-editor .ProseMirror-dropcursor {
+  color: var(--color-primary);
+}
+
+/* Gapcursor */
+.composer-editor .ProseMirror-gapcursor::after {
+  border-top-color: var(--color-foreground);
+}
+
+/* Invisible spacer between adjacent inline atoms for drop targeting */
+.composer-editor .ProseMirror-atom-gap {
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+  vertical-align: baseline;
+  pointer-events: auto;
+}
