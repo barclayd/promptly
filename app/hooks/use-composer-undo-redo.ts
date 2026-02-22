@@ -15,6 +15,10 @@ const setupUndoRedoListener = () => {
         return;
 
       const target = e.target as HTMLElement;
+
+      // Skip when focus is inside the Tiptap editor — let ProseMirror handle natively
+      if (target.closest('.ProseMirror')) return;
+
       const isManagedUndo = target.dataset.managedUndo !== undefined;
 
       if (!isManagedUndo) return;
@@ -37,6 +41,10 @@ const setupUndoRedoListener = () => {
       if (!((e.metaKey || e.ctrlKey) && e.key === 'z')) return;
 
       const target = e.target as HTMLElement;
+
+      // Skip when focus is inside the Tiptap editor — let ProseMirror handle natively
+      if (target.closest('.ProseMirror')) return;
+
       const isTextInput =
         target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
       const isManagedUndo = target.dataset.managedUndo !== undefined;

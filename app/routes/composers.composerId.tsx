@@ -1,3 +1,4 @@
+import type { Editor } from '@tiptap/react';
 import { ArrowLeft, GitBranch, RssIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -8,10 +9,9 @@ import {
   useSearchParams,
 } from 'react-router';
 import { useDebouncedCallback } from 'use-debounce';
+import { ComposerEditor } from '~/components/composer-editor';
 import { ComposerEditorMenubar } from '~/components/composer-editor-menubar';
-import { PromptEditor } from '~/components/prompt-editor';
 import { PublishComposerDialog } from '~/components/publish-composer-dialog';
-import { RemoteCursorsOverlay } from '~/components/remote-cursors-overlay';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
@@ -234,6 +234,14 @@ export const loader = async ({
     // Keep null
   }
 
+  // Fetch available prompts for the prompt ref picker
+  const promptsResult = await db
+    .prepare(
+      'SELECT id, name FROM prompt WHERE organization_id = ? AND deleted_at IS NULL ORDER BY name ASC',
+    )
+    .bind(org.organizationId)
+    .all<{ id: string; name: string }>();
+
   const hasDraft =
     versionsResult.results?.some((v) => v.published_at === null) ?? false;
 
@@ -266,6 +274,7 @@ export const loader = async ({
     versionNotFound,
     requestedVersion,
     isOwner,
+    prompts: promptsResult.results ?? [],
   };
 };
 
@@ -283,8 +292,8 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
   const { sendContentUpdate, subscribeToEvents, sendCursorUpdate, cursors } =
     usePresence(isReadOnly ? undefined : loaderData.composer.id);
 
-  const [remoteCursors, setRemoteCursors] = useState<CursorPosition[]>([]);
-  const systemTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [_remoteCursors, setRemoteCursors] = useState<CursorPosition[]>([]);
+  const editorRef = useRef<Editor | null>(null);
 
   const setContentFromRemote = useComposerEditorStore(
     (state) => state.setContentFromRemote,
@@ -307,6 +316,12 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
         localVersionRef.current = version;
         if (field === 'systemMessage') {
           setContentFromRemote(value);
+          // Sync Tiptap editor with remote content (without adding to history)
+          if (editorRef.current) {
+            editorRef.current.commands.setContent(value, {
+              emitUpdate: false,
+            });
+          }
         }
       },
       onContentState: (state) => {
@@ -316,6 +331,11 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
           const currentContent = useComposerEditorStore.getState().content;
           if (state.systemMessage !== currentContent) {
             setContentFromRemote(state.systemMessage);
+            if (editorRef.current) {
+              editorRef.current.commands.setContent(state.systemMessage, {
+                emitUpdate: false,
+              });
+            }
           }
         }
       },
@@ -331,9 +351,7 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
       onUserJoined: () => {
         if (lastCursorRef.current && sendCursorUpdate) {
           const { field, position } = lastCursorRef.current;
-          const textarea = systemTextareaRef.current;
-          const width = textarea?.clientWidth ?? 0;
-          sendCursorUpdate(field, position, width);
+          sendCursorUpdate(field, position, 0);
         }
       },
     };
@@ -410,18 +428,9 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
     [setContent, sendContentUpdate, debouncedSave],
   );
 
-  const debouncedCursorUpdate = useDebouncedCallback((position: number) => {
-    const width = systemTextareaRef.current?.clientWidth ?? 0;
-    sendCursorUpdate?.('systemMessage', position, width);
-  }, 50);
-
-  const handleSelectionChange = useCallback(
-    (position: number) => {
-      lastCursorRef.current = { field: 'systemMessage', position };
-      debouncedCursorUpdate(position);
-    },
-    [debouncedCursorUpdate],
-  );
+  const handleEditorReady = useCallback((editor: Editor) => {
+    editorRef.current = editor;
+  }, []);
 
   const isContentDirty = content !== initialContentRef.current;
 
@@ -592,29 +601,17 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
               </p>
             )}
             <Separator className="my-4" />
-            <PromptEditor
-              title="Content"
-              value={content}
+            <ComposerEditor
+              content={content}
               onChange={isReadOnly ? undefined : handleContentChange}
               isDirty={isContentDirty}
               isPendingSave={isPendingSaveRef.current}
               isSaving={false}
               lastSavedAt={lastSavedAtRef.current}
               onTest={triggerTest}
-              textareaRef={(el) => {
-                systemTextareaRef.current = el;
-              }}
-              onSelectionChange={isReadOnly ? undefined : handleSelectionChange}
-              cursorOverlay={
-                !isReadOnly && (
-                  <RemoteCursorsOverlay
-                    cursors={remoteCursors}
-                    textareaRef={systemTextareaRef.current}
-                    field="systemMessage"
-                  />
-                )
-              }
               disabled={isReadOnly}
+              prompts={loaderData.prompts}
+              onEditorReady={handleEditorReady}
             />
             {!isReadOnly && (
               <div className="mt-4 md:hidden">

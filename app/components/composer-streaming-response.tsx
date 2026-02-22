@@ -229,6 +229,17 @@ export const ComposerStreamingResponse = ({
                   return null;
                 }
 
+                if (segment.type === 'static') {
+                  return (
+                    <span
+                      key={segment.index}
+                      className="composer-response-html"
+                      // biome-ignore lint/security/noDangerouslySetInnerHtml: Static segments contain trusted HTML from the composer editor
+                      dangerouslySetInnerHTML={{ __html: segment.content }}
+                    />
+                  );
+                }
+
                 return <span key={segment.index}>{segment.content}</span>;
               })}
               {hasActiveStream && (

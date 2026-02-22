@@ -115,7 +115,7 @@ export const useComposerEditorStore = create<ComposerEditorStore>()(
     }),
     {
       partialize: (state) => ({
-        content: state.content,
+        // content removed — Tiptap's ProseMirror history handles undo/redo for editor content
         schemaFields: state.schemaFields,
         inputData: state.inputData,
         inputDataRootName: state.inputDataRootName,

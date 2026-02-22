@@ -59,10 +59,8 @@ test('can navigate to a composer and see editor', async ({
     timeout: 15000,
   });
 
-  // Verify "Content" editor title is visible
-  await expect(
-    authenticatedPage.getByText('Content', { exact: true }),
-  ).toBeVisible();
+  // Verify Tiptap editor is visible (ProseMirror container)
+  await expect(authenticatedPage.locator('.ProseMirror')).toBeVisible();
 });
 
 test('composer detail has sidebar sections', async ({ authenticatedPage }) => {
@@ -114,16 +112,19 @@ test('can edit composer content', async ({ authenticatedPage }) => {
     timeout: 15000,
   });
 
-  // Find the Content textarea
-  const textarea = authenticatedPage.locator('#textarea-content');
-  await expect(textarea).toBeVisible();
+  // Find the Tiptap editor (ProseMirror)
+  const editor = authenticatedPage.locator('.ProseMirror');
+  await expect(editor).toBeVisible();
 
-  // Enter test content
+  // Click to focus the editor, then select all and type new content
+  await editor.click();
+  await authenticatedPage.keyboard.press('Meta+a');
+
   const testText = `Test composer content ${Date.now()}`;
-  await textarea.fill(testText);
+  await authenticatedPage.keyboard.type(testText);
 
   // Verify the text was entered
-  await expect(textarea).toHaveValue(testText);
+  await expect(editor).toContainText(testText);
 });
 
 test('composer menubar has File and Edit menus', async ({
@@ -180,13 +181,16 @@ test('no prompt refs shows warning in test panel', async ({
     timeout: 15000,
   });
 
-  // Clear content to ensure no prompt refs
-  const textarea = authenticatedPage.locator('#textarea-content');
-  await expect(textarea).toBeVisible();
-  await textarea.fill('Just some static text without any prompt references');
+  // Clear content in the Tiptap editor and type static text
+  const editor = authenticatedPage.locator('.ProseMirror');
+  await expect(editor).toBeVisible();
+  await editor.click();
+  await authenticatedPage.keyboard.press('Meta+a');
+  await authenticatedPage.keyboard.type(
+    'Just some static text without any prompt references',
+  );
 
   // The warning about no prompt references should appear in the Test section
-  // Text is split across child elements, so use locator with hasText
   await expect(
     authenticatedPage.locator('p', {
       hasText: 'No prompt references found',

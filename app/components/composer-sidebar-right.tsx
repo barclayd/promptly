@@ -644,12 +644,9 @@ export const ComposerSidebarRight = forwardRef<
                         </ItemMedia>
                         <ItemContent>
                           <ItemDescription className="line-clamp-none text-amber-700 dark:text-amber-300">
-                            No prompt references found. Add{' '}
-                            <code className="font-mono text-[11px] bg-amber-500/10 px-1 py-0.5 rounded">
-                              {'$'}
-                              {'{prompt:id}'}
-                            </code>{' '}
-                            references to test.
+                            No prompt references found. Use the prompt reference
+                            button in the editor toolbar to insert prompt
+                            references.
                           </ItemDescription>
                         </ItemContent>
                       </Item>
