@@ -7,7 +7,7 @@ export const PromptRefBadge = ({ node, selected }: ReactNodeViewProps) => {
   const promptName = node.attrs.promptName as string;
 
   return (
-    <NodeViewWrapper as="span" className="inline">
+    <NodeViewWrapper as="span" className="inline mx-1">
       <span
         className={cn(
           'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium align-baseline cursor-default',
