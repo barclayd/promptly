@@ -4,6 +4,7 @@ import type { SchemaField } from '~/lib/schema-types';
 
 export type ComposerEditorState = {
   content: string;
+  _initialContent: string;
   schemaFields: SchemaField[];
   inputData: unknown;
   inputDataRootName: string | null;
@@ -34,6 +35,7 @@ type ComposerEditorStore = ComposerEditorState & ComposerEditorActions;
 
 const initialState: ComposerEditorState = {
   content: '',
+  _initialContent: '',
   schemaFields: [],
   inputData: null,
   inputDataRootName: null,
@@ -79,6 +81,7 @@ export const useComposerEditorStore = create<ComposerEditorStore>()(
       initialize: (data) => {
         set({
           content: data.content,
+          _initialContent: data.content,
           schemaFields: data.schemaFields,
           inputData: data.inputData,
           inputDataRootName: data.inputDataRootName,

@@ -396,43 +396,43 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
     });
   }
 
-  const content = useComposerEditorStore((state) => state.content);
-  const setContent = useComposerEditorStore((state) => state.setContent);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
-  const isPendingSaveRef = useRef(false);
-  const lastSavedAtRef = useRef<number | null>(null);
+  // Note: Using useEffect here is acceptable — reacting to fetcher completion is external state sync
+  const prevFetcherStateRef = useRef(fetcher.state);
+  useEffect(() => {
+    const wasActive = prevFetcherStateRef.current !== 'idle';
+    prevFetcherStateRef.current = fetcher.state;
+    if (wasActive && fetcher.state === 'idle') {
+      setLastSavedAt(Date.now());
+    }
+  }, [fetcher.state]);
 
   const debouncedSave = useDebouncedCallback(() => {
     const state = useComposerEditorStore.getState();
-    const now = Date.now();
-
-    if (isPendingSaveRef.current) {
-      lastSavedAtRef.current = now;
-    }
 
     fetcher.submit(
       { composerId: loaderData.composer.id, content: state.content },
       { method: 'post', action: '/api/composers/save-content' },
     );
-
-    isPendingSaveRef.current = false;
   }, 1000);
 
   const handleContentChange = useCallback(
     (value: string) => {
-      setContent(value);
+      useComposerEditorStore.getState().setContent(value);
       sendContentUpdate?.('systemMessage', value);
-      isPendingSaveRef.current = true;
       debouncedSave();
     },
-    [setContent, sendContentUpdate, debouncedSave],
+    [sendContentUpdate, debouncedSave],
   );
 
   const handleEditorReady = useCallback((editor: Editor) => {
     editorRef.current = editor;
   }, []);
 
-  const isContentDirty = content !== initialContentRef.current;
+  const isContentDirty = useComposerEditorStore(
+    (state) => state.content !== state._initialContent,
+  );
 
   const schemasEqual = useMemo(() => {
     if (!loaderData.lastPublishedSchema) return true;
@@ -602,12 +602,12 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
             )}
             <Separator className="my-4" />
             <ComposerEditor
-              content={content}
+              content={initialContentRef.current}
               onChange={isReadOnly ? undefined : handleContentChange}
               isDirty={isContentDirty}
-              isPendingSave={isPendingSaveRef.current}
-              isSaving={false}
-              lastSavedAt={lastSavedAtRef.current}
+              isPendingSave={fetcher.state === 'submitting'}
+              isSaving={fetcher.state === 'loading'}
+              lastSavedAt={lastSavedAt}
               onTest={triggerTest}
               disabled={isReadOnly}
               prompts={loaderData.prompts}

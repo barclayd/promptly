@@ -19,6 +19,8 @@ import { VariableRefNode } from './variable-ref-extension';
 export const getComposerExtensions = () => [
   StarterKit.configure({
     heading: { levels: [1, 2, 3] },
+    link: false,
+    underline: false,
   }),
   Underline,
   TextStyle,
