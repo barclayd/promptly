@@ -1,6 +1,6 @@
 'use client';
 
-import { IconFileText, IconPlus, IconSparkles } from '@tabler/icons-react';
+import { IconFileText, IconPlus } from '@tabler/icons-react';
 import type { Editor } from '@tiptap/react';
 import { useCallback, useMemo, useState } from 'react';
 import { Button } from '~/components/ui/button';
@@ -67,7 +67,7 @@ export const PromptRefPicker = ({
               )}
               type="button"
             >
-              <IconSparkles className="size-3.5" />
+              <IconFileText className="size-3.5" />
               {!collapsed && <span>Add prompt</span>}
             </Button>
           </PopoverTrigger>

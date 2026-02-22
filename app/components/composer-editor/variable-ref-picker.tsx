@@ -1,6 +1,6 @@
 'use client';
 
-import { IconCode, IconSparkles } from '@tabler/icons-react';
+import { IconCode } from '@tabler/icons-react';
 import type { Editor } from '@tiptap/react';
 import { useCallback, useMemo, useState } from 'react';
 import { Button } from '~/components/ui/button';
@@ -72,7 +72,7 @@ export const VariableRefPicker = ({
               )}
               type="button"
             >
-              <IconSparkles className="size-3.5" />
+              <IconCode className="size-3.5" />
               {!collapsed && <span>Add variable</span>}
             </Button>
           </PopoverTrigger>
