@@ -85,6 +85,31 @@ export const extractVariableIds = (content: string): string[] => {
   return [...ids];
 };
 
+const VERSION_PIN_REGEX =
+  /data-prompt-id="([a-zA-Z0-9_-]+)"[^>]*data-prompt-version-id="([a-zA-Z0-9_-]+)"/g;
+
+const VERSION_PIN_ALT_REGEX =
+  /data-prompt-version-id="([a-zA-Z0-9_-]+)"[^>]*data-prompt-id="([a-zA-Z0-9_-]+)"/g;
+
+export const extractPromptVersionPins = (
+  content: string,
+): Map<string, string> => {
+  const pins = new Map<string, string>();
+
+  for (const match of content.matchAll(VERSION_PIN_REGEX)) {
+    pins.set(match[1], match[2]);
+  }
+
+  for (const match of content.matchAll(VERSION_PIN_ALT_REGEX)) {
+    // Alt ordering: version-id first, then prompt-id
+    if (!pins.has(match[2])) {
+      pins.set(match[2], match[1]);
+    }
+  }
+
+  return pins;
+};
+
 const VARIABLE_REF_TAG_REGEX =
   /<span[^>]*\sdata-variable-ref(?:="[^"]*")?[^>]*\sdata-field-path="([^"]+)"[^>]*><\/span>/g;
 

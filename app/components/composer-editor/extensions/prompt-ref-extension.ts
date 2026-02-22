@@ -13,6 +13,11 @@ declare module '@tiptap/core' {
         promptId: string;
         promptName: string;
       }) => ReturnType;
+      updatePromptVersionPin: (attrs: {
+        promptId: string;
+        promptVersionId: string | null;
+        promptVersionLabel: string | null;
+      }) => ReturnType;
     };
   }
 }
@@ -46,6 +51,24 @@ export const PromptRefNode = Node.create<PromptRefOptions>({
           'data-prompt-name': attributes.promptName,
         }),
       },
+      promptVersionId: {
+        default: null,
+        parseHTML: (element) =>
+          element.getAttribute('data-prompt-version-id') || null,
+        renderHTML: (attributes) =>
+          attributes.promptVersionId
+            ? { 'data-prompt-version-id': attributes.promptVersionId }
+            : {},
+      },
+      promptVersionLabel: {
+        default: null,
+        parseHTML: (element) =>
+          element.getAttribute('data-prompt-version-label') || null,
+        renderHTML: (attributes) =>
+          attributes.promptVersionLabel
+            ? { 'data-prompt-version-label': attributes.promptVersionLabel }
+            : {},
+      },
     };
   },
 
@@ -77,6 +100,25 @@ export const PromptRefNode = Node.create<PromptRefOptions>({
               attrs,
             })
             .run(),
+      updatePromptVersionPin:
+        ({ promptId, promptVersionId, promptVersionLabel }) =>
+        ({ tr, state, dispatch }) => {
+          if (!dispatch) return true;
+          state.doc.descendants((node, pos) => {
+            if (
+              node.type.name === 'promptRef' &&
+              node.attrs.promptId === promptId
+            ) {
+              tr.setNodeMarkup(pos, undefined, {
+                ...node.attrs,
+                promptVersionId,
+                promptVersionLabel,
+              });
+            }
+          });
+          dispatch(tr);
+          return true;
+        },
     };
   },
 });
