@@ -27,9 +27,14 @@ import { cn } from '~/lib/utils';
 type PromptRefPickerProps = {
   editor: Editor;
   prompts?: Array<{ id: string; name: string }>;
+  collapsed?: boolean;
 };
 
-export const PromptRefPicker = ({ editor, prompts }: PromptRefPickerProps) => {
+export const PromptRefPicker = ({
+  editor,
+  prompts,
+  collapsed,
+}: PromptRefPickerProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -56,16 +61,19 @@ export const PromptRefPicker = ({ editor, prompts }: PromptRefPickerProps) => {
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
-              size="icon"
-              className={cn('size-7 rounded-sm')}
+              className={cn(
+                'h-7 rounded-sm',
+                collapsed ? 'w-7 px-0' : 'gap-1 px-2 text-xs font-medium',
+              )}
               type="button"
             >
-              <IconFileText className="size-4" />
+              <IconPlus className="size-3.5" />
+              {!collapsed && <span>Add prompt</span>}
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="text-xs">
-          Insert Prompt Reference
+          Add prompt reference
         </TooltipContent>
       </Tooltip>
       <PopoverContent className="w-64 p-0" side="bottom" align="start">

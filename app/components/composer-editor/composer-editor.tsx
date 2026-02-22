@@ -175,7 +175,6 @@ export const ComposerEditor = ({
       <InputGroup>
         <InputGroupAddon align="block-start" className="border-b">
           <ComposerToolbar editor={editor} prompts={prompts} />
-          <div className="grow" />
           <InputGroupButton
             variant="ghost"
             size="icon-xs"

@@ -257,15 +257,6 @@
   padding: 0.0625rem 0;
 }
 
-/* Subscript / Superscript */
-.composer-editor .tiptap sub {
-  font-size: 0.75em;
-}
-
-.composer-editor .tiptap sup {
-  font-size: 0.75em;
-}
-
 /* Strikethrough */
 .composer-editor .tiptap s {
   text-decoration: line-through;
