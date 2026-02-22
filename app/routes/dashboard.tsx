@@ -26,39 +26,39 @@ export const meta = ({}: Route.MetaArgs) => [
 export const loader = async ({ context }: Route.LoaderArgs) => {
   const org = context.get(orgContext);
   if (!org) {
-    return { latestPrompt: null };
+    return { latestComposer: null };
   }
 
   const db = context.cloudflare.env.promptly;
 
   const result = await db
     .prepare(
-      `SELECT p.name, pv.system_message
-       FROM prompt p
-       JOIN prompt_version pv ON pv.prompt_id = p.id
-         AND pv.id = (
-           SELECT id FROM prompt_version
-           WHERE prompt_id = p.id
+      `SELECT c.name, cv.content
+       FROM composer c
+       JOIN composer_version cv ON cv.composer_id = c.id
+         AND cv.id = (
+           SELECT id FROM composer_version
+           WHERE composer_id = c.id
            ORDER BY major DESC, minor DESC, patch DESC
            LIMIT 1
          )
-       WHERE p.organization_id = ?
-         AND p.deleted_at IS NULL
-       ORDER BY p.updated_at DESC
+       WHERE c.organization_id = ?
+         AND c.deleted_at IS NULL
+       ORDER BY c.updated_at DESC
        LIMIT 1`,
     )
     .bind(org.organizationId)
-    .first<{ name: string; system_message: string | null }>();
+    .first<{ name: string; content: string | null }>();
 
   return {
-    latestPrompt: result
-      ? { name: result.name, systemMessage: result.system_message ?? '' }
+    latestComposer: result
+      ? { name: result.name, content: result.content ?? '' }
       : null,
   };
 };
 
 export default function Home() {
-  const { latestPrompt } = useLoaderData<typeof loader>();
+  const { latestComposer } = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
   const hasJoined = searchParams.get('joined') === 'true';
 
@@ -104,7 +104,7 @@ export default function Home() {
             <div className="font-semibold text-muted-foreground mb-4">
               Folders
             </div>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap items-end gap-8">
               <NavLink to="/prompts">
                 <div className="flex flex-col">
                   <Folder />
@@ -120,10 +120,10 @@ export default function Home() {
               <NavLink to="/composers">
                 <div className="flex flex-col">
                   <PaperStack
-                    title={latestPrompt?.name}
-                    content={latestPrompt?.systemMessage}
+                    title={latestComposer?.name}
+                    content={latestComposer?.content}
                   />
-                  <h4 className="w-[110px] text-center my-4">All composers</h4>
+                  <h4 className="w-48 text-center my-4">All composers</h4>
                 </div>
               </NavLink>
             </div>
