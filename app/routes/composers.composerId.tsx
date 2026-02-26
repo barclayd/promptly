@@ -1,6 +1,14 @@
 import type { Editor } from '@tiptap/react';
 import { ArrowLeft, GitBranch, RssIcon } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   useFetcher,
   useLocation,
@@ -9,9 +17,24 @@ import {
   useSearchParams,
 } from 'react-router';
 import { useDebouncedCallback } from 'use-debounce';
-import { ComposerEditor } from '~/components/composer-editor';
-import { ComposerEditorMenubar } from '~/components/composer-editor-menubar';
-import { PublishComposerDialog } from '~/components/publish-composer-dialog';
+import { Skeleton } from '~/components/ui/skeleton';
+
+const ComposerEditor = lazy(() =>
+  import('~/components/composer-editor').then((m) => ({
+    default: m.ComposerEditor,
+  })),
+);
+const ComposerEditorMenubar = lazy(() =>
+  import('~/components/composer-editor-menubar').then((m) => ({
+    default: m.ComposerEditorMenubar,
+  })),
+);
+const PublishComposerDialog = lazy(() =>
+  import('~/components/publish-composer-dialog').then((m) => ({
+    default: m.PublishComposerDialog,
+  })),
+);
+
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
@@ -568,52 +591,20 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
       )}
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-          {!isReadOnly && (
-            <div className="hidden md:flex px-4 lg:px-6 items-center justify-between gap-2">
-              <ComposerEditorMenubar
-                composer={loaderData.composer}
-                isOwner={loaderData.isOwner}
-              />
-              <PublishComposerDialog
-                composerId={loaderData.composer.id}
-                suggestedVersion={suggestedVersion}
-                lastPublishedVersion={loaderData.lastPublishedVersion}
-                isSchemaChanged={!schemasEqual}
-                disabled={!canPublish}
-              >
-                <Button className="cursor-pointer" disabled={!canPublish}>
-                  Publish <RssIcon />
-                </Button>
-              </PublishComposerDialog>
-            </div>
-          )}
-          <div className="px-4 lg:px-6 flex flex-col gap-y-4">
-            <h1 className="text-3xl">{loaderData.composer.name}</h1>
-            <div className="text-muted-foreground text-sm -mt-2">
-              {loaderData.currentVersion
-                ? `v${loaderData.currentVersion}`
-                : 'Draft'}
-            </div>
-            {loaderData.composer.description && (
-              <p className="text-secondary-foreground">
-                {loaderData.composer.description}
-              </p>
-            )}
-            <Separator className="my-4" />
-            <ComposerEditor
-              content={initialContentRef.current}
-              onChange={isReadOnly ? undefined : handleContentChange}
-              isDirty={isContentDirty}
-              isPendingSave={fetcher.state === 'submitting'}
-              isSaving={fetcher.state === 'loading'}
-              lastSavedAt={lastSavedAt}
-              onTest={triggerTest}
-              disabled={isReadOnly}
-              prompts={loaderData.prompts}
-              onEditorReady={handleEditorReady}
-            />
+          <Suspense
+            fallback={
+              <div className="px-4 lg:px-6 flex flex-col gap-y-4">
+                <Skeleton className="h-10 w-full rounded-md" />
+                <Skeleton className="h-[400px] w-full rounded-xl" />
+              </div>
+            }
+          >
             {!isReadOnly && (
-              <div className="mt-4 md:hidden">
+              <div className="hidden md:flex px-4 lg:px-6 items-center justify-between gap-2">
+                <ComposerEditorMenubar
+                  composer={loaderData.composer}
+                  isOwner={loaderData.isOwner}
+                />
                 <PublishComposerDialog
                   composerId={loaderData.composer.id}
                   suggestedVersion={suggestedVersion}
@@ -621,16 +612,57 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
                   isSchemaChanged={!schemasEqual}
                   disabled={!canPublish}
                 >
-                  <Button
-                    className="cursor-pointer w-full"
-                    disabled={!canPublish}
-                  >
+                  <Button className="cursor-pointer" disabled={!canPublish}>
                     Publish <RssIcon />
                   </Button>
                 </PublishComposerDialog>
               </div>
             )}
-          </div>
+            <div className="px-4 lg:px-6 flex flex-col gap-y-4">
+              <h1 className="text-3xl">{loaderData.composer.name}</h1>
+              <div className="text-muted-foreground text-sm -mt-2">
+                {loaderData.currentVersion
+                  ? `v${loaderData.currentVersion}`
+                  : 'Draft'}
+              </div>
+              {loaderData.composer.description && (
+                <p className="text-secondary-foreground">
+                  {loaderData.composer.description}
+                </p>
+              )}
+              <Separator className="my-4" />
+              <ComposerEditor
+                content={initialContentRef.current}
+                onChange={isReadOnly ? undefined : handleContentChange}
+                isDirty={isContentDirty}
+                isPendingSave={fetcher.state === 'submitting'}
+                isSaving={fetcher.state === 'loading'}
+                lastSavedAt={lastSavedAt}
+                onTest={triggerTest}
+                disabled={isReadOnly}
+                prompts={loaderData.prompts}
+                onEditorReady={handleEditorReady}
+              />
+              {!isReadOnly && (
+                <div className="mt-4 md:hidden">
+                  <PublishComposerDialog
+                    composerId={loaderData.composer.id}
+                    suggestedVersion={suggestedVersion}
+                    lastPublishedVersion={loaderData.lastPublishedVersion}
+                    isSchemaChanged={!schemasEqual}
+                    disabled={!canPublish}
+                  >
+                    <Button
+                      className="cursor-pointer w-full"
+                      disabled={!canPublish}
+                    >
+                      Publish <RssIcon />
+                    </Button>
+                  </PublishComposerDialog>
+                </div>
+              )}
+            </div>
+          </Suspense>
         </div>
       </div>
     </div>
