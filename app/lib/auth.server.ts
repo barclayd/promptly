@@ -12,11 +12,37 @@ import { hashPassword, verifyPassword } from './password.server';
 
 type Database = Record<string, string>;
 
-export const getAuth = (ctx: Readonly<RouterContextProvider>) => {
+// Module-level cache: betterAuth instances are stateless config objects,
+// safe to reuse across requests per Cloudflare's guidance.
+let cachedSecret: string | null = null;
+
+const createAuth = (ctx: Readonly<RouterContextProvider>) => {
   const baseURL = ctx.cloudflare.env.BETTER_AUTH_URL;
   const resendApiKey = ctx.cloudflare.env.RESEND_API_KEY;
 
+  const kvCache = ctx.cloudflare.env.AUTH_CACHE;
+
   return betterAuth({
+    secondaryStorage: {
+      get: async (key) => {
+        const val = await kvCache.get(key);
+        return val ?? null;
+      },
+      set: async (key, value, ttl) => {
+        await kvCache.put(key, value, {
+          expirationTtl: Math.max(ttl ?? 60, 60), // KV minimum 60s
+        });
+      },
+      delete: async (key) => {
+        await kvCache.delete(key);
+      },
+    },
+    session: {
+      cookieCache: {
+        enabled: true,
+        maxAge: 5 * 60, // 5 minutes — session validated from cookie, not DB
+      },
+    },
     emailAndPassword: {
       enabled: true,
       password: {
@@ -203,4 +229,18 @@ export const getAuth = (ctx: Readonly<RouterContextProvider>) => {
       }),
     ],
   });
+};
+
+let cachedAuth: ReturnType<typeof createAuth> | null = null;
+
+export const getAuth = (ctx: Readonly<RouterContextProvider>) => {
+  const secret = ctx.cloudflare.env.BETTER_AUTH_SECRET;
+
+  if (cachedAuth && cachedSecret === secret) {
+    return cachedAuth;
+  }
+
+  cachedAuth = createAuth(ctx);
+  cachedSecret = secret;
+  return cachedAuth;
 };

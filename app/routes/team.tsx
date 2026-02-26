@@ -6,10 +6,9 @@ import { TeamEmptyState } from '~/components/team-empty-state';
 import { TeamMembersTable } from '~/components/team-members-table';
 import { Button } from '~/components/ui/button';
 import { UpgradeGateModal } from '~/components/upgrade-gate-modal';
-import { orgContext, userContext } from '~/context';
+import { authContext, orgContext, userContext } from '~/context';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useSubscription } from '~/hooks/use-subscription';
-import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/team';
 
 type Member = {
@@ -61,9 +60,8 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     throw new Response('Unauthorized', { status: 403 });
   }
 
-  const auth = getAuth(context);
+  const auth = context.get(authContext);
 
-  // Get full organization with members - pass organizationId explicitly
   const orgResponse = await auth.api.getFullOrganization({
     query: {
       organizationId: org.organizationId,

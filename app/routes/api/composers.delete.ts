@@ -1,6 +1,5 @@
 import { data } from 'react-router';
-import { orgContext } from '~/context';
-import { getAuth } from '~/lib/auth.server';
+import { authContext, orgContext, sessionContext } from '~/context';
 import { deleteComposerSchema } from '~/lib/validations/composer';
 import type { Route } from './+types/composers.delete';
 
@@ -19,10 +18,8 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return data({ error: 'Unauthorized' }, { status: 403 });
   }
 
-  const auth = getAuth(context);
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
+  const auth = context.get(authContext);
+  const session = context.get(sessionContext);
 
   if (!session?.user) {
     return data({ error: 'Not authenticated' }, { status: 401 });

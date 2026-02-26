@@ -1,16 +1,11 @@
 import { streamText } from 'ai';
 import { data } from 'react-router';
-import { orgContext } from '~/context';
-import { getAuth } from '~/lib/auth.server';
+import { orgContext, sessionContext } from '~/context';
 import { resolveModelForOrg } from '~/lib/resolve-model.server';
 import type { Route } from './+types/snippets.run';
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
-  const auth = getAuth(context);
-
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
+  const session = context.get(sessionContext);
 
   if (!session?.user) {
     return data({ error: 'Not authenticated' }, { status: 401 });

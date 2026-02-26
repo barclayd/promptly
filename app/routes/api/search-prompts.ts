@@ -1,5 +1,4 @@
-import { orgContext } from '~/context';
-import { getAuth } from '~/lib/auth.server';
+import { orgContext, sessionContext } from '~/context';
 import type { Route } from './+types/search-prompts';
 
 type PromptResult = {
@@ -19,9 +18,8 @@ type SearchPromptItem = {
   url: string;
 };
 
-export const loader = async ({ request, context }: Route.LoaderArgs) => {
-  const auth = getAuth(context);
-  const session = await auth.api.getSession({ headers: request.headers });
+export const loader = async ({ context }: Route.LoaderArgs) => {
+  const session = context.get(sessionContext);
 
   if (!session?.user) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });

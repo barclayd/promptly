@@ -1,8 +1,7 @@
 import { nanoid } from 'nanoid';
 import { data } from 'react-router';
 import { z } from 'zod';
-import { orgContext } from '~/context';
-import { getAuth } from '~/lib/auth.server';
+import { orgContext, sessionContext } from '~/context';
 import { encryptApiKey, getKeyHint } from '~/lib/encryption.server';
 import { createLlmApiKeySchema } from '~/lib/validations/llm-api-keys';
 import type { Route } from './+types/settings.create-llm-api-key';
@@ -28,11 +27,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     );
   }
 
-  const auth = getAuth(context);
-
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
+  const session = context.get(sessionContext);
 
   if (!session?.user) {
     return data({ errors: { _form: ['Not authenticated'] } }, { status: 401 });

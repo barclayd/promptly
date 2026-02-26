@@ -46,6 +46,15 @@ type ServerMessage =
       userId: string;
     }
   | {
+      type: 'content_diff_sync';
+      field: 'systemMessage' | 'userMessage';
+      position: number;
+      deleteCount: number;
+      insertText: string;
+      version: number;
+      userId: string;
+    }
+  | {
       type: 'content_state';
       systemMessage: string;
       userMessage: string;
@@ -72,10 +81,25 @@ type ServerMessage =
       }>;
     };
 
+// Content diff type for efficient sync
+export type ContentDiff = {
+  field: 'systemMessage' | 'userMessage';
+  position: number;
+  deleteCount: number;
+  insertText: string;
+};
+
 // Content sync callback for collaborative editing
 export type ContentSyncCallback = (
   field: 'systemMessage' | 'userMessage',
   value: string,
+  version: number,
+  userId: string,
+) => void;
+
+// Content diff sync callback
+export type ContentDiffSyncCallback = (
+  diff: ContentDiff,
   version: number,
   userId: string,
 ) => void;
@@ -88,6 +112,7 @@ export type PresenceEventCallbacks = {
   onUserJoined?: (user: PresenceUser) => void;
   onInitialPresence?: (users: PresenceUser[]) => void;
   onContentSync?: ContentSyncCallback;
+  onContentDiffSync?: ContentDiffSyncCallback;
   onContentState?: (state: ContentState) => void;
   onCursorSync?: CursorSyncCallback;
   onCursorState?: (cursors: CursorPosition[]) => void;
@@ -104,11 +129,13 @@ const reconnectTimeoutByPromptId = new Map<
 >();
 const retryCountByPromptId = new Map<string, number>();
 
-// Exponential backoff: 3s, 6s, 12s, 24s, max 60s
+// Exponential backoff with 50% jitter: prevents reconnection storms after deploys
 const getRetryDelay = (retryCount: number): number => {
   const baseDelay = 3000;
   const maxDelay = 60000;
-  return Math.min(baseDelay * 2 ** retryCount, maxDelay);
+  const exponentialDelay = Math.min(baseDelay * 2 ** retryCount, maxDelay);
+  const jitter = 0.5 + Math.random(); // 0.5x to 1.5x
+  return Math.floor(exponentialDelay * jitter);
 };
 
 const DEFAULT_STATE: PresenceState = {
@@ -151,21 +178,12 @@ const fireEventCallbacks = (
     | 'userJoined'
     | 'initialPresence'
     | 'contentSync'
+    | 'contentDiffSync'
     | 'contentState'
     | 'cursorSync'
     | 'cursorState',
-  payload:
-    | PresenceUser
-    | PresenceUser[]
-    | {
-        field: 'systemMessage' | 'userMessage';
-        value: string;
-        version: number;
-        userId: string;
-      }
-    | ContentState
-    | CursorPosition
-    | CursorPosition[],
+  // biome-ignore lint/suspicious/noExplicitAny: union type for all event payloads
+  payload: any,
 ): void => {
   const callbacks = eventCallbacksByPromptId.get(promptId);
   if (!callbacks) return;
@@ -187,6 +205,17 @@ const fireEventCallbacks = (
         syncPayload.value,
         syncPayload.version,
         syncPayload.userId,
+      );
+    } else if (event === 'contentDiffSync' && cb.onContentDiffSync) {
+      const diffPayload = payload as {
+        diff: ContentDiff;
+        version: number;
+        userId: string;
+      };
+      cb.onContentDiffSync(
+        diffPayload.diff,
+        diffPayload.version,
+        diffPayload.userId,
       );
     } else if (event === 'contentState' && cb.onContentState) {
       cb.onContentState(payload as ContentState);
@@ -259,7 +288,7 @@ const handleMessage = (promptId: string, data: ServerMessage): void => {
       break;
 
     case 'content_sync':
-      // Update local content state
+      // Full-text sync (used for paste, undo/redo, or large changes)
       updateState(promptId, {
         contentState: {
           ...current.contentState,
@@ -267,7 +296,6 @@ const handleMessage = (promptId: string, data: ServerMessage): void => {
           version: data.version,
         },
       });
-      // Fire callback for component to handle
       fireEventCallbacks(promptId, 'contentSync', {
         field: data.field,
         value: data.value,
@@ -275,6 +303,33 @@ const handleMessage = (promptId: string, data: ServerMessage): void => {
         userId: data.userId,
       });
       break;
+
+    case 'content_diff_sync': {
+      // Apply positional diff to local content state
+      const currentText = current.contentState[data.field];
+      const newText =
+        currentText.slice(0, data.position) +
+        data.insertText +
+        currentText.slice(data.position + data.deleteCount);
+      updateState(promptId, {
+        contentState: {
+          ...current.contentState,
+          [data.field]: newText,
+          version: data.version,
+        },
+      });
+      fireEventCallbacks(promptId, 'contentDiffSync', {
+        diff: {
+          field: data.field,
+          position: data.position,
+          deleteCount: data.deleteCount,
+          insertText: data.insertText,
+        },
+        version: data.version,
+        userId: data.userId,
+      });
+      break;
+    }
 
     case 'cursor_sync': {
       const cursorData: CursorPosition = {
@@ -446,6 +501,25 @@ const disconnect = (promptId: string): void => {
 
     retryCountByPromptId.delete(promptId);
     stateByPromptId.delete(promptId);
+
+    // Clean up throttle timers and cached values
+    for (const [key, timer] of contentThrottleByKey) {
+      if (key.startsWith(`${promptId}:`)) {
+        clearTimeout(timer);
+        contentThrottleByKey.delete(key);
+        pendingContentByKey.delete(key);
+      }
+    }
+    for (const key of prevValueByPromptField.keys()) {
+      if (key.startsWith(`${promptId}:`)) {
+        prevValueByPromptField.delete(key);
+      }
+    }
+    const cursorTimer = cursorThrottleByPromptId.get(promptId);
+    if (cursorTimer) {
+      clearTimeout(cursorTimer);
+      cursorThrottleByPromptId.delete(promptId);
+    }
   }, 100);
 
   disconnectTimeoutByPromptId.set(promptId, timeout);
@@ -479,22 +553,109 @@ const subscribe = (promptId: string, callback: () => void): (() => void) => {
 
 const getServerSnapshot = (): PresenceState => DEFAULT_STATE;
 
+// Track previous values per field for diff computation
+const prevValueByPromptField = new Map<string, string>();
+
+const computeDiff = (
+  oldVal: string,
+  newVal: string,
+): { position: number; deleteCount: number; insertText: string } => {
+  let start = 0;
+  while (
+    start < oldVal.length &&
+    start < newVal.length &&
+    oldVal[start] === newVal[start]
+  ) {
+    start++;
+  }
+  let oldEnd = oldVal.length;
+  let newEnd = newVal.length;
+  while (
+    oldEnd > start &&
+    newEnd > start &&
+    oldVal[oldEnd - 1] === newVal[newEnd - 1]
+  ) {
+    oldEnd--;
+    newEnd--;
+  }
+  return {
+    position: start,
+    deleteCount: oldEnd - start,
+    insertText: newVal.slice(start, newEnd),
+  };
+};
+
+// Content throttle: 100ms leading-edge throttle
+const contentThrottleByKey = new Map<string, ReturnType<typeof setTimeout>>();
+const pendingContentByKey = new Map<
+  string,
+  { field: 'systemMessage' | 'userMessage'; value: string }
+>();
+
 const sendContentUpdate = (
   promptId: string,
   field: 'systemMessage' | 'userMessage',
   value: string,
 ): void => {
   const socket = socketByPromptId.get(promptId);
-  if (socket?.readyState === WebSocket.OPEN) {
-    socket.send(
-      JSON.stringify({
-        type: 'content_update',
-        field,
-        value,
-      }),
+  if (socket?.readyState !== WebSocket.OPEN) return;
+
+  const key = `${promptId}:${field}`;
+  const prevKey = key;
+  const prevValue = prevValueByPromptField.get(prevKey) ?? '';
+
+  // If no change, skip
+  if (prevValue === value) return;
+
+  const diff = computeDiff(prevValue, value);
+
+  // If diff is >50% of the text length, send full text
+  const diffSize = diff.deleteCount + diff.insertText.length;
+  const useFullText = diffSize > value.length * 0.5;
+
+  const doSend = () => {
+    if (useFullText) {
+      socket.send(JSON.stringify({ type: 'content_update', field, value }));
+    } else {
+      socket.send(
+        JSON.stringify({
+          type: 'content_diff',
+          field,
+          position: diff.position,
+          deleteCount: diff.deleteCount,
+          insertText: diff.insertText,
+        }),
+      );
+    }
+    prevValueByPromptField.set(prevKey, value);
+  };
+
+  // Leading-edge throttle: send immediately, then throttle
+  if (!contentThrottleByKey.has(key)) {
+    doSend();
+    contentThrottleByKey.set(
+      key,
+      setTimeout(() => {
+        contentThrottleByKey.delete(key);
+        // Send any pending update
+        const pending = pendingContentByKey.get(key);
+        if (pending) {
+          pendingContentByKey.delete(key);
+          sendContentUpdate(promptId, pending.field, pending.value);
+        }
+      }, 100),
     );
+  } else {
+    // Queue latest value for send when throttle clears
+    pendingContentByKey.set(key, { field, value });
   }
 };
+
+// Cursor throttle: 100ms leading-edge
+const cursorThrottleByPromptId = new Map<
+  string,
+  ReturnType<typeof setTimeout>
+>();
 
 const sendCursorUpdate = (
   promptId: string,
@@ -503,16 +664,20 @@ const sendCursorUpdate = (
   textareaWidth: number,
 ): void => {
   const socket = socketByPromptId.get(promptId);
-  if (socket?.readyState === WebSocket.OPEN) {
-    socket.send(
-      JSON.stringify({
-        type: 'cursor_update',
-        field,
-        position,
-        textareaWidth,
-      }),
-    );
-  }
+  if (socket?.readyState !== WebSocket.OPEN) return;
+
+  // Leading-edge throttle: send immediately, skip during cooldown
+  if (cursorThrottleByPromptId.has(promptId)) return;
+
+  socket.send(
+    JSON.stringify({ type: 'cursor_update', field, position, textareaWidth }),
+  );
+  cursorThrottleByPromptId.set(
+    promptId,
+    setTimeout(() => {
+      cursorThrottleByPromptId.delete(promptId);
+    }, 100),
+  );
 };
 
 const subscribeToEvents = (

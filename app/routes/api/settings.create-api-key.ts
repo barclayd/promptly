@@ -1,7 +1,6 @@
 import { data } from 'react-router';
 import { z } from 'zod';
-import { orgContext } from '~/context';
-import { getAuth } from '~/lib/auth.server';
+import { authContext, orgContext, sessionContext } from '~/context';
 import { createApiKeySchema } from '~/lib/validations/settings';
 import type { Route } from './+types/settings.create-api-key';
 
@@ -22,11 +21,8 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     );
   }
 
-  const auth = getAuth(context);
-
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
+  const auth = context.get(authContext);
+  const session = context.get(sessionContext);
 
   if (!session?.user) {
     return data({ errors: { _form: ['Not authenticated'] } }, { status: 401 });
