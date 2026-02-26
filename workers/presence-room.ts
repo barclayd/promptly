@@ -45,6 +45,15 @@ type PresenceMessage =
       userId: string;
     }
   | {
+      type: 'content_diff_sync';
+      field: 'systemMessage' | 'userMessage';
+      position: number;
+      deleteCount: number;
+      insertText: string;
+      version: number;
+      userId: string;
+    }
+  | {
       type: 'content_state';
       systemMessage: string;
       userMessage: string;
@@ -82,6 +91,13 @@ type ClientMessage =
       value: string;
     }
   | {
+      type: 'content_diff';
+      field: 'systemMessage' | 'userMessage';
+      position: number;
+      deleteCount: number;
+      insertText: string;
+    }
+  | {
       type: 'cursor_update';
       field: 'systemMessage' | 'userMessage';
       position: number;
@@ -104,6 +120,7 @@ export class PresenceRoom extends DurableObject<Env> {
     userMessage: '',
     version: 0,
   };
+  private contentSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -286,19 +303,42 @@ export class PresenceRoom extends DurableObject<Env> {
         }
 
         case 'content_update': {
-          // Increment version and update content state
+          // Full-text update (used for paste, undo/redo, or large changes)
           this.contentState.version++;
           this.contentState[data.field] = data.value;
+          this.debouncedSaveContent();
 
-          // Persist to storage for hibernation recovery
-          this.ctx.storage.put('contentState', this.contentState);
-
-          // Broadcast to all OTHER clients (not the sender)
           this.broadcast(
             {
               type: 'content_sync',
               field: data.field,
               value: data.value,
+              version: this.contentState.version,
+              userId: attachment.userId,
+            },
+            attachment.userId,
+          );
+          break;
+        }
+
+        case 'content_diff': {
+          // Apply positional diff to content state
+          const current = this.contentState[data.field];
+          this.contentState[data.field] =
+            current.slice(0, data.position) +
+            data.insertText +
+            current.slice(data.position + data.deleteCount);
+          this.contentState.version++;
+          this.debouncedSaveContent();
+
+          // Broadcast diff to all OTHER clients
+          this.broadcast(
+            {
+              type: 'content_diff_sync',
+              field: data.field,
+              position: data.position,
+              deleteCount: data.deleteCount,
+              insertText: data.insertText,
               version: this.contentState.version,
               userId: attachment.userId,
             },
@@ -365,6 +405,14 @@ export class PresenceRoom extends DurableObject<Env> {
       this.cursorPositions.delete(attachment.userId);
       this.broadcast({ type: 'user_left', userId: attachment.userId });
     }
+  }
+
+  private debouncedSaveContent(): void {
+    if (this.contentSaveTimer) clearTimeout(this.contentSaveTimer);
+    this.contentSaveTimer = setTimeout(() => {
+      this.ctx.storage.put('contentState', this.contentState);
+      this.contentSaveTimer = null;
+    }, 500);
   }
 
   private broadcast(message: PresenceMessage, excludeUserId?: string): void {

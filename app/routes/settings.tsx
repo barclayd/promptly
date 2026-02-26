@@ -10,9 +10,8 @@ import { LlmApiKeysEmptyState } from '~/components/llm-api-keys-empty-state';
 import { LlmApiKeysTable } from '~/components/llm-api-keys-table';
 import { Button } from '~/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
-import { orgContext, userContext } from '~/context';
+import { authContext, orgContext, userContext } from '~/context';
 import { useSubscription } from '~/hooks/use-subscription';
-import { getAuth } from '~/lib/auth.server';
 import { getLlmApiKeysForOrg } from '~/lib/llm-api-keys.server';
 import type { Route } from './+types/settings';
 
@@ -46,7 +45,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     throw new Response('Unauthorized', { status: 403 });
   }
 
-  const auth = getAuth(context);
+  const auth = context.get(authContext);
   const db = context.cloudflare.env.promptly;
 
   // Get Promptly API keys and LLM API keys in parallel

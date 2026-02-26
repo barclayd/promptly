@@ -20,7 +20,7 @@ import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import type { Version } from '~/components/versions-table';
-import { orgContext } from '~/context';
+import { authContext, orgContext, sessionContext } from '~/context';
 import {
   type CursorPosition,
   type PresenceEventCallbacks,
@@ -28,7 +28,6 @@ import {
 } from '~/hooks/use-presence';
 import { useResourceLimits } from '~/hooks/use-resource-limits';
 import { useUndoRedo } from '~/hooks/use-undo-redo';
-import { getAuth } from '~/lib/auth.server';
 import type { SchemaField } from '~/lib/schema-types';
 import { getSubscriptionStatus } from '~/lib/subscription.server';
 import { useOnboardingStore } from '~/stores/onboarding-store';
@@ -69,9 +68,8 @@ export const loader = async ({
     throw new Response('Unauthorized', { status: 403 });
   }
 
-  // Get current user's role to check if they're an owner
-  const auth = getAuth(context);
-  const session = await auth.api.getSession({ headers: request.headers });
+  const auth = context.get(authContext);
+  const session = context.get(sessionContext);
   let isOwner = false;
   if (session?.user) {
     const orgResponse = await auth.api.getFullOrganization({
@@ -352,10 +350,7 @@ export const action = async ({
   const { promptId } = params;
   const db = context.cloudflare.env.promptly;
 
-  const auth = getAuth(context);
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
+  const session = context.get(sessionContext);
 
   if (!session?.user) {
     return data({ error: 'Not authenticated' }, { status: 401 });
@@ -566,16 +561,35 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
 
     const callbacks: PresenceEventCallbacks = {
       onContentSync: (field, value, version) => {
-        // Update local version tracking
+        // Full-text sync (paste, undo/redo, or large changes)
         localVersionRef.current = version;
 
-        // Apply remote change without triggering undo history
         if (field === 'systemMessage') {
           setSystemMessageFromRemote(value);
         } else if (field === 'userMessage') {
           setUserMessageFromRemote(value);
         }
         // Note: Do NOT call debouncedSave - only originator saves to D1
+      },
+      onContentDiffSync: (diff, version) => {
+        // Apply positional diff to current local value
+        localVersionRef.current = version;
+
+        const currentValue =
+          diff.field === 'systemMessage'
+            ? usePromptEditorStore.getState().systemMessage
+            : usePromptEditorStore.getState().userMessage;
+
+        const newValue =
+          currentValue.slice(0, diff.position) +
+          diff.insertText +
+          currentValue.slice(diff.position + diff.deleteCount);
+
+        if (diff.field === 'systemMessage') {
+          setSystemMessageFromRemote(newValue);
+        } else {
+          setUserMessageFromRemote(newValue);
+        }
       },
       onContentState: (state) => {
         // Handle initial content state when joining a room

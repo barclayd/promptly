@@ -19,6 +19,10 @@
     {
       "binding": "PROMPTS_CACHE",
       "id": "fe422f717c1b4a8295656d6e494161a3"
+    },
+    {
+      "binding": "AUTH_CACHE",
+      "id": "8b36ae26bc6b489cb949063b68231edb"
     }
   ],
   "durable_objects": {

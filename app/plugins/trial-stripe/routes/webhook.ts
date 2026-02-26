@@ -22,6 +22,7 @@ export const webhookEndpoint = (options: TrialStripePluginOptions) =>
     {
       method: 'POST',
       requireHeaders: true,
+      disableBody: true,
       metadata: {
         isAction: false,
         openapi: {

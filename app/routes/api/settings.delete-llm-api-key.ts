@@ -1,6 +1,5 @@
 import { data, redirect } from 'react-router';
-import { orgContext } from '~/context';
-import { getAuth } from '~/lib/auth.server';
+import { orgContext, sessionContext } from '~/context';
 import type { Route } from './+types/settings.delete-llm-api-key';
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
@@ -11,11 +10,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return data({ error: 'Key ID is required' }, { status: 400 });
   }
 
-  const auth = getAuth(context);
-
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
+  const session = context.get(sessionContext);
 
   if (!session?.user) {
     return data({ error: 'Not authenticated' }, { status: 401 });

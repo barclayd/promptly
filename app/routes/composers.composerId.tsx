@@ -16,14 +16,13 @@ import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import type { Version } from '~/components/versions-table';
-import { orgContext } from '~/context';
+import { authContext, orgContext, sessionContext } from '~/context';
 import { useComposerUndoRedo } from '~/hooks/use-composer-undo-redo';
 import {
   type CursorPosition,
   type PresenceEventCallbacks,
   usePresence,
 } from '~/hooks/use-presence';
-import { getAuth } from '~/lib/auth.server';
 import type { SchemaField } from '~/lib/schema-types';
 import { useComposerEditorStore } from '~/stores/composer-editor-store';
 import type { Route } from './+types/composers.composerId';
@@ -63,8 +62,8 @@ export const loader = async ({
     throw new Response('Unauthorized', { status: 403 });
   }
 
-  const auth = getAuth(context);
-  const session = await auth.api.getSession({ headers: request.headers });
+  const auth = context.get(authContext);
+  const session = context.get(sessionContext);
   let isOwner = false;
   if (session?.user) {
     const orgResponse = await auth.api.getFullOrganization({

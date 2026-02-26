@@ -1,10 +1,8 @@
-import { orgContext } from '~/context';
-import { getAuth } from '~/lib/auth.server';
+import { orgContext, sessionContext } from '~/context';
 import type { Route } from './+types/prompt-info';
 
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
-  const auth = getAuth(context);
-  const session = await auth.api.getSession({ headers: request.headers });
+  const session = context.get(sessionContext);
 
   if (!session?.user) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });

@@ -20,7 +20,10 @@ export const PaperStack = ({
 }: PaperStackProps) => {
   return (
     <div
-      className={cn('flex items-center justify-center h-[188px] w-48', className)}
+      className={cn(
+        'flex items-center justify-center h-[188px] w-48',
+        className,
+      )}
       {...props}
     >
       <div className="paper-stack h-[140px] w-[110px]">

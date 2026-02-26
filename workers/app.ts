@@ -17,8 +17,16 @@ declare module 'react-router' {
 
 type Database = Record<string, string>;
 
+// Module-level cache for the worker entry point auth instance
+let cachedWorkerAuth: ReturnType<typeof betterAuth> | null = null;
+let cachedWorkerSecret: string | null = null;
+
 const getAuth = (env: Env) => {
-  return betterAuth({
+  if (cachedWorkerAuth && cachedWorkerSecret === env.BETTER_AUTH_SECRET) {
+    return cachedWorkerAuth;
+  }
+
+  cachedWorkerAuth = betterAuth({
     emailAndPassword: { enabled: true },
     baseURL: env.BETTER_AUTH_URL,
     trustedOrigins: [env.BETTER_AUTH_URL, 'https://promptlycms.com'],
@@ -34,10 +42,13 @@ const getAuth = (env: Env) => {
     advanced: {
       crossSubDomainCookies: {
         enabled: true,
-        domain: '.promptlycms.com', // Share cookies across app.promptlycms.com and promptlycms.com
+        domain: '.promptlycms.com',
       },
     },
   });
+
+  cachedWorkerSecret = env.BETTER_AUTH_SECRET;
+  return cachedWorkerAuth;
 };
 
 const handlePresenceWebSocket = async (
@@ -98,22 +109,33 @@ const requestHandler = createRequestHandler(
 // No Worker code needed - Cloudflare serves it directly from CDN
 // This function is kept as a fallback for non-GET requests or if static asset is missing
 
+const PROBE_PATTERNS = [
+  '.env',
+  '.git',
+  'wp-admin',
+  'wp-login',
+  '.php',
+  'xmlrpc',
+];
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Redirect app subdomain root based on auth status
-    if (url.pathname === '/' && url.hostname.startsWith('app.')) {
-      const auth = getAuth(env);
-      const session = await auth.api.getSession({
-        headers: request.headers,
-      });
+    // Reject bot/security probes early to save CPU
+    if (PROBE_PATTERNS.some((p) => url.pathname.includes(p))) {
+      return new Response('Not Found', { status: 404 });
+    }
 
-      if (session?.user) {
-        // Logged in → go to dashboard
+    // Redirect app subdomain root based on session cookie presence.
+    // Lightweight check avoids betterAuth instantiation + D1 query (~3-5ms CPU).
+    // If cookie is expired/invalid, user hits /dashboard → middleware redirects to /login.
+    if (url.pathname === '/' && url.hostname.startsWith('app.')) {
+      const cookieHeader = request.headers.get('Cookie') || '';
+      const hasSession = cookieHeader.includes('better-auth.session_token=');
+      if (hasSession) {
         return Response.redirect(`${url.origin}/dashboard`, 302);
       }
-      // Not logged in → go to landing page
       const landingUrl = url.hostname.replace('app.', '');
       return Response.redirect(`https://${landingUrl}/`, 302);
     }

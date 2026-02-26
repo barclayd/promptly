@@ -19,14 +19,13 @@ import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import type { Version } from '~/components/versions-table';
-import { orgContext } from '~/context';
+import { authContext, orgContext, sessionContext } from '~/context';
 import {
   type CursorPosition,
   type PresenceEventCallbacks,
   usePresence,
 } from '~/hooks/use-presence';
 import { useSnippetUndoRedo } from '~/hooks/use-snippet-undo-redo';
-import { getAuth } from '~/lib/auth.server';
 import { useSnippetEditorStore } from '~/stores/snippet-editor-store';
 import type { Route } from './+types/snippets.snippetId';
 
@@ -62,8 +61,8 @@ export const loader = async ({
     throw new Response('Unauthorized', { status: 403 });
   }
 
-  const auth = getAuth(context);
-  const session = await auth.api.getSession({ headers: request.headers });
+  const auth = context.get(authContext);
+  const session = context.get(sessionContext);
   let isOwner = false;
   if (session?.user) {
     const orgResponse = await auth.api.getFullOrganization({
@@ -271,10 +270,7 @@ export const action = async ({
   const { snippetId } = params;
   const db = context.cloudflare.env.promptly;
 
-  const auth = getAuth(context);
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
+  const session = context.get(sessionContext);
 
   if (!session?.user) {
     return data({ error: 'Not authenticated' }, { status: 401 });
