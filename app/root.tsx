@@ -13,11 +13,8 @@ import {
   ThemeProvider,
   useTheme,
 } from 'remix-themes';
-import { OnboardingProvider } from '~/components/onboarding/onboarding-provider';
 import { Toaster } from '~/components/ui/sonner';
 import { orgContext, sessionContext } from '~/context';
-import { RecentsProvider } from '~/context/recents-context';
-import { SearchProvider } from '~/context/search-context';
 import { parseCookie } from '~/lib/cookies';
 import { authMiddleware } from '~/middleware/auth';
 import { orgMiddleware } from '~/middleware/org';
@@ -272,16 +269,13 @@ export const links: Route.LinksFunction = () => [
     href: `${CDN}apple-touch-icon.png`,
     sizes: '180x180',
   },
-  { rel: 'manifest', href: `${CDN}site.webmanifest` },
-  { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+  { rel: 'manifest', href: '/site.webmanifest' },
   {
-    rel: 'preconnect',
-    href: 'https://fonts.gstatic.com',
+    rel: 'preload',
+    href: '/fonts/inter-latin.woff2',
+    as: 'font',
+    type: 'font/woff2',
     crossOrigin: 'anonymous',
-  },
-  {
-    rel: 'stylesheet',
-    href: 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap',
   },
 ];
 
@@ -299,11 +293,7 @@ const AppWithTheme = ({ children }: { children: React.ReactNode }) => {
         <Links />
       </head>
       <body>
-        <RecentsProvider>
-          <SearchProvider>
-            <OnboardingProvider>{children}</OnboardingProvider>
-          </SearchProvider>
-        </RecentsProvider>
+        {children}
         <Toaster />
         <ScrollRestoration />
         <Scripts />

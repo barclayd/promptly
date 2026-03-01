@@ -22,7 +22,7 @@ const costFeatures = [
 
 export const CostSection = () => {
   return (
-    <section className="py-24 lg:py-32">
+    <section className="py-24 lg:py-32" aria-labelledby="cost-heading">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left: Content */}
@@ -37,7 +37,10 @@ export const CostSection = () => {
                 </span>
               </Badge>
 
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
+              <h2
+                id="cost-heading"
+                className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight"
+              >
                 No more billing surprises
               </h2>
 
@@ -54,9 +57,9 @@ export const CostSection = () => {
                       <feature.icon className="size-5 text-amber-600 dark:text-amber-400" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-foreground mb-1">
+                      <h3 className="font-semibold text-foreground mb-1">
                         {feature.title}
-                      </h4>
+                      </h3>
                       <p className="text-sm text-muted-foreground">
                         {feature.description}
                       </p>
@@ -74,7 +77,10 @@ export const CostSection = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
                   <h3 className="font-semibold">Cost Dashboard</h3>
-                  <select className="text-xs bg-muted rounded-md px-2 py-1 border-0 focus:ring-0">
+                  <select
+                    aria-label="Time period"
+                    className="text-xs bg-muted rounded-md px-2 py-1 border-0 focus:ring-0"
+                  >
                     <option>Last 7 days</option>
                   </select>
                 </div>
@@ -109,7 +115,11 @@ export const CostSection = () => {
                   <p className="text-xs text-muted-foreground mb-4">
                     Daily Spend
                   </p>
-                  <div className="flex items-end gap-2 h-32">
+                  <div
+                    className="flex items-end gap-2 h-32"
+                    role="img"
+                    aria-label="Bar chart showing daily spend from Monday to Sunday, ranging from $35 to $70"
+                  >
                     {[35, 55, 40, 70, 45, 60, 50].map((height) => (
                       <div
                         key={height}
@@ -163,8 +173,14 @@ export const CostSection = () => {
               </div>
 
               {/* Decorative elements */}
-              <div className="absolute -top-6 -right-6 size-24 rounded-full bg-amber-500/10 blur-2xl" />
-              <div className="absolute -bottom-6 -left-6 size-32 rounded-full bg-orange-500/10 blur-2xl" />
+              <div
+                className="absolute -top-6 -right-6 size-24 rounded-full bg-amber-500/10 blur-2xl"
+                aria-hidden="true"
+              />
+              <div
+                className="absolute -bottom-6 -left-6 size-32 rounded-full bg-orange-500/10 blur-2xl"
+                aria-hidden="true"
+              />
             </div>
           </AnimatedWrapper>
         </div>

@@ -84,7 +84,11 @@ export const SolutionSection = () => {
   const [activeTab, setActiveTab] = useState('editors');
 
   return (
-    <section id="features" className="py-24 lg:py-32 overflow-hidden">
+    <section
+      id="features"
+      className="py-24 lg:py-32 overflow-hidden"
+      aria-labelledby="solution-heading"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <AnimatedWrapper className="text-center mb-16">
           <Badge
@@ -95,7 +99,10 @@ export const SolutionSection = () => {
               The solution
             </span>
           </Badge>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+          <h2
+            id="solution-heading"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4"
+          >
             Prompts deserve their own home
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useInView } from '~/hooks/use-in-view';
+import { useReducedMotion } from '~/hooks/use-reduced-motion';
 import { cn } from '~/lib/utils';
 
 type AnimationDirection = 'up' | 'left' | 'right';
@@ -24,6 +25,12 @@ export const AnimatedWrapper = ({
   className,
 }: AnimatedWrapperProps) => {
   const { ref, isInView } = useInView({ threshold: 0.1, triggerOnce: true });
+  const prefersReducedMotion = useReducedMotion();
+
+  // Skip animation entirely if user prefers reduced motion
+  if (prefersReducedMotion) {
+    return <div className={className}>{children}</div>;
+  }
 
   return (
     <div

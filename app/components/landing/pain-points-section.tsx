@@ -3,13 +3,19 @@ import { AnimatedWrapper } from './animated-wrapper';
 
 export const PainPointsSection = () => {
   return (
-    <section className="py-24 lg:py-32 bg-muted/30">
+    <section
+      className="py-24 lg:py-32 bg-muted/30"
+      aria-labelledby="pain-points-heading"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <AnimatedWrapper className="text-center mb-16">
           <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 mb-3">
             Sound familiar?
           </p>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
+          <h2
+            id="pain-points-heading"
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight"
+          >
             The pain of prompts in code
           </h2>
         </AnimatedWrapper>

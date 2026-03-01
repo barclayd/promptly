@@ -9,7 +9,10 @@ export const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center pt-12 sm:pt-16 overflow-hidden">
       {/* Background gradient mesh */}
-      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+      <div
+        className="absolute inset-0 -z-10 overflow-hidden pointer-events-none"
+        aria-hidden="true"
+      >
         <div className="absolute top-0 left-1/4 w-[min(600px,80vw)] h-[min(600px,80vw)] bg-indigo-500/20 rounded-full blur-[128px] dark:bg-indigo-500/10" />
         <div className="absolute bottom-0 right-1/4 w-[min(500px,70vw)] h-[min(500px,70vw)] bg-purple-500/20 rounded-full blur-[128px] dark:bg-purple-500/10" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(800px,100%)] h-[min(800px,100%)] bg-pink-500/10 rounded-full blur-[128px] dark:bg-pink-500/5" />
@@ -17,6 +20,7 @@ export const HeroSection = () => {
 
       {/* Subtle grid pattern */}
       <div
+        aria-hidden="true"
         className="absolute inset-0 -z-10 opacity-[0.015] dark:opacity-[0.03]"
         style={{
           backgroundImage: `linear-gradient(to right, currentColor 1px, transparent 1px),
@@ -110,8 +114,14 @@ export const HeroSection = () => {
             <div className="relative">
               <HeroDemoStack className="w-full max-w-xl mx-auto lg:mx-0" />
               {/* Decorative elements */}
-              <div className="absolute -top-8 -left-8 size-16 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 blur-xl" />
-              <div className="absolute -bottom-8 -right-8 size-24 rounded-full bg-gradient-to-br from-pink-500/20 to-orange-500/20 blur-xl" />
+              <div
+                className="absolute -top-8 -left-8 size-16 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 blur-xl"
+                aria-hidden="true"
+              />
+              <div
+                className="absolute -bottom-8 -right-8 size-24 rounded-full bg-gradient-to-br from-pink-500/20 to-orange-500/20 blur-xl"
+                aria-hidden="true"
+              />
             </div>
           </AnimatedWrapper>
         </div>

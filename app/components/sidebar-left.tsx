@@ -186,12 +186,12 @@ export const SidebarLeft = ({
             >
               <NavLink to="/dashboard" className="flex items-center gap-2">
                 <img
-                  src="https://images.keepfre.sh/app/icons/promptly/promptly-light.webp"
+                  src="https://images.keepfre.sh/app/icons/promptly/promptly-light_64x64.webp"
                   alt=""
                   className="!size-7 dark:hidden"
                 />
                 <img
-                  src="https://images.keepfre.sh/app/icons/promptly/promptly.webp"
+                  src="https://images.keepfre.sh/app/icons/promptly/promptly_64x_64.webp"
                   alt=""
                   className="!size-7 hidden dark:block"
                 />

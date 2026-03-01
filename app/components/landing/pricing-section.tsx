@@ -4,10 +4,17 @@ import { PricingCard } from './pricing-card';
 
 export const PricingSection = () => {
   return (
-    <section id="pricing" className="py-24 lg:py-32">
+    <section
+      id="pricing"
+      className="py-24 lg:py-32"
+      aria-labelledby="pricing-heading"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <AnimatedWrapper className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+          <h2
+            id="pricing-heading"
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4"
+          >
             Simple, transparent pricing
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
