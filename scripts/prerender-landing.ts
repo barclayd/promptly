@@ -115,6 +115,51 @@ const inlineFontFace = (html: string): string => {
 };
 
 /**
+ * Set class="dark" on <html> so Beasties includes dark-mode CSS variables
+ * in the inlined critical CSS. Without this, Beasties only inlines :root
+ * (light-mode) variables, causing a flash for dark-mode users.
+ *
+ * This runs BEFORE Beasties. After Beasties, hoistThemeScript() moves
+ * the theme detection script to run before <style>, so light-mode users
+ * get their class swapped before CSS is parsed — no flash either way.
+ */
+const setDarkClassForBeasties = (html: string): string => {
+  return html.replace(
+    /<html([^>]*)\sclass(?:="[^"]*")?/,
+    '<html$1 class="dark"',
+  );
+};
+
+/**
+ * Move the PreventFlashOnWrongTheme <script> to the very first child
+ * of <head>, before any <style> or <link> tags. This ensures the theme
+ * class is set on <html> before the browser parses critical CSS.
+ *
+ * - Dark-mode users: class stays "dark", inlined dark CSS applies.
+ * - Light-mode users: script swaps to "light" before CSS is parsed,
+ *   so :root (light) CSS variables apply instead.
+ */
+const hoistThemeScript = (html: string): string => {
+  // Match the PreventFlashOnWrongTheme IIFE script block
+  const scriptRegex =
+    /<script>\s*\(\(\)\s*=>\s*\{[\s\S]*?prefers-color-scheme[\s\S]*?\}\)\(\);\s*<\/script>/;
+  const match = html.match(scriptRegex);
+  if (!match) {
+    console.warn('⚠️  Could not find PreventFlashOnWrongTheme script to hoist');
+    return html;
+  }
+
+  // Remove from current position
+  const scriptBlock = match[0];
+  html = html.replace(scriptBlock, '');
+
+  // Insert as first child of <head>, before any <meta>, <style>, or <link>
+  html = html.replace(/<head>/, `<head>${scriptBlock}`);
+
+  return html;
+};
+
+/**
  * Clean up empty lines left by stripped tags.
  */
 const cleanEmptyLines = (html: string): string => {
@@ -149,6 +194,11 @@ const main = async () => {
     console.error('❌ Response does not look like a valid landing page');
     process.exit(1);
   }
+
+  // --- Phase 0: Set dark class so Beasties inlines dark-mode CSS ---
+  console.log('🌙 Setting dark class for Beasties...');
+  html = setDarkClassForBeasties(html);
+  console.log('✅ Dark class set on <html>\n');
 
   // --- Phase 1a: Critical CSS inlining with Beasties ---
   console.log('🎨 Inlining critical CSS...');
@@ -193,6 +243,11 @@ const main = async () => {
   console.log('🔤 Inlining @font-face into critical CSS...');
   html = inlineFontFace(html);
   console.log('✅ @font-face inlined (font-display: optional)\n');
+
+  // --- Phase 1g: Hoist theme script to prevent flash ---
+  console.log('🌙 Hoisting theme detection script...');
+  html = hoistThemeScript(html);
+  console.log('✅ Theme script hoisted before <style>\n');
 
   // Final cleanup
   html = cleanEmptyLines(html);
