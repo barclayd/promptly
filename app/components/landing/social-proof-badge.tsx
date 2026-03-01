@@ -5,23 +5,23 @@ import { NumberTicker } from './hero-demo/animations/number-ticker';
 const AVATARS = [
   {
     id: 'avatar-1',
-    url: 'https://images.keepfre.sh/app/images/user-1.webp',
+    url: 'https://images.keepfre.sh/app/images/user-1_64x64.webp',
   },
   {
     id: 'avatar-2',
-    url: 'https://images.keepfre.sh/app/images/user-2.webp',
+    url: 'https://images.keepfre.sh/app/images/user-2_64x64.webp',
   },
   {
     id: 'avatar-3',
-    url: 'https://images.keepfre.sh/app/images/user-3.webp',
+    url: 'https://images.keepfre.sh/app/images/user-3_64x64.webp',
   },
   {
     id: 'avatar-4',
-    url: 'https://images.keepfre.sh/app/images/user-4.webp',
+    url: 'https://images.keepfre.sh/app/images/user-4_64x64.webp',
   },
   {
     id: 'avatar-5',
-    url: 'https://images.keepfre.sh/app/images/user-5.webp',
+    url: 'https://images.keepfre.sh/app/images/user-5_64x64.webp',
   },
 ];
 
