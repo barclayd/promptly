@@ -75,30 +75,32 @@ export default [
     route('login', './routes/auth/login.tsx'),
     route('sign-up', './routes/auth/sign-up.tsx'),
   ]),
-  layout('./routes/layouts/app.tsx', [
-    route('dashboard', './routes/dashboard.tsx'),
-    route('home', './routes/home.tsx'),
-    route('logout', './routes/logout.tsx'),
-    route('prompts', './routes/prompts.tsx'),
-    route('snippets', './routes/snippets.tsx'),
-    route('composers', './routes/composers.tsx'),
-    route('analytics', './routes/analytics.tsx'),
-    route('team', './routes/team.tsx'),
-    route('settings', './routes/settings.tsx'),
-  ]),
-  layout('./routes/layouts/prompt-detail.tsx', [
-    route('prompts/:promptId', './routes/prompts.promptId.tsx', {
-      id: 'prompt-detail',
-    }),
-  ]),
-  layout('./routes/layouts/snippet-detail.tsx', [
-    route('snippets/:snippetId', './routes/snippets.snippetId.tsx', {
-      id: 'snippet-detail',
-    }),
-  ]),
-  layout('./routes/layouts/composer-detail.tsx', [
-    route('composers/:composerId', './routes/composers.composerId.tsx', {
-      id: 'composer-detail',
-    }),
+  layout('./routes/layouts/authenticated-providers.tsx', [
+    layout('./routes/layouts/app.tsx', [
+      route('dashboard', './routes/dashboard.tsx'),
+      route('home', './routes/home.tsx'),
+      route('logout', './routes/logout.tsx'),
+      route('prompts', './routes/prompts.tsx'),
+      route('snippets', './routes/snippets.tsx'),
+      route('composers', './routes/composers.tsx'),
+      route('analytics', './routes/analytics.tsx'),
+      route('team', './routes/team.tsx'),
+      route('settings', './routes/settings.tsx'),
+    ]),
+    layout('./routes/layouts/prompt-detail.tsx', [
+      route('prompts/:promptId', './routes/prompts.promptId.tsx', {
+        id: 'prompt-detail',
+      }),
+    ]),
+    layout('./routes/layouts/snippet-detail.tsx', [
+      route('snippets/:snippetId', './routes/snippets.snippetId.tsx', {
+        id: 'snippet-detail',
+      }),
+    ]),
+    layout('./routes/layouts/composer-detail.tsx', [
+      route('composers/:composerId', './routes/composers.composerId.tsx', {
+        id: 'composer-detail',
+      }),
+    ]),
   ]),
 ] satisfies RouteConfig;

@@ -1,14 +1,9 @@
 import { useEffect } from 'react';
 import { Outlet } from 'react-router';
-import {
-  OnboardingProvider,
-  useStartOnboarding,
-} from '~/components/onboarding/onboarding-provider';
+import { useStartOnboarding } from '~/components/onboarding/onboarding-provider';
 import { SidebarLeft } from '~/components/sidebar-left';
 import { SiteHeader } from '~/components/site-header';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
-import { RecentsProvider } from '~/context/recents-context';
-import { SearchProvider } from '~/context/search-context';
 import { useInterstitials } from '~/hooks/use-interstitials';
 import { useOnboardingTour } from '~/hooks/use-onboarding-tour';
 
@@ -64,13 +59,5 @@ const AppLayoutInner = () => {
 };
 
 export default function AppLayout() {
-  return (
-    <RecentsProvider>
-      <SearchProvider>
-        <OnboardingProvider>
-          <AppLayoutInner />
-        </OnboardingProvider>
-      </SearchProvider>
-    </RecentsProvider>
-  );
+  return <AppLayoutInner />;
 }
