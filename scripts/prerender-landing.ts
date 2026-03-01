@@ -59,8 +59,9 @@ const stripModulepreloads = (html: string): string => {
  */
 const fixRouteDiscovery = (html: string): string => {
   // Fix the route discovery mode in the serialized context
+  // The actual JSON includes extra keys like "manifestPath", so match the full object
   let result = html.replace(
-    /"routeDiscovery"\s*:\s*\{\s*"mode"\s*:\s*"lazy"\s*\}/g,
+    /"routeDiscovery"\s*:\s*\{[^}]*"mode"\s*:\s*"lazy"[^}]*\}/g,
     '"routeDiscovery":{"mode":"initial"}',
   );
   // Strip data-discover attributes from links
