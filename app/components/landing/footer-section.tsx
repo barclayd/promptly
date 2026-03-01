@@ -78,8 +78,9 @@ export const FooterSection = () => {
                   href="https://github.com/barclayd/promptly"
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label="Visit our GitHub repository"
                 >
-                  <IconBrandGithub className="size-4" />
+                  <IconBrandGithub className="size-4" aria-hidden="true" />
                 </a>
               </Button>
               <Button
@@ -92,8 +93,9 @@ export const FooterSection = () => {
                   href="https://x.com/promptly"
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label="Follow us on X"
                 >
-                  <IconBrandX className="size-4" />
+                  <IconBrandX className="size-4" aria-hidden="true" />
                 </a>
               </Button>
             </div>
@@ -101,7 +103,7 @@ export const FooterSection = () => {
 
           {/* Product */}
           <div>
-            <h4 className="font-semibold mb-4">Product</h4>
+            <h3 className="font-semibold mb-4">Product</h3>
             <ul className="space-y-3">
               {footerLinks.product.map((link) => {
                 const isExternal = link.href.startsWith('http');
@@ -125,7 +127,7 @@ export const FooterSection = () => {
 
           {/* Company */}
           <div>
-            <h4 className="font-semibold mb-4">Company</h4>
+            <h3 className="font-semibold mb-4">Company</h3>
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.label}>
@@ -142,7 +144,7 @@ export const FooterSection = () => {
 
           {/* Legal */}
           <div>
-            <h4 className="font-semibold mb-4">Legal</h4>
+            <h3 className="font-semibold mb-4">Legal</h3>
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
                 <li key={link.label}>

@@ -72,13 +72,19 @@ export const Navigation = ({ isAuthenticated = false }: NavigationProps) => {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 group">
               <img
-                src="https://images.keepfre.sh/app/icons/promptly/promptly-light.webp"
+                src="https://images.keepfre.sh/app/icons/promptly/promptly-light_64x64.webp"
                 alt=""
+                width={32}
+                height={32}
+                fetchPriority="high"
                 className="size-8 dark:hidden"
               />
               <img
-                src="https://images.keepfre.sh/app/icons/promptly/promptly.webp"
+                src="https://images.keepfre.sh/app/icons/promptly/promptly_64x_64.webp"
                 alt=""
+                width={32}
+                height={32}
+                fetchPriority="high"
                 className="size-8 hidden dark:block"
               />
               <span className="font-semibold text-lg tracking-tight">
@@ -87,7 +93,10 @@ export const Navigation = ({ isAuthenticated = false }: NavigationProps) => {
             </Link>
 
             {/* Desktop Nav */}
-            <div className="hidden md:flex items-center gap-1">
+            <nav
+              className="hidden md:flex items-center gap-1"
+              aria-label="Main navigation"
+            >
               {navLinks.map((link) => {
                 const isExternal = link.href.startsWith('http');
                 return (
@@ -104,7 +113,7 @@ export const Navigation = ({ isAuthenticated = false }: NavigationProps) => {
                   </a>
                 );
               })}
-            </div>
+            </nav>
 
             {/* Desktop CTAs */}
             <div className="hidden md:flex items-center gap-3">
@@ -145,6 +154,10 @@ export const Navigation = ({ isAuthenticated = false }: NavigationProps) => {
             ? 'opacity-100 pointer-events-auto'
             : 'opacity-0 pointer-events-none',
         )}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile navigation menu"
+        onKeyDown={(e) => e.key === 'Escape' && closeMobileMenu()}
       >
         {/* Backdrop with blur */}
         <button
@@ -160,7 +173,10 @@ export const Navigation = ({ isAuthenticated = false }: NavigationProps) => {
         />
 
         {/* Gradient orbs for visual interest */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div
+          className="absolute inset-0 overflow-hidden pointer-events-none"
+          aria-hidden="true"
+        >
           <div
             className={cn(
               'absolute -top-32 -right-32 size-64 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 blur-3xl transition-all duration-700 delay-100',
@@ -192,13 +208,19 @@ export const Navigation = ({ isAuthenticated = false }: NavigationProps) => {
               )}
             >
               <img
-                src="https://images.keepfre.sh/app/icons/promptly/promptly-light.webp"
+                src="https://images.keepfre.sh/app/icons/promptly/promptly-light_64x64.webp"
                 alt=""
+                width={32}
+                height={32}
+                loading="lazy"
                 className="size-8 dark:hidden"
               />
               <img
-                src="https://images.keepfre.sh/app/icons/promptly/promptly.webp"
+                src="https://images.keepfre.sh/app/icons/promptly/promptly_64x_64.webp"
                 alt=""
+                width={32}
+                height={32}
+                loading="lazy"
                 className="size-8 hidden dark:block"
               />
               <span className="font-semibold text-lg tracking-tight">

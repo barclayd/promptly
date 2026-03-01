@@ -7,7 +7,12 @@ import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 import { useInterstitials } from '~/hooks/use-interstitials';
 import { useOnboardingTour } from '~/hooks/use-onboarding-tour';
 
-export default function AppLayout() {
+/**
+ * Inner layout that consumes context from the providers above.
+ * useStartOnboarding requires NextStepProvider (from OnboardingProvider),
+ * so it must be rendered as a child of OnboardingProvider.
+ */
+const AppLayoutInner = () => {
   const { banners, overlay, overlayOpen, setOverlayOpen } = useInterstitials();
 
   // Onboarding tour (separate — it's a tour, not an interstitial)
@@ -51,4 +56,8 @@ export default function AppLayout() {
       )}
     </SidebarProvider>
   );
+};
+
+export default function AppLayout() {
+  return <AppLayoutInner />;
 }

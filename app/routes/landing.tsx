@@ -1,17 +1,58 @@
-import { AudienceSection } from '~/components/landing/audience-section';
-import { CostSection } from '~/components/landing/cost-section';
-import { FAQSection } from '~/components/landing/faq-section';
-import { FeaturesGridSection } from '~/components/landing/features-grid-section';
+import { lazy, Suspense } from 'react';
 import { FooterSection } from '~/components/landing/footer-section';
 import { HeroSection } from '~/components/landing/hero-section';
-import { HowItWorksSection } from '~/components/landing/how-it-works-section';
 import { Navigation } from '~/components/landing/navigation';
-import { PainPointsSection } from '~/components/landing/pain-points-section';
-import { PricingSection } from '~/components/landing/pricing-section';
-import { SocialProofSection } from '~/components/landing/social-proof-section';
-import { SolutionSection } from '~/components/landing/solution-section';
 import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/landing';
+
+const PainPointsSection = lazy(() =>
+  import('~/components/landing/pain-points-section').then((m) => ({
+    default: m.PainPointsSection,
+  })),
+);
+
+// Lazy-load below-fold sections — prerendered HTML is already in the page for SEO,
+// so the Suspense fallback is null (hydration picks up the existing DOM)
+const SolutionSection = lazy(() =>
+  import('~/components/landing/solution-section').then((m) => ({
+    default: m.SolutionSection,
+  })),
+);
+const FeaturesGridSection = lazy(() =>
+  import('~/components/landing/features-grid-section').then((m) => ({
+    default: m.FeaturesGridSection,
+  })),
+);
+const HowItWorksSection = lazy(() =>
+  import('~/components/landing/how-it-works-section').then((m) => ({
+    default: m.HowItWorksSection,
+  })),
+);
+const AudienceSection = lazy(() =>
+  import('~/components/landing/audience-section').then((m) => ({
+    default: m.AudienceSection,
+  })),
+);
+const CostSection = lazy(() =>
+  import('~/components/landing/cost-section').then((m) => ({
+    default: m.CostSection,
+  })),
+);
+const SocialProofSection = lazy(() =>
+  import('~/components/landing/social-proof-section').then((m) => ({
+    default: m.SocialProofSection,
+  })),
+);
+const PricingSection = lazy(() =>
+  import('~/components/landing/pricing-section').then((m) => ({
+    default: m.PricingSection,
+  })),
+);
+const FAQSection = lazy(() =>
+  import('~/components/landing/faq-section').then((m) => ({
+    default: m.FAQSection,
+  })),
+);
 
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const auth = getAuth(context);
@@ -72,15 +113,17 @@ export default function Landing({ loaderData }: Route.ComponentProps) {
       <Navigation isAuthenticated={isAuthenticated} />
       <main>
         <HeroSection />
-        <PainPointsSection />
-        <SolutionSection />
-        <FeaturesGridSection />
-        <HowItWorksSection />
-        <AudienceSection />
-        <CostSection />
-        <SocialProofSection />
-        <PricingSection />
-        <FAQSection />
+        <Suspense>
+          <PainPointsSection />
+          <SolutionSection />
+          <FeaturesGridSection />
+          <HowItWorksSection />
+          <AudienceSection />
+          <CostSection />
+          <SocialProofSection />
+          <PricingSection />
+          <FAQSection />
+        </Suspense>
       </main>
       <FooterSection />
     </div>

@@ -178,12 +178,12 @@ const AcceptInvitation = ({ loaderData, actionData }: Route.ComponentProps) => {
         <div className="flex justify-center mb-8">
           <div className="flex items-center gap-2 text-foreground">
             <img
-              src="https://images.keepfre.sh/app/icons/promptly/promptly-light.webp"
+              src="https://images.keepfre.sh/app/icons/promptly/promptly-light_64x64.webp"
               alt=""
               className="size-8 dark:hidden"
             />
             <img
-              src="https://images.keepfre.sh/app/icons/promptly/promptly.webp"
+              src="https://images.keepfre.sh/app/icons/promptly/promptly_64x_64.webp"
               alt=""
               className="size-8 hidden dark:block"
             />
