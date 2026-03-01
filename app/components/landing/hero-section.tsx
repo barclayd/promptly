@@ -2,7 +2,7 @@ import { IconArrowRight, IconSparkles } from '@tabler/icons-react';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { AnimatedWrapper } from './animated-wrapper';
-import { HeroDemoStack } from './hero-demo';
+import { HeroDemoStack } from './hero-demo/hero-demo-stack';
 import { SocialProofBadge } from './social-proof-badge';
 
 export const HeroSection = () => {
@@ -33,7 +33,7 @@ export const HeroSection = () => {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left: Copy */}
           <div className="flex flex-col gap-5 sm:gap-8">
-            <AnimatedWrapper delay={0}>
+            <AnimatedWrapper aboveFold delay={0}>
               <Badge
                 variant="outline"
                 className="w-fit px-3 py-1.5 bg-background/50 backdrop-blur-sm border-indigo-200 dark:border-indigo-800"
@@ -45,7 +45,7 @@ export const HeroSection = () => {
               </Badge>
             </AnimatedWrapper>
 
-            <AnimatedWrapper delay={100}>
+            <AnimatedWrapper aboveFold delay={100}>
               <h1 className="text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight leading-[1.05] sm:leading-[1.1]">
                 Your prompts don't belong in{' '}
                 <span className="relative">
@@ -70,7 +70,7 @@ export const HeroSection = () => {
               </h1>
             </AnimatedWrapper>
 
-            <AnimatedWrapper delay={200}>
+            <AnimatedWrapper aboveFold delay={200}>
               <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
                 Manage, test, and deploy AI prompts without touching code.
                 Empower your whole team to iterate on prompts while developers
@@ -78,11 +78,11 @@ export const HeroSection = () => {
               </p>
             </AnimatedWrapper>
 
-            <AnimatedWrapper delay={250}>
+            <AnimatedWrapper aboveFold delay={250}>
               <SocialProofBadge />
             </AnimatedWrapper>
 
-            <AnimatedWrapper delay={300}>
+            <AnimatedWrapper aboveFold delay={300}>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <Button
                   size="lg"
@@ -110,7 +110,12 @@ export const HeroSection = () => {
           </div>
 
           {/* Right: Animated Demo Stack */}
-          <AnimatedWrapper direction="right" delay={400} className="lg:pl-8">
+          <AnimatedWrapper
+            aboveFold
+            direction="right"
+            delay={400}
+            className="lg:pl-8"
+          >
             <div className="relative">
               <HeroDemoStack className="w-full max-w-xl mx-auto lg:mx-0" />
               {/* Decorative elements */}

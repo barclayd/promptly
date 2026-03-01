@@ -10,6 +10,8 @@ type AnimatedWrapperProps = {
   direction?: AnimationDirection;
   delay?: number;
   className?: string;
+  /** Render visible immediately — animation class baked into SSR HTML so CSS plays without waiting for JS hydration. Use for above-fold content to improve LCP. */
+  aboveFold?: boolean;
 };
 
 const animationClasses: Record<AnimationDirection, string> = {
@@ -23,12 +25,23 @@ export const AnimatedWrapper = ({
   direction = 'up',
   delay = 0,
   className,
+  aboveFold = false,
 }: AnimatedWrapperProps) => {
-  const { ref, isInView } = useInView({ threshold: 0.1, triggerOnce: true });
+  const { ref, isInView } = useInView({
+    threshold: 0.1,
+    triggerOnce: true,
+    initiallyVisible: aboveFold,
+  });
   const prefersReducedMotion = useReducedMotion();
 
   // Skip animation entirely if user prefers reduced motion
   if (prefersReducedMotion) {
+    return <div className={className}>{children}</div>;
+  }
+
+  // Above-fold content renders fully visible so the pre-rendered HTML paints
+  // instantly — no opacity-0 waiting for JS hydration. This is critical for LCP.
+  if (aboveFold) {
     return <div className={className}>{children}</div>;
   }
 

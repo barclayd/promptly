@@ -95,6 +95,25 @@ const addResourceHints = (html: string): string => {
 };
 
 /**
+ * Inject @font-face into the inline critical CSS.
+ * Beasties doesn't extract @font-face rules, so the font definition
+ * only applies when the deferred external stylesheet loads — causing
+ * a font swap that shifts every text element on the page (high CLS).
+ *
+ * We use font-display: optional here so the browser either uses Inter
+ * immediately (font is preloaded, so it's usually available) or stays
+ * on the system fallback with zero layout shift.
+ */
+const inlineFontFace = (html: string): string => {
+  const fontFaceRule = `@font-face{font-family:"Inter";font-style:normal;font-weight:100 900;font-display:optional;src:url("/fonts/inter-latin.woff2") format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}`;
+
+  // Prepend to the first inline <style> block that Beasties created
+  return html.replace(/<style>([\s\S]*?)<\/style>/, (_match, content) => {
+    return `<style>${fontFaceRule}${content}</style>`;
+  });
+};
+
+/**
  * Clean up empty lines left by stripped tags.
  */
 const cleanEmptyLines = (html: string): string => {
@@ -168,6 +187,11 @@ const main = async () => {
   console.log('🔗 Adding resource hints...');
   html = addResourceHints(html);
   console.log('✅ Resource hints added\n');
+
+  // --- Phase 1f: Inline @font-face into critical CSS ---
+  console.log('🔤 Inlining @font-face into critical CSS...');
+  html = inlineFontFace(html);
+  console.log('✅ @font-face inlined (font-display: optional)\n');
 
   // Final cleanup
   html = cleanEmptyLines(html);

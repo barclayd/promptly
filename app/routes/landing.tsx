@@ -2,9 +2,14 @@ import { lazy, Suspense } from 'react';
 import { FooterSection } from '~/components/landing/footer-section';
 import { HeroSection } from '~/components/landing/hero-section';
 import { Navigation } from '~/components/landing/navigation';
-import { PainPointsSection } from '~/components/landing/pain-points-section';
 import { getAuth } from '~/lib/auth.server';
 import type { Route } from './+types/landing';
+
+const PainPointsSection = lazy(() =>
+  import('~/components/landing/pain-points-section').then((m) => ({
+    default: m.PainPointsSection,
+  })),
+);
 
 // Lazy-load below-fold sections — prerendered HTML is already in the page for SEO,
 // so the Suspense fallback is null (hydration picks up the existing DOM)
@@ -108,8 +113,8 @@ export default function Landing({ loaderData }: Route.ComponentProps) {
       <Navigation isAuthenticated={isAuthenticated} />
       <main>
         <HeroSection />
-        <PainPointsSection />
         <Suspense>
+          <PainPointsSection />
           <SolutionSection />
           <FeaturesGridSection />
           <HowItWorksSection />

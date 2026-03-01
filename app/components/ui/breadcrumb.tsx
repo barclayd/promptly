@@ -100,28 +100,30 @@ export const BreadcrumbWithDropdown = () => {
     const el = listElRef.current;
     if (!el) return;
 
-    // Sum visible children widths + gaps for actual content width.
-    // scrollWidth === clientWidth when there's no overflow, so we can't
-    // rely on it to detect free space after hiding the last segment.
-    const children = el.children;
+    // Batch all layout reads — avoid getComputedStyle inside the loop
+    // to prevent forced synchronous reflow per child.
     const gap = parseFloat(getComputedStyle(el).columnGap || '0');
+    const containerWidth = el.clientWidth;
+
+    // Single pass: elements with display:none have offsetWidth === 0
     let contentWidth = 0;
     let visibleCount = 0;
-    for (let i = 0; i < children.length; i++) {
-      const child = children[i] as HTMLElement;
-      if (getComputedStyle(child).display === 'none') continue;
-      contentWidth += child.offsetWidth;
+    for (let i = 0; i < el.children.length; i++) {
+      const w = (el.children[i] as HTMLElement).offsetWidth;
+      if (w === 0) continue;
+      contentWidth += w;
       visibleCount++;
     }
     if (visibleCount > 1) contentWidth += gap * (visibleCount - 1);
 
+    // Write phase — state updates only
     if (!hideRef.current) {
-      if (contentWidth > el.clientWidth) {
+      if (contentWidth > containerWidth) {
         hideRef.current = true;
         setHideLastSegment(true);
       }
     } else {
-      const freeSpace = el.clientWidth - contentWidth;
+      const freeSpace = containerWidth - contentWidth;
       if (freeSpace >= lastSegmentWidthRef.current) {
         hideRef.current = false;
         setHideLastSegment(false);

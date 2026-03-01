@@ -41,7 +41,6 @@ export const SocialProofBadge = ({ className }: { className?: string }) => {
             alt=""
             width={33}
             height={33}
-            loading="lazy"
             className="size-[30px] sm:size-[33px] rounded-full ring-2 ring-zinc-900 dark:ring-zinc-950 object-cover"
           />
         ))}
