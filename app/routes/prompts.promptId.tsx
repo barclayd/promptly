@@ -15,6 +15,8 @@ import { PromptEditorMenubar } from '~/components/prompt-editor-menubar';
 import { PublishPromptDialog } from '~/components/publish-prompt-dialog';
 import { ReadOnlyPlanBanner } from '~/components/read-only-plan-banner';
 import { RemoteCursorsOverlay } from '~/components/remote-cursors-overlay';
+import { SnippetBadgeBar } from '~/components/snippet-badge-bar';
+import { SnippetPicker } from '~/components/snippet-picker';
 import { TrialExpiredModal } from '~/components/trial-expired-modal';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -31,7 +33,10 @@ import { useUndoRedo } from '~/hooks/use-undo-redo';
 import type { SchemaField } from '~/lib/schema-types';
 import { getSubscriptionStatus } from '~/lib/subscription.server';
 import { useOnboardingStore } from '~/stores/onboarding-store';
-import { usePromptEditorStore } from '~/stores/prompt-editor-store';
+import {
+  type AttachedSnippet,
+  usePromptEditorStore,
+} from '~/stores/prompt-editor-store';
 import type { Route } from './+types/prompts.promptId';
 
 type PromptDetailContext = {
@@ -176,6 +181,7 @@ export const loader = async ({
   let requestedVersion: string | null = null;
 
   let targetVersion: {
+    id: string;
     system_message: string | null;
     user_message: string | null;
     config: string;
@@ -196,10 +202,11 @@ export const loader = async ({
     requestedVersion = versionParam;
     targetVersion = await db
       .prepare(
-        'SELECT system_message, user_message, config, major, minor, patch, last_output_tokens, last_system_input_tokens, last_user_input_tokens FROM prompt_version WHERE prompt_id = ? AND major = ? AND minor = ? AND patch = ?',
+        'SELECT id, system_message, user_message, config, major, minor, patch, last_output_tokens, last_system_input_tokens, last_user_input_tokens FROM prompt_version WHERE prompt_id = ? AND major = ? AND minor = ? AND patch = ?',
       )
       .bind(promptId, requestedMajor, requestedMinor, requestedPatch)
       .first<{
+        id: string;
         system_message: string | null;
         user_message: string | null;
         config: string;
@@ -226,10 +233,11 @@ export const loader = async ({
   if (!targetVersion) {
     targetVersion = await db
       .prepare(
-        'SELECT system_message, user_message, config, major, minor, patch, last_output_tokens, last_system_input_tokens, last_user_input_tokens FROM prompt_version WHERE prompt_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
+        'SELECT id, system_message, user_message, config, major, minor, patch, last_output_tokens, last_system_input_tokens, last_user_input_tokens FROM prompt_version WHERE prompt_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
       )
       .bind(promptId)
       .first<{
+        id: string;
         system_message: string | null;
         user_message: string | null;
         config: string;
@@ -292,6 +300,56 @@ export const loader = async ({
     // Keep defaults
   }
 
+  // Fetch attached snippets for the target version
+  let attachedSnippets: Array<{
+    id: string;
+    snippetId: string;
+    snippetName: string;
+    snippetVersionId: string | null;
+    snippetVersionLabel: string | null;
+    sortOrder: number;
+    isDeleted: boolean;
+  }> = [];
+
+  if (targetVersion) {
+    const snippetRefs = await db
+      .prepare(
+        `SELECT pvs.id, pvs.snippet_id, pvs.snippet_version_id, pvs.sort_order,
+                s.name as snippet_name, s.deleted_at as snippet_deleted_at,
+                sv.major, sv.minor, sv.patch
+         FROM prompt_version_snippet pvs
+         JOIN snippet s ON pvs.snippet_id = s.id
+         LEFT JOIN snippet_version sv ON pvs.snippet_version_id = sv.id
+         WHERE pvs.prompt_version_id = ?
+         ORDER BY pvs.sort_order ASC`,
+      )
+      .bind(targetVersion.id)
+      .all<{
+        id: string;
+        snippet_id: string;
+        snippet_version_id: string | null;
+        sort_order: number;
+        snippet_name: string;
+        snippet_deleted_at: number | null;
+        major: number | null;
+        minor: number | null;
+        patch: number | null;
+      }>();
+
+    attachedSnippets = (snippetRefs.results ?? []).map((ref) => ({
+      id: ref.id,
+      snippetId: ref.snippet_id,
+      snippetName: ref.snippet_name,
+      snippetVersionId: ref.snippet_version_id,
+      snippetVersionLabel:
+        ref.major !== null && ref.minor !== null && ref.patch !== null
+          ? `v${ref.major}.${ref.minor}.${ref.patch}`
+          : null,
+      sortOrder: ref.sort_order,
+      isDeleted: ref.snippet_deleted_at !== null,
+    }));
+  }
+
   const hasDraft =
     versionsResult.results?.some((v) => v.published_at === null) ?? false;
 
@@ -334,7 +392,40 @@ export const loader = async ({
     requestedVersion,
     isOwner,
     isReadOnlyDueToLimit,
+    attachedSnippets,
   };
+};
+
+const copySnippetRefsToNewVersion = async (
+  db: D1Database,
+  sourceVersionId: string,
+  targetVersionId: string,
+) => {
+  const existingRefs = await db
+    .prepare(
+      'SELECT snippet_id, snippet_version_id, sort_order FROM prompt_version_snippet WHERE prompt_version_id = ?',
+    )
+    .bind(sourceVersionId)
+    .all<{
+      snippet_id: string;
+      snippet_version_id: string | null;
+      sort_order: number;
+    }>();
+
+  for (const ref of existingRefs.results ?? []) {
+    await db
+      .prepare(
+        'INSERT INTO prompt_version_snippet (id, prompt_version_id, snippet_id, snippet_version_id, sort_order) VALUES (?, ?, ?, ?, ?)',
+      )
+      .bind(
+        nanoid(),
+        targetVersionId,
+        ref.snippet_id,
+        ref.snippet_version_id,
+        ref.sort_order,
+      )
+      .run();
+  }
 };
 
 export const action = async ({
@@ -427,12 +518,13 @@ export const action = async ({
         .bind(configJson, now, session.user.id, currentVersion.id)
         .run();
     } else {
+      const newDraftId = nanoid();
       await db
         .prepare(
           'INSERT INTO prompt_version (id, prompt_id, config, system_message, user_message, created_by, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         )
         .bind(
-          nanoid(),
+          newDraftId,
           promptId,
           configJson,
           currentVersion.system_message,
@@ -442,6 +534,7 @@ export const action = async ({
           session.user.id,
         )
         .run();
+      await copySnippetRefsToNewVersion(db, currentVersion.id, newDraftId);
     }
 
     return { success: true, savedAt: Date.now(), intent: 'saveConfig' };
@@ -485,12 +578,13 @@ export const action = async ({
       .bind(systemMessage, userMessage, now, session.user.id, currentVersion.id)
       .run();
   } else {
+    const newDraftId = nanoid();
     await db
       .prepare(
         'INSERT INTO prompt_version (id, prompt_id, system_message, user_message, config, created_by, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       )
       .bind(
-        nanoid(),
+        newDraftId,
         promptId,
         systemMessage,
         userMessage,
@@ -500,6 +594,7 @@ export const action = async ({
         session.user.id,
       )
       .run();
+    await copySnippetRefsToNewVersion(db, currentVersion.id, newDraftId);
   }
 
   return { success: true, savedAt: Date.now() };
@@ -696,6 +791,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
       lastOutputTokens: loaderData.lastOutputTokens,
       lastSystemInputTokens: loaderData.lastSystemInputTokens,
       lastUserInputTokens: loaderData.lastUserInputTokens,
+      attachedSnippets: loaderData.attachedSnippets,
       promptId: loaderData.prompt.id,
     });
   }
@@ -785,6 +881,102 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
       debouncedUserCursorUpdate(position);
     },
     [debouncedUserCursorUpdate],
+  );
+
+  // Snippet state and handlers
+  const attachedSnippets = usePromptEditorStore(
+    (state) => state.attachedSnippets,
+  );
+  const addSnippet = usePromptEditorStore((state) => state.addSnippet);
+  const removeSnippet = usePromptEditorStore((state) => state.removeSnippet);
+  const reorderSnippets = usePromptEditorStore(
+    (state) => state.reorderSnippets,
+  );
+  const updateSnippetVersion = usePromptEditorStore(
+    (state) => state.updateSnippetVersion,
+  );
+
+  const snippetFetcher = useFetcher();
+
+  const saveSnippets = useCallback(
+    (snippets: AttachedSnippet[]) => {
+      snippetFetcher.submit(
+        {
+          promptId: loaderData.prompt.id,
+          snippets: JSON.stringify(
+            snippets.map((s) => ({
+              snippetId: s.snippetId,
+              snippetVersionId: s.snippetVersionId,
+              sortOrder: s.sortOrder,
+            })),
+          ),
+        },
+        { method: 'post', action: '/api/prompts/save-snippets' },
+      );
+    },
+    [snippetFetcher, loaderData.prompt.id],
+  );
+
+  const handleAddSnippet = useCallback(
+    (snippetId: string, snippetName: string) => {
+      const newSnippet: AttachedSnippet = {
+        id: nanoid(),
+        snippetId,
+        snippetName,
+        snippetVersionId: null,
+        snippetVersionLabel: null,
+        sortOrder: attachedSnippets.length,
+        isDeleted: false,
+      };
+      addSnippet(newSnippet);
+      saveSnippets([...attachedSnippets, newSnippet]);
+    },
+    [attachedSnippets, addSnippet, saveSnippets],
+  );
+
+  const handleRemoveSnippet = useCallback(
+    (snippetId: string) => {
+      const filtered = attachedSnippets
+        .filter((s) => s.snippetId !== snippetId)
+        .map((s, i) => ({ ...s, sortOrder: i }));
+      removeSnippet(snippetId);
+      saveSnippets(filtered);
+    },
+    [attachedSnippets, removeSnippet, saveSnippets],
+  );
+
+  const handleReorderSnippets = useCallback(
+    (reordered: AttachedSnippet[]) => {
+      reorderSnippets(reordered);
+      saveSnippets(reordered);
+    },
+    [reorderSnippets, saveSnippets],
+  );
+
+  const handleSnippetVersionChange = useCallback(
+    (
+      snippetId: string,
+      versionId: string | null,
+      versionLabel: string | null,
+    ) => {
+      updateSnippetVersion(snippetId, versionId, versionLabel);
+      const updated = attachedSnippets.map((s) =>
+        s.snippetId === snippetId
+          ? {
+              ...s,
+              snippetVersionId: versionId,
+              snippetVersionLabel: versionLabel,
+            }
+          : s,
+      );
+      saveSnippets(updated);
+    },
+    [attachedSnippets, updateSnippetVersion, saveSnippets],
+  );
+
+  const attachedSnippetIds = useMemo(
+    () => new Set(attachedSnippets.map((s) => s.snippetId)),
+    [attachedSnippets],
   );
 
   const isSystemDirty = systemMessage !== initialSystemRef.current;
@@ -1016,6 +1208,25 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
                 )
               }
               disabled={isReadOnly}
+              snippetPicker={
+                !isReadOnly ? (
+                  <SnippetPicker
+                    attachedSnippetIds={attachedSnippetIds}
+                    onSelect={handleAddSnippet}
+                  />
+                ) : undefined
+              }
+              snippetBar={
+                attachedSnippets.length > 0 ? (
+                  <SnippetBadgeBar
+                    snippets={attachedSnippets}
+                    readOnly={isReadOnly}
+                    onReorder={handleReorderSnippets}
+                    onVersionChange={handleSnippetVersionChange}
+                    onRemove={handleRemoveSnippet}
+                  />
+                ) : undefined
+              }
             />
             <PromptEditor
               title="User Prompt"

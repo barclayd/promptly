@@ -131,6 +131,8 @@ export const PromptEditor = ({
   onSelectionChange,
   disabled,
   costCalculator,
+  snippetPicker,
+  snippetBar,
 }: {
   title: string;
   value?: string;
@@ -145,6 +147,8 @@ export const PromptEditor = ({
   onSelectionChange?: (position: number) => void;
   disabled?: boolean;
   costCalculator?: React.ReactNode;
+  snippetPicker?: React.ReactNode;
+  snippetBar?: React.ReactNode;
 }) => {
   const isCurrentlySaving = isPendingSave || isSaving;
   const [copied, setCopied] = useState(false);
@@ -167,6 +171,7 @@ export const PromptEditor = ({
   return (
     <div className="grid w-full gap-4">
       <InputGroup>
+        {snippetBar}
         <InputGroupTextarea
           id={`textarea-${title.toLowerCase().replace(/\s+/g, '-')}`}
           placeholder="Prompt text goes here"
@@ -207,6 +212,7 @@ export const PromptEditor = ({
             {title}
           </InputGroupText>
           <div className="grow" />
+          {snippetPicker}
           <Tooltip>
             <TooltipTrigger asChild>
               <InputGroupButton variant="ghost" size="icon-xs">

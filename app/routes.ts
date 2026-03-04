@@ -58,6 +58,9 @@ export default [
   ),
   route('api/user-state', './routes/api/user-state.update.ts'),
   route('api/search-prompts', './routes/api/search-prompts.ts'),
+  route('api/search-snippets', './routes/api/search-snippets.ts'),
+  route('api/snippet-versions', './routes/api/snippet-versions.ts'),
+  route('api/prompts/save-snippets', './routes/api/prompts.save-snippets.ts'),
   route('api/request-upgrade', './routes/api/request-upgrade.ts'),
   route(
     'team/accept-invitation/:id',

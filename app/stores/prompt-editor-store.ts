@@ -2,6 +2,16 @@ import { temporal } from 'zundo';
 import { create } from 'zustand';
 import type { SchemaField } from '~/lib/schema-types';
 
+export type AttachedSnippet = {
+  id: string;
+  snippetId: string;
+  snippetName: string;
+  snippetVersionId: string | null;
+  snippetVersionLabel: string | null;
+  sortOrder: number;
+  isDeleted: boolean;
+};
+
 export type PromptEditorState = {
   systemMessage: string;
   userMessage: string;
@@ -16,6 +26,7 @@ export type PromptEditorState = {
   lastOutputTokens: number | null;
   lastSystemInputTokens: number | null;
   lastUserInputTokens: number | null;
+  attachedSnippets: AttachedSnippet[];
   _promptId: string | null;
   _initialized: boolean;
 };
@@ -34,6 +45,7 @@ type InitializeData = {
   lastOutputTokens: number | null;
   lastSystemInputTokens: number | null;
   lastUserInputTokens: number | null;
+  attachedSnippets: AttachedSnippet[];
   promptId: string | null;
 };
 
@@ -57,6 +69,15 @@ export type PromptEditorActions = {
   setLastOutputTokens: (tokens: number | null) => void;
   setLastSystemInputTokens: (tokens: number | null) => void;
   setLastUserInputTokens: (tokens: number | null) => void;
+  setAttachedSnippets: (snippets: AttachedSnippet[]) => void;
+  addSnippet: (snippet: AttachedSnippet) => void;
+  removeSnippet: (snippetId: string) => void;
+  reorderSnippets: (snippets: AttachedSnippet[]) => void;
+  updateSnippetVersion: (
+    snippetId: string,
+    versionId: string | null,
+    versionLabel: string | null,
+  ) => void;
 };
 
 type PromptEditorStore = PromptEditorState & PromptEditorActions;
@@ -75,6 +96,7 @@ const initialState: PromptEditorState = {
   lastOutputTokens: null,
   lastSystemInputTokens: null,
   lastUserInputTokens: null,
+  attachedSnippets: [],
   _promptId: null,
   _initialized: false,
 };
@@ -128,6 +150,7 @@ export const usePromptEditorStore = create<PromptEditorStore>()(
           lastOutputTokens: data.lastOutputTokens,
           lastSystemInputTokens: data.lastSystemInputTokens,
           lastUserInputTokens: data.lastUserInputTokens,
+          attachedSnippets: data.attachedSnippets,
           _promptId: data.promptId,
           _initialized: true,
         });
@@ -199,6 +222,35 @@ export const usePromptEditorStore = create<PromptEditorStore>()(
         set({ lastSystemInputTokens: tokens }),
 
       setLastUserInputTokens: (tokens) => set({ lastUserInputTokens: tokens }),
+
+      setAttachedSnippets: (snippets) => set({ attachedSnippets: snippets }),
+
+      addSnippet: (snippet) =>
+        set((state) => ({
+          attachedSnippets: [...state.attachedSnippets, snippet],
+        })),
+
+      removeSnippet: (snippetId) =>
+        set((state) => ({
+          attachedSnippets: state.attachedSnippets.filter(
+            (s) => s.snippetId !== snippetId,
+          ),
+        })),
+
+      reorderSnippets: (snippets) => set({ attachedSnippets: snippets }),
+
+      updateSnippetVersion: (snippetId, versionId, versionLabel) =>
+        set((state) => ({
+          attachedSnippets: state.attachedSnippets.map((s) =>
+            s.snippetId === snippetId
+              ? {
+                  ...s,
+                  snippetVersionId: versionId,
+                  snippetVersionLabel: versionLabel,
+                }
+              : s,
+          ),
+        })),
     }),
     {
       partialize: (state) => ({
@@ -215,6 +267,7 @@ export const usePromptEditorStore = create<PromptEditorStore>()(
         lastOutputTokens: state.lastOutputTokens,
         lastSystemInputTokens: state.lastSystemInputTokens,
         lastUserInputTokens: state.lastUserInputTokens,
+        attachedSnippets: state.attachedSnippets,
       }),
       limit: 100,
       handleSet: (handleSet) =>

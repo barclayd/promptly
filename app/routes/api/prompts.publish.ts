@@ -105,6 +105,32 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     .bind(Date.now(), promptId)
     .run();
 
+  // Pin unpinned snippet version references to their current latest published version
+  const unpinnedSnippetRefs = await db
+    .prepare(
+      'SELECT id, snippet_id FROM prompt_version_snippet WHERE prompt_version_id = ? AND snippet_version_id IS NULL',
+    )
+    .bind(currentDraft.id)
+    .all<{ id: string; snippet_id: string }>();
+
+  for (const ref of unpinnedSnippetRefs.results ?? []) {
+    const latestPublished = await db
+      .prepare(
+        'SELECT id FROM snippet_version WHERE snippet_id = ? AND published_at IS NOT NULL ORDER BY major DESC, minor DESC, patch DESC LIMIT 1',
+      )
+      .bind(ref.snippet_id)
+      .first<{ id: string }>();
+
+    if (latestPublished) {
+      await db
+        .prepare(
+          'UPDATE prompt_version_snippet SET snippet_version_id = ? WHERE id = ?',
+        )
+        .bind(latestPublished.id, ref.id)
+        .run();
+    }
+  }
+
   // Fetch the published version content and cache it
   const publishedVersion = await db
     .prepare(
