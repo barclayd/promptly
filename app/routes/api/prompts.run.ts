@@ -97,8 +97,46 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return data({ error: 'Prompt version not found' }, { status: 404 });
   }
 
+  // Resolve attached snippets and prepend to system message
+  const snippetRefs = await db
+    .prepare(
+      'SELECT snippet_id, snippet_version_id FROM prompt_version_snippet WHERE prompt_version_id = ? ORDER BY sort_order ASC',
+    )
+    .bind(promptVersion.id)
+    .all<{ snippet_id: string; snippet_version_id: string | null }>();
+
+  const snippetContents: string[] = [];
+  for (const ref of snippetRefs.results ?? []) {
+    let content: string | null = null;
+
+    if (ref.snippet_version_id) {
+      // Pinned version
+      const sv = await db
+        .prepare('SELECT content FROM snippet_version WHERE id = ?')
+        .bind(ref.snippet_version_id)
+        .first<{ content: string | null }>();
+      content = sv?.content ?? null;
+    } else {
+      // Latest published version
+      const sv = await db
+        .prepare(
+          'SELECT content FROM snippet_version WHERE snippet_id = ? AND published_at IS NOT NULL ORDER BY major DESC, minor DESC, patch DESC LIMIT 1',
+        )
+        .bind(ref.snippet_id)
+        .first<{ content: string | null }>();
+      content = sv?.content ?? null;
+    }
+
+    if (content) {
+      snippetContents.push(content);
+    }
+  }
+
+  const snippetPrefix =
+    snippetContents.length > 0 ? `${snippetContents.join('\n\n')}\n\n` : '';
+
   const prepared = preparePrompts({
-    systemMessage: promptVersion.system_message || '',
+    systemMessage: snippetPrefix + (promptVersion.system_message || ''),
     userMessage: promptVersion.user_message || '',
     inputDataJson,
     inputDataRootName,

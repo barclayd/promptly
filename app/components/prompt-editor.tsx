@@ -131,6 +131,7 @@ export const PromptEditor = ({
   onSelectionChange,
   disabled,
   costCalculator,
+  snippetPicker,
 }: {
   title: string;
   value?: string;
@@ -145,6 +146,7 @@ export const PromptEditor = ({
   onSelectionChange?: (position: number) => void;
   disabled?: boolean;
   costCalculator?: React.ReactNode;
+  snippetPicker?: React.ReactNode;
 }) => {
   const isCurrentlySaving = isPendingSave || isSaving;
   const [copied, setCopied] = useState(false);
@@ -207,6 +209,7 @@ export const PromptEditor = ({
             {title}
           </InputGroupText>
           <div className="grow" />
+          {snippetPicker}
           <Tooltip>
             <TooltipTrigger asChild>
               <InputGroupButton variant="ghost" size="icon-xs">
