@@ -15,7 +15,6 @@ import { PromptEditorMenubar } from '~/components/prompt-editor-menubar';
 import { PublishPromptDialog } from '~/components/publish-prompt-dialog';
 import { ReadOnlyPlanBanner } from '~/components/read-only-plan-banner';
 import { RemoteCursorsOverlay } from '~/components/remote-cursors-overlay';
-import { SnippetBadgeBar } from '~/components/snippet-badge-bar';
 import { SnippetPicker } from '~/components/snippet-picker';
 import { TrialExpiredModal } from '~/components/trial-expired-modal';
 import { Badge } from '~/components/ui/badge';
@@ -974,11 +973,6 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
     [attachedSnippets, updateSnippetVersion, saveSnippets],
   );
 
-  const attachedSnippetIds = useMemo(
-    () => new Set(attachedSnippets.map((s) => s.snippetId)),
-    [attachedSnippets],
-  );
-
   const isSystemDirty = systemMessage !== initialSystemRef.current;
   const isUserDirty = userMessage !== initialUserRef.current;
 
@@ -1209,23 +1203,14 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               }
               disabled={isReadOnly}
               snippetPicker={
-                !isReadOnly ? (
-                  <SnippetPicker
-                    attachedSnippetIds={attachedSnippetIds}
-                    onSelect={handleAddSnippet}
-                  />
-                ) : undefined
-              }
-              snippetBar={
-                attachedSnippets.length > 0 ? (
-                  <SnippetBadgeBar
-                    snippets={attachedSnippets}
-                    readOnly={isReadOnly}
-                    onReorder={handleReorderSnippets}
-                    onVersionChange={handleSnippetVersionChange}
-                    onRemove={handleRemoveSnippet}
-                  />
-                ) : undefined
+                <SnippetPicker
+                  attachedSnippets={attachedSnippets}
+                  readOnly={isReadOnly}
+                  onSelect={handleAddSnippet}
+                  onRemove={handleRemoveSnippet}
+                  onReorder={handleReorderSnippets}
+                  onVersionChange={handleSnippetVersionChange}
+                />
               }
             />
             <PromptEditor
