@@ -37,13 +37,13 @@ export const cancelEndpoint = (options: TrialStripePluginOptions) =>
 
       if (!subscription || !subscription.stripeSubscriptionId) {
         throw new APIError('BAD_REQUEST', {
-          message: ERROR_CODES.CANNOT_CANCEL,
+          message: ERROR_CODES.CANNOT_CANCEL.message,
         });
       }
 
       if (subscription.status !== 'active') {
         throw new APIError('BAD_REQUEST', {
-          message: ERROR_CODES.CANNOT_CANCEL,
+          message: ERROR_CODES.CANNOT_CANCEL.message,
         });
       }
 

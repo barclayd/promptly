@@ -43,7 +43,7 @@ export const upgradeEndpoint = (options: TrialStripePluginOptions) =>
       const planConfig = options.plans.find((p) => p.name === plan);
       if (!planConfig) {
         throw new APIError('BAD_REQUEST', {
-          message: ERROR_CODES.PLAN_NOT_FOUND,
+          message: ERROR_CODES.PLAN_NOT_FOUND.message,
         });
       }
 
@@ -56,7 +56,7 @@ export const upgradeEndpoint = (options: TrialStripePluginOptions) =>
         subscription.stripeSubscriptionId
       ) {
         throw new APIError('BAD_REQUEST', {
-          message: ERROR_CODES.ALREADY_SUBSCRIBED,
+          message: ERROR_CODES.ALREADY_SUBSCRIBED.message,
         });
       }
 
@@ -108,7 +108,7 @@ export const upgradeEndpoint = (options: TrialStripePluginOptions) =>
         return ctx.json({ url: session.url });
       } catch {
         throw new APIError('INTERNAL_SERVER_ERROR', {
-          message: ERROR_CODES.STRIPE_CHECKOUT_FAILED,
+          message: ERROR_CODES.STRIPE_CHECKOUT_FAILED.message,
         });
       }
     },

@@ -45,7 +45,7 @@ export const requireOrgAdmin = async (
 ) => {
   if (!organizationId) {
     throw new APIError('FORBIDDEN', {
-      message: ERROR_CODES.FORBIDDEN,
+      message: ERROR_CODES.FORBIDDEN.message,
     });
   }
 
@@ -59,7 +59,7 @@ export const requireOrgAdmin = async (
 
   if (!member || !['owner', 'admin'].includes(member.role)) {
     throw new APIError('FORBIDDEN', {
-      message: ERROR_CODES.FORBIDDEN,
+      message: ERROR_CODES.FORBIDDEN.message,
     });
   }
 };
