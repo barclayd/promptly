@@ -99,6 +99,9 @@ test('cancel button in delete dialog preserves snippet', async ({
     timeout: 15000,
   });
 
+  // Wait for page to fully load after navigation
+  await authenticatedPage.waitForLoadState('networkidle');
+
   // Get the snippet name from the h1 heading after page loads
   const h1 = authenticatedPage.locator('h1');
   await expect(h1).toBeVisible();
@@ -113,6 +116,7 @@ test('cancel button in delete dialog preserves snippet', async ({
   const deleteItem = authenticatedPage.getByRole('menuitem', {
     name: 'Delete',
   });
+  await expect(deleteItem).toBeVisible();
   await deleteItem.click();
 
   // Verify delete confirmation dialog opens

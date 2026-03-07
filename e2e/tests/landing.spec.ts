@@ -76,6 +76,7 @@ test('pricing section displays three tiers', async ({ page }) => {
 
 test('FAQ accordion expands and collapses', async ({ page }) => {
   await page.goto('/');
+  await page.waitForLoadState('networkidle');
 
   // Scroll to FAQ section
   const faqSection = page.getByRole('heading', {

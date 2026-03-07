@@ -18,15 +18,8 @@ declare module 'react-router' {
 type Database = Record<string, string>;
 
 // Module-level cache for the worker entry point auth instance
-let cachedWorkerAuth: ReturnType<typeof betterAuth> | null = null;
-let cachedWorkerSecret: string | null = null;
-
-const getAuth = (env: Env) => {
-  if (cachedWorkerAuth && cachedWorkerSecret === env.BETTER_AUTH_SECRET) {
-    return cachedWorkerAuth;
-  }
-
-  cachedWorkerAuth = betterAuth({
+const createWorkerAuth = (env: Env) =>
+  betterAuth({
     emailAndPassword: { enabled: true },
     baseURL: env.BETTER_AUTH_URL,
     trustedOrigins: [env.BETTER_AUTH_URL, 'https://promptlycms.com'],
@@ -47,6 +40,15 @@ const getAuth = (env: Env) => {
     },
   });
 
+let cachedWorkerAuth: ReturnType<typeof createWorkerAuth> | null = null;
+let cachedWorkerSecret: string | null = null;
+
+const getAuth = (env: Env) => {
+  if (cachedWorkerAuth && cachedWorkerSecret === env.BETTER_AUTH_SECRET) {
+    return cachedWorkerAuth;
+  }
+
+  cachedWorkerAuth = createWorkerAuth(env);
   cachedWorkerSecret = env.BETTER_AUTH_SECRET;
   return cachedWorkerAuth;
 };

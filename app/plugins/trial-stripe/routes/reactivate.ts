@@ -37,13 +37,13 @@ export const reactivateEndpoint = (options: TrialStripePluginOptions) =>
 
       if (!subscription || !subscription.stripeSubscriptionId) {
         throw new APIError('BAD_REQUEST', {
-          message: ERROR_CODES.CANNOT_REACTIVATE,
+          message: ERROR_CODES.CANNOT_REACTIVATE.message,
         });
       }
 
       if (subscription.status !== 'active' || !subscription.cancelAtPeriodEnd) {
         throw new APIError('BAD_REQUEST', {
-          message: ERROR_CODES.CANNOT_REACTIVATE,
+          message: ERROR_CODES.CANNOT_REACTIVATE.message,
         });
       }
 

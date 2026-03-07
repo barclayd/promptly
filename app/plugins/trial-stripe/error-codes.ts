@@ -1,4 +1,4 @@
-import { defineErrorCodes } from '@better-auth/core/utils';
+import { defineErrorCodes } from '@better-auth/core/utils/error-codes';
 
 export const ERROR_CODES = defineErrorCodes({
   SUBSCRIPTION_NOT_FOUND: 'Subscription not found',

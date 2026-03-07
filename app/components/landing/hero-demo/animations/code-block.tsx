@@ -168,14 +168,14 @@ export const CodeBlock = ({
             {/* Code content - wraps within its container */}
             <code className="flex-1 whitespace-pre-wrap break-words">
               {lineContent.length > 0 ? (
-                lineContent.map((dt, tokenIndex) => (
-                  <span
-                    key={`${dt.token.type}-${tokenIndex}`}
-                    className={getTokenColor(dt.token.type)}
-                  >
-                    {dt.token.text}
-                  </span>
-                ))
+                lineContent.map((dt, tokenIndex) => {
+                  const key = `${dt.token.type}-${tokenIndex}`;
+                  return (
+                    <span key={key} className={getTokenColor(dt.token.type)}>
+                      {dt.token.text}
+                    </span>
+                  );
+                })
               ) : (
                 <span>&nbsp;</span>
               )}

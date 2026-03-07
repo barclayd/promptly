@@ -41,7 +41,7 @@ export const portalEndpoint = (options: TrialStripePluginOptions) =>
 
       if (!subscription?.stripeCustomerId) {
         throw new APIError('BAD_REQUEST', {
-          message: ERROR_CODES.NO_STRIPE_CUSTOMER,
+          message: ERROR_CODES.NO_STRIPE_CUSTOMER.message,
         });
       }
 

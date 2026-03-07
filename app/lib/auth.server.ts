@@ -1,6 +1,7 @@
+import { apiKey } from '@better-auth/api-key';
 import { render } from '@react-email/render';
 import { betterAuth } from 'better-auth';
-import { apiKey, organization } from 'better-auth/plugins';
+import { organization } from 'better-auth/plugins';
 import { CamelCasePlugin, Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
 import type { RouterContextProvider } from 'react-router';

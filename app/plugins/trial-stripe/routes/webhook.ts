@@ -41,7 +41,7 @@ export const webhookEndpoint = (options: TrialStripePluginOptions) =>
       const request = ctx.request;
       if (!request) {
         throw new APIError('BAD_REQUEST', {
-          message: ERROR_CODES.STRIPE_WEBHOOK_VERIFICATION_FAILED,
+          message: ERROR_CODES.STRIPE_WEBHOOK_VERIFICATION_FAILED.message,
         });
       }
       const body = await request.text();
@@ -49,7 +49,7 @@ export const webhookEndpoint = (options: TrialStripePluginOptions) =>
 
       if (!signature) {
         throw new APIError('BAD_REQUEST', {
-          message: ERROR_CODES.STRIPE_WEBHOOK_VERIFICATION_FAILED,
+          message: ERROR_CODES.STRIPE_WEBHOOK_VERIFICATION_FAILED.message,
         });
       }
 
@@ -64,7 +64,7 @@ export const webhookEndpoint = (options: TrialStripePluginOptions) =>
         );
       } catch {
         throw new APIError('BAD_REQUEST', {
-          message: ERROR_CODES.STRIPE_WEBHOOK_VERIFICATION_FAILED,
+          message: ERROR_CODES.STRIPE_WEBHOOK_VERIFICATION_FAILED.message,
         });
       }
 
