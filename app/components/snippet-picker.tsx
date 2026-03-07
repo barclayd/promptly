@@ -383,29 +383,43 @@ export const SnippetPicker = ({
     );
   };
 
-  const renderMainView = () => (
-    <>
-      {hasSnippets && (
+  const renderMainView = () => {
+    if (readOnly) {
+      return hasSnippets ? (
         <div className="p-1">
           <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
             Active Snippets
           </div>
-          {readOnly ? (
-            attachedSnippets.map((snippet) => (
-              <button
-                type="button"
-                key={snippet.snippetId}
-                className="flex w-full items-center gap-1.5 rounded-sm px-2 py-1.5 text-sm hover:bg-accent cursor-pointer text-left"
-                onClick={() => handleRowClick(snippet.snippetId)}
-              >
-                <IconPuzzle className="size-3.5 text-emerald-500 shrink-0" />
-                <span className="truncate flex-1">{snippet.snippetName}</span>
-                <span className="text-xs text-muted-foreground shrink-0">
-                  {snippet.snippetVersionLabel ?? 'Latest'}
-                </span>
-              </button>
-            ))
-          ) : (
+          {attachedSnippets.map((snippet) => (
+            <button
+              type="button"
+              key={snippet.snippetId}
+              className="flex w-full items-center gap-1.5 rounded-sm px-2 py-1.5 text-sm hover:bg-accent cursor-pointer text-left"
+              onClick={() => handleRowClick(snippet.snippetId)}
+            >
+              <IconPuzzle className="size-3.5 text-emerald-500 shrink-0" />
+              <span className="truncate flex-1">{snippet.snippetName}</span>
+              <span className="text-xs text-muted-foreground shrink-0">
+                {snippet.snippetVersionLabel ?? 'Latest'}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null;
+    }
+
+    return (
+      <Command shouldFilter={false}>
+        <CommandInput
+          placeholder="Search snippets..."
+          value={search}
+          onValueChange={setSearch}
+        />
+        {hasSnippets && (
+          <div className="p-1">
+            <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+              Active Snippets
+            </div>
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -425,56 +439,43 @@ export const SnippetPicker = ({
                 ))}
               </SortableContext>
             </DndContext>
-          )}
-        </div>
-      )}
-      {!readOnly && (
-        <>
-          {hasSnippets && <div className="border-b" />}
-          <Command shouldFilter={false}>
-            <CommandInput
-              placeholder="Search snippets..."
-              value={search}
-              onValueChange={setSearch}
-            />
-            <CommandList>
-              <CommandEmpty className="py-3 text-center text-xs text-muted-foreground">
-                {loading
-                  ? 'Loading snippets...'
-                  : !snippetsRef.current || snippetsRef.current.length === 0
-                    ? 'No published snippets'
-                    : 'No matching snippets'}
-              </CommandEmpty>
-              <CommandGroup heading="Available Snippets">
-                {filteredSnippets.map((snippet) => {
-                  const isAttached = attachedIds.has(snippet.id);
-                  return (
-                    <CommandItem
-                      key={snippet.id}
-                      value={snippet.id}
-                      onSelect={() =>
-                        handleSelectSnippet(snippet.id, snippet.name)
-                      }
-                      disabled={isAttached}
-                      className="gap-2 text-sm cursor-pointer"
-                    >
-                      <IconPuzzle className="size-3.5 text-muted-foreground shrink-0" />
-                      <span className="truncate flex-1">{snippet.name}</span>
-                      {isAttached ? (
-                        <IconCheck className="size-3 ml-auto text-emerald-500 shrink-0" />
-                      ) : (
-                        <IconPlus className="size-3 ml-auto text-muted-foreground/60 shrink-0" />
-                      )}
-                    </CommandItem>
-                  );
-                })}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </>
-      )}
-    </>
-  );
+          </div>
+        )}
+        {hasSnippets && <div className="border-b" />}
+        <CommandList>
+          <CommandEmpty className="py-3 text-center text-xs text-muted-foreground">
+            {loading
+              ? 'Loading snippets...'
+              : !snippetsRef.current || snippetsRef.current.length === 0
+                ? 'No published snippets'
+                : 'No matching snippets'}
+          </CommandEmpty>
+          <CommandGroup heading="Available Snippets">
+            {filteredSnippets.map((snippet) => {
+              const isAttached = attachedIds.has(snippet.id);
+              return (
+                <CommandItem
+                  key={snippet.id}
+                  value={snippet.id}
+                  onSelect={() => handleSelectSnippet(snippet.id, snippet.name)}
+                  disabled={isAttached}
+                  className="gap-2 text-sm cursor-pointer"
+                >
+                  <IconPuzzle className="size-3.5 text-muted-foreground shrink-0" />
+                  <span className="truncate flex-1">{snippet.name}</span>
+                  {isAttached ? (
+                    <IconCheck className="size-3 ml-auto text-emerald-500 shrink-0" />
+                  ) : (
+                    <IconPlus className="size-3 ml-auto text-muted-foreground/60 shrink-0" />
+                  )}
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
+        </CommandList>
+      </Command>
+    );
+  };
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
