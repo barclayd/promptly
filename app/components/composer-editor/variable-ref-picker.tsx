@@ -29,11 +29,13 @@ import { useComposerEditorStore } from '~/stores/composer-editor-store';
 type VariableRefPickerProps = {
   editor: Editor;
   collapsed?: boolean;
+  variant?: 'ghost' | 'secondary' | 'outline';
 };
 
 export const VariableRefPicker = ({
   editor,
   collapsed,
+  variant = 'ghost',
 }: VariableRefPickerProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -65,7 +67,7 @@ export const VariableRefPicker = ({
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <Button
-              variant="ghost"
+              variant={variant}
               className={cn(
                 'h-7 rounded-sm focus-visible:ring-0',
                 collapsed ? 'w-7 px-0' : 'gap-1 px-2 text-xs font-medium',

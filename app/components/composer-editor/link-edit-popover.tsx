@@ -1,9 +1,12 @@
 'use client';
 
+import type { Editor } from '@tiptap/react';
 import { useState } from 'react';
 import { Button } from '~/components/ui/button';
-import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
+import { serializeLinkUrl } from '~/lib/link-url-template';
+import { LinkUrlMiniEditor } from './link-url-mini-editor';
+import { VariableRefPicker } from './variable-ref-picker';
 
 type LinkEditPopoverProps = {
   url: string;
@@ -18,11 +21,13 @@ export const LinkEditPopover = ({
   onRemoveLink,
   hasLink,
 }: LinkEditPopoverProps) => {
-  const [value, setValue] = useState(url);
+  const [miniEditor, setMiniEditor] = useState<Editor | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSetLink(value);
+    if (!miniEditor) return;
+    const serialized = serializeLinkUrl(miniEditor);
+    onSetLink(serialized);
   };
 
   return (
@@ -30,15 +35,12 @@ export const LinkEditPopover = ({
       <Label htmlFor="link-url" className="text-xs">
         URL
       </Label>
-      <Input
-        id="link-url"
-        type="url"
-        placeholder="https://example.com"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        className="h-8 text-sm"
-        autoFocus
-      />
+      {miniEditor && (
+        <div className="flex justify-end">
+          <VariableRefPicker editor={miniEditor} variant="secondary" />
+        </div>
+      )}
+      <LinkUrlMiniEditor initialTemplate={url} onEditorReady={setMiniEditor} />
       <div className="flex gap-2 justify-end">
         {hasLink && (
           <Button

@@ -116,6 +116,9 @@ const VARIABLE_REF_TAG_REGEX =
 const VARIABLE_REF_TAG_ALT_REGEX =
   /<span[^>]*\sdata-field-path="([^"]+)"[^>]*\sdata-variable-ref(?:="[^"]*")?[^>]*><\/span>/g;
 
+const HREF_VARIABLE_REGEX = /href="([^"]*\{\{[^"]*\}\}[^"]*)"/g;
+const MUSTACHE_REGEX = /\{\{([^}]+)\}\}/g;
+
 export const replaceVariableRefs = (
   html: string,
   inputData: unknown,
@@ -131,5 +134,19 @@ export const replaceVariableRefs = (
 
   let result = html.replace(VARIABLE_REF_TAG_REGEX, replace);
   result = result.replace(VARIABLE_REF_TAG_ALT_REGEX, replace);
+
+  // Also resolve {{fieldPath}} mustache templates inside href attributes
+  result = result.replace(HREF_VARIABLE_REGEX, (_match, hrefValue: string) => {
+    const resolved = hrefValue.replace(
+      MUSTACHE_REGEX,
+      (_m: string, fieldPath: string) => {
+        const value = getNestedValue(data, fieldPath);
+        if (value === undefined) return _m;
+        return encodeURIComponent(formatValue(value));
+      },
+    );
+    return `href="${resolved}"`;
+  });
+
   return result;
 };
