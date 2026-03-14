@@ -1,5 +1,6 @@
 import { redirect } from 'react-router';
 import { getAuth } from '~/lib/auth.server';
+import { forwardAuthCookies } from '~/lib/auth-cookies.server';
 import type { Route } from './+types/logout';
 
 const performLogout = async (
@@ -13,13 +14,7 @@ const performLogout = async (
     asResponse: true,
   });
 
-  const headers = new Headers();
-
-  const setCookie = response.headers.get('set-cookie');
-
-  if (setCookie) {
-    headers.append('Set-Cookie', setCookie);
-  }
+  const headers = forwardAuthCookies(response);
 
   headers.append(
     'Set-Cookie',

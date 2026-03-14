@@ -30,12 +30,14 @@ type VariableRefPickerProps = {
   editor: Editor;
   collapsed?: boolean;
   variant?: 'ghost' | 'secondary' | 'outline';
+  onInsertVariable?: (fieldId: string, fieldPath: string) => void;
 };
 
 export const VariableRefPicker = ({
   editor,
   collapsed,
   variant = 'ghost',
+  onInsertVariable,
 }: VariableRefPickerProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -54,11 +56,22 @@ export const VariableRefPicker = ({
 
   const handleSelect = useCallback(
     (fieldId: string, fieldPath: string) => {
-      editor.chain().focus().insertVariableRef({ fieldId, fieldPath }).run();
       setOpen(false);
       setSearch('');
+      // Defer insert until after Radix popover unmounts and releases focus trap
+      requestAnimationFrame(() => {
+        if (onInsertVariable) {
+          onInsertVariable(fieldId, fieldPath);
+        } else {
+          editor
+            .chain()
+            .focus()
+            .insertVariableRef({ fieldId, fieldPath })
+            .run();
+        }
+      });
     },
-    [editor],
+    [editor, onInsertVariable],
   );
 
   return (

@@ -2,6 +2,10 @@ import { data, redirect, useFetcher } from 'react-router';
 import { z } from 'zod';
 import { LoginForm } from '~/components/login-form';
 import { getAuth } from '~/lib/auth.server';
+import {
+  forwardAuthCookies,
+  toRequestCookieHeader,
+} from '~/lib/auth-cookies.server';
 import { loginSchema } from '~/lib/validations/auth';
 import type { Route } from './+types/login';
 
@@ -41,23 +45,23 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       asResponse: true,
     });
 
-    const setCookie = response.headers.get('set-cookie');
+    const cookieHeader = toRequestCookieHeader(response);
 
-    if (setCookie) {
+    if (cookieHeader) {
       const orgsResponse = await auth.api.listOrganizations({
-        headers: { Cookie: setCookie },
+        headers: { Cookie: cookieHeader },
       });
 
       if (orgsResponse && orgsResponse.length > 0) {
         await auth.api.setActiveOrganization({
           body: { organizationId: orgsResponse[0].id },
-          headers: { Cookie: setCookie },
+          headers: { Cookie: cookieHeader },
         });
       }
     }
 
     return redirect('/dashboard', {
-      headers: setCookie ? { 'Set-Cookie': setCookie } : {},
+      headers: forwardAuthCookies(response),
     });
   } catch (error) {
     console.error('Login error:', error);

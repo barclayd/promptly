@@ -3,6 +3,10 @@ import { data, redirect, useFetcher } from 'react-router';
 import { z } from 'zod';
 import { SignUpForm } from '~/components/sign-up-form';
 import { getAuth } from '~/lib/auth.server';
+import {
+  forwardAuthCookies,
+  toRequestCookieHeader,
+} from '~/lib/auth-cookies.server';
 import { signUpSchema } from '~/lib/validations/auth';
 import type { Route } from './+types/sign-up';
 
@@ -45,9 +49,9 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       asResponse: true,
     });
 
-    const setCookie = response.headers.get('set-cookie');
+    const cookieHeader = toRequestCookieHeader(response);
 
-    if (setCookie) {
+    if (cookieHeader) {
       const db = context.cloudflare.env.promptly;
       const now = Date.now();
 
@@ -68,7 +72,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
           try {
             await auth.api.acceptInvitation({
               body: { invitationId: inv.id },
-              headers: { Cookie: setCookie },
+              headers: { Cookie: cookieHeader },
             });
             if (!joinedOrgId) {
               joinedOrgId = inv.organization_id;
@@ -82,7 +86,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
         if (joinedOrgId) {
           await auth.api.setActiveOrganization({
             body: { organizationId: joinedOrgId },
-            headers: { Cookie: setCookie },
+            headers: { Cookie: cookieHeader },
           });
         }
       }
@@ -94,13 +98,13 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
             name: `${result.data.name}'s Workspace`,
             slug: nanoid(10),
           },
-          headers: { Cookie: setCookie },
+          headers: { Cookie: cookieHeader },
         });
 
         // Backfill organization_id on the subscription created by the signup hook
         if (org?.id) {
           const session = await auth.api.getSession({
-            headers: { Cookie: setCookie },
+            headers: { Cookie: cookieHeader },
           });
           if (session?.user?.id) {
             await db
@@ -115,7 +119,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     }
 
     return redirect('/dashboard', {
-      headers: setCookie ? { 'Set-Cookie': setCookie } : {},
+      headers: forwardAuthCookies(response),
     });
   } catch (error) {
     console.error('Sign up error:', error);

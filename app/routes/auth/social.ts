@@ -1,5 +1,6 @@
 import { redirect } from 'react-router';
 import { getAuth } from '~/lib/auth.server';
+import { forwardAuthCookies } from '~/lib/auth-cookies.server';
 import type { Route } from './+types/social';
 
 // GET requests to this route should redirect to login
@@ -29,9 +30,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     throw new Response('Failed to get OAuth URL', { status: 500 });
   }
 
-  const setCookie = response.headers.get('set-cookie');
-
   return redirect(data.url, {
-    headers: setCookie ? { 'Set-Cookie': setCookie } : {},
+    headers: forwardAuthCookies(response),
   });
 };
