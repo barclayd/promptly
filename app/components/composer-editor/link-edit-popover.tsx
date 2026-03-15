@@ -29,15 +29,6 @@ export const LinkEditPopover = ({
     setMiniEditor(editor);
   }, []);
 
-  const handleInsertVariable = useCallback(
-    (fieldId: string, fieldPath: string) => {
-      const editor = miniEditorRef.current;
-      if (!editor || editor.isDestroyed) return;
-      editor.chain().focus().insertVariableRef({ fieldId, fieldPath }).run();
-    },
-    [],
-  );
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!miniEditor) return;
@@ -52,11 +43,7 @@ export const LinkEditPopover = ({
       </Label>
       {miniEditor && (
         <div className="flex justify-end">
-          <VariableRefPicker
-            editor={miniEditor}
-            variant="secondary"
-            onInsertVariable={handleInsertVariable}
-          />
+          <VariableRefPicker editor={miniEditor} variant="secondary" inline />
         </div>
       )}
       <LinkUrlMiniEditor

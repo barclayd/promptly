@@ -58,8 +58,31 @@ export const LinkUrlMiniEditor = ({
     onCreate,
   });
 
+  // Listen for custom events from the inline VariableRefPicker.
+  // This decouples insertion from React's ref/closure system, which
+  // gets invalidated when the outer popover's DismissableLayer causes
+  // remounts of the LinkEditPopover component tree.
+  const containerRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      if (!el || !editor) return;
+      const handler = (e: Event) => {
+        const { fieldId, fieldPath } = (e as CustomEvent).detail;
+        if (editor.isDestroyed) return;
+        const endPos = editor.state.doc.content.size - 1;
+        editor
+          .chain()
+          .setTextSelection(endPos)
+          .insertVariableRef({ fieldId, fieldPath })
+          .run();
+      };
+      el.addEventListener('insert-variable-ref', handler);
+      return () => el.removeEventListener('insert-variable-ref', handler);
+    },
+    [editor],
+  );
+
   return (
-    <div className="link-url-editor">
+    <div className="link-url-editor" ref={containerRef}>
       <EditorContent editor={editor} />
     </div>
   );
