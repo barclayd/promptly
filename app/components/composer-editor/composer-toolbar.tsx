@@ -360,7 +360,7 @@ export const ComposerToolbar = ({ editor, prompts }: ComposerToolbarProps) => {
                 <IconLink className="size-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-72 p-3" side="bottom" align="start">
+            <PopoverContent className="w-80 p-3" side="bottom" align="start">
               <LinkEditPopover
                 url={currentLinkUrl}
                 onSetLink={handleSetLink}

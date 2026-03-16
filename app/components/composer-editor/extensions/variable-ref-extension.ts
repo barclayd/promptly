@@ -1,9 +1,11 @@
 import { mergeAttributes, Node } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
+import { CompactVariableRefBadge } from '../compact-variable-ref-badge';
 import { VariableRefBadge } from '../variable-ref-badge';
 
 export interface VariableRefOptions {
   HTMLAttributes: Record<string, unknown>;
+  compact: boolean;
 }
 
 declare module '@tiptap/core' {
@@ -27,6 +29,7 @@ export const VariableRefNode = Node.create<VariableRefOptions>({
   addOptions() {
     return {
       HTMLAttributes: {},
+      compact: false,
     };
   },
 
@@ -63,7 +66,9 @@ export const VariableRefNode = Node.create<VariableRefOptions>({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(VariableRefBadge);
+    return ReactNodeViewRenderer(
+      this.options.compact ? CompactVariableRefBadge : VariableRefBadge,
+    );
   },
 
   addCommands() {

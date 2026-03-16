@@ -22,7 +22,7 @@ const createWorkerAuth = (env: Env) =>
   betterAuth({
     emailAndPassword: { enabled: true },
     baseURL: env.BETTER_AUTH_URL,
-    trustedOrigins: [env.BETTER_AUTH_URL, 'https://promptlycms.com'],
+    trustedOrigins: [env.BETTER_AUTH_URL],
     secret: env.BETTER_AUTH_SECRET,
     database: {
       db: new Kysely<Database>({
@@ -32,12 +32,6 @@ const createWorkerAuth = (env: Env) =>
       type: 'sqlite',
     },
     plugins: [organization()],
-    advanced: {
-      crossSubDomainCookies: {
-        enabled: true,
-        domain: '.promptlycms.com',
-      },
-    },
   });
 
 let cachedWorkerAuth: ReturnType<typeof createWorkerAuth> | null = null;

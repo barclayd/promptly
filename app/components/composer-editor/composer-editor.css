@@ -278,10 +278,46 @@
 }
 
 /* Invisible spacer between adjacent inline atoms for drop targeting */
-.composer-editor .ProseMirror-atom-gap {
+.composer-editor .ProseMirror-atom-gap,
+.link-url-editor .ProseMirror-atom-gap {
   display: inline-block;
   width: 1px;
   height: 1em;
   vertical-align: baseline;
   pointer-events: auto;
+}
+
+/* Mini TipTap editor for link URL input */
+.link-url-editor .tiptap {
+  outline: none;
+  white-space: nowrap;
+  overflow-x: auto;
+  max-height: 2rem;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--color-foreground);
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius) - 2px);
+  background: transparent;
+}
+
+.link-url-editor .tiptap:focus {
+  outline: none;
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 1px var(--color-ring);
+}
+
+.link-url-editor .tiptap p {
+  display: inline;
+  margin: 0;
+}
+
+.link-url-editor .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--color-muted-foreground);
+  opacity: 0.5;
+  pointer-events: none;
+  height: 0;
 }

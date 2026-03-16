@@ -15,6 +15,10 @@ import {
   ItemTitle,
 } from '~/components/ui/item';
 import { getAuth } from '~/lib/auth.server';
+import {
+  forwardAuthCookies,
+  toRequestCookieHeader,
+} from '~/lib/auth-cookies.server';
 import { roleLabels } from '~/lib/validations/team';
 import type { Route } from './+types/invite.$id';
 
@@ -257,11 +261,11 @@ export const action = async ({
         return data({ errors: { form: [errorMessage] } }, { status: 400 });
       }
 
-      const setCookie = signUpResponse.headers.get('set-cookie');
+      const cookieHeader = toRequestCookieHeader(signUpResponse);
 
       const acceptResponse = await auth.api.acceptInvitation({
         body: { invitationId: id },
-        headers: setCookie ? { Cookie: setCookie } : {},
+        headers: cookieHeader ? { Cookie: cookieHeader } : {},
         asResponse: true,
       });
 
@@ -276,11 +280,11 @@ export const action = async ({
       // Set the joined organization as active
       await auth.api.setActiveOrganization({
         body: { organizationId: invitation.organizationId },
-        headers: setCookie ? { Cookie: setCookie } : {},
+        headers: cookieHeader ? { Cookie: cookieHeader } : {},
       });
 
       return redirect('/dashboard', {
-        headers: setCookie ? { 'Set-Cookie': setCookie } : {},
+        headers: forwardAuthCookies(signUpResponse),
       });
     } catch (error) {
       console.error('Invite signup error:', error);
@@ -363,10 +367,8 @@ export const action = async ({
       );
     }
 
-    const setCookie = response.headers.get('set-cookie');
-
     return redirect(responseData.url, {
-      headers: setCookie ? { 'Set-Cookie': setCookie } : {},
+      headers: forwardAuthCookies(response),
     });
   }
 

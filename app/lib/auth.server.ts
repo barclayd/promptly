@@ -39,6 +39,8 @@ const createAuth = (ctx: Readonly<RouterContextProvider>) => {
       },
     },
     session: {
+      expiresIn: 60 * 60 * 24 * 30, // 30 days
+      updateAge: 60 * 60 * 4, // refresh session every 4 hours
       cookieCache: {
         enabled: true,
         maxAge: 5 * 60, // 5 minutes — session validated from cookie, not DB

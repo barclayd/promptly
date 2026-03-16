@@ -2,7 +2,7 @@
 
 import { IconCode } from '@tabler/icons-react';
 import type { Editor } from '@tiptap/react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Button } from '~/components/ui/button';
 import {
   Command,
@@ -29,14 +29,72 @@ import { useComposerEditorStore } from '~/stores/composer-editor-store';
 type VariableRefPickerProps = {
   editor: Editor;
   collapsed?: boolean;
+  variant?: 'ghost' | 'secondary' | 'outline';
+  onInsertVariable?: (fieldId: string, fieldPath: string) => void;
+  /** Render dropdown inline (no portal) — for use inside other popovers. */
+  inline?: boolean;
 };
+
+const VariableCommandList = ({
+  variables,
+  filteredVariables,
+  search,
+  setSearch,
+  onSelect,
+  autoFocus,
+}: {
+  variables: Array<{ id: string; path: string }>;
+  filteredVariables: Array<{ id: string; path: string }>;
+  search: string;
+  setSearch: (v: string) => void;
+  onSelect: (fieldId: string, fieldPath: string) => void;
+  autoFocus?: boolean;
+}) => (
+  <Command shouldFilter={false}>
+    <CommandInput
+      placeholder="Search variables..."
+      value={search}
+      onValueChange={setSearch}
+      ref={autoFocus ? (el) => el?.focus() : undefined}
+    />
+    <CommandList>
+      <CommandEmpty className="py-3 text-center text-xs text-muted-foreground">
+        {variables.length === 0
+          ? 'No variables defined. Add fields in Schema Builder.'
+          : 'No matching variables'}
+      </CommandEmpty>
+      <CommandGroup>
+        {filteredVariables.map((variable) => (
+          <CommandItem
+            key={variable.id}
+            value={variable.id}
+            onSelect={() => onSelect(variable.id, variable.path)}
+            className="gap-2 text-sm cursor-pointer"
+          >
+            <IconCode className="size-3.5 text-muted-foreground shrink-0" />
+            <span className="truncate">{variable.path}</span>
+          </CommandItem>
+        ))}
+      </CommandGroup>
+    </CommandList>
+  </Command>
+);
 
 export const VariableRefPicker = ({
   editor,
   collapsed,
+  variant = 'ghost',
+  onInsertVariable,
+  inline,
 }: VariableRefPickerProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+
+  // Keep a ref to always read the latest editor prop. The outer link
+  // popover's DismissableLayer can cause remounts, which means the
+  // editor captured in useCallback closures can become stale/destroyed.
+  const editorRef = useRef(editor);
+  editorRef.current = editor;
 
   const schemaFields = useComposerEditorStore((s) => s.schemaFields);
   const variables = useMemo(
@@ -52,12 +110,74 @@ export const VariableRefPicker = ({
 
   const handleSelect = useCallback(
     (fieldId: string, fieldPath: string) => {
-      editor.chain().focus().insertVariableRef({ fieldId, fieldPath }).run();
-      setOpen(false);
-      setSearch('');
+      if (inline) {
+        // Inline mode: dispatch a custom event to the mini editor container.
+        // This avoids stale React refs — the outer popover's DismissableLayer
+        // can cause remounts that invalidate all closure-captured editor refs.
+        // The LinkUrlMiniEditor listens for this event and performs the
+        // insertion using its live TipTap editor instance.
+        document.querySelector('.link-url-editor')?.dispatchEvent(
+          new CustomEvent('insert-variable-ref', {
+            detail: { fieldId, fieldPath },
+          }),
+        );
+        setOpen(false);
+        setSearch('');
+      } else if (onInsertVariable) {
+        onInsertVariable(fieldId, fieldPath);
+        setOpen(false);
+        setSearch('');
+      } else {
+        setOpen(false);
+        setSearch('');
+        // Defer insert until after Radix popover unmounts and releases focus trap
+        requestAnimationFrame(() => {
+          const ed = editorRef.current;
+          ed.chain().focus().insertVariableRef({ fieldId, fieldPath }).run();
+        });
+      }
     },
-    [editor],
+    [inline, onInsertVariable],
   );
+
+  const inlineRef = useRef<HTMLDivElement>(null);
+
+  // When used inside another popover (onInsertVariable provided),
+  // render the dropdown inline to avoid nested portal issues.
+  // Radix portals nested popover content to document.body, which
+  // causes the outer popover's DismissableLayer to treat clicks
+  // inside the inner popover as "outside" — dismissing the outer
+  // popover and destroying its content (including the mini editor).
+  if (inline) {
+    return (
+      <div className="relative" ref={inlineRef}>
+        <Button
+          variant={variant}
+          className={cn(
+            'h-7 rounded-sm focus-visible:ring-0',
+            collapsed ? 'w-7 px-0' : 'gap-1 px-2 text-xs font-medium',
+          )}
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+        >
+          <IconCode className="size-3.5" />
+          {!collapsed && <span>Add variable</span>}
+        </Button>
+        {open && (
+          <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover shadow-md">
+            <VariableCommandList
+              variables={variables}
+              filteredVariables={filteredVariables}
+              search={search}
+              setSearch={setSearch}
+              onSelect={handleSelect}
+              autoFocus
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -65,7 +185,7 @@ export const VariableRefPicker = ({
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <Button
-              variant="ghost"
+              variant={variant}
               className={cn(
                 'h-7 rounded-sm focus-visible:ring-0',
                 collapsed ? 'w-7 px-0' : 'gap-1 px-2 text-xs font-medium',
@@ -82,33 +202,13 @@ export const VariableRefPicker = ({
         </TooltipContent>
       </Tooltip>
       <PopoverContent className="w-64 p-0" side="bottom" align="start">
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder="Search variables..."
-            value={search}
-            onValueChange={setSearch}
-          />
-          <CommandList>
-            <CommandEmpty className="py-3 text-center text-xs text-muted-foreground">
-              {variables.length === 0
-                ? 'No variables defined. Add fields in Schema Builder.'
-                : 'No matching variables'}
-            </CommandEmpty>
-            <CommandGroup>
-              {filteredVariables.map((variable) => (
-                <CommandItem
-                  key={variable.id}
-                  value={variable.id}
-                  onSelect={() => handleSelect(variable.id, variable.path)}
-                  className="gap-2 text-sm cursor-pointer"
-                >
-                  <IconCode className="size-3.5 text-muted-foreground shrink-0" />
-                  <span className="truncate">{variable.path}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+        <VariableCommandList
+          variables={variables}
+          filteredVariables={filteredVariables}
+          search={search}
+          setSearch={setSearch}
+          onSelect={handleSelect}
+        />
       </PopoverContent>
     </Popover>
   );
