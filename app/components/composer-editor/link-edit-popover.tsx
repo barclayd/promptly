@@ -4,7 +4,6 @@ import type { Editor } from '@tiptap/react';
 import { useCallback, useRef, useState } from 'react';
 import { Button } from '~/components/ui/button';
 import { Label } from '~/components/ui/label';
-import { serializeLinkUrl } from '~/lib/link-url-template';
 import { LinkUrlMiniEditor } from './link-url-mini-editor';
 import { VariableRefPicker } from './variable-ref-picker';
 
@@ -22,18 +21,19 @@ export const LinkEditPopover = ({
   hasLink,
 }: LinkEditPopoverProps) => {
   const [miniEditor, setMiniEditor] = useState<Editor | null>(null);
-  const miniEditorRef = useRef<Editor | null>(null);
+  const serializedUrlRef = useRef(url);
 
   const handleEditorReady = useCallback((editor: Editor) => {
-    miniEditorRef.current = editor;
     setMiniEditor(editor);
+  }, []);
+
+  const handleUrlChange = useCallback((serializedUrl: string) => {
+    serializedUrlRef.current = serializedUrl;
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!miniEditor) return;
-    const serialized = serializeLinkUrl(miniEditor);
-    onSetLink(serialized);
+    onSetLink(serializedUrlRef.current);
   };
 
   return (
@@ -49,6 +49,7 @@ export const LinkEditPopover = ({
       <LinkUrlMiniEditor
         initialTemplate={url}
         onEditorReady={handleEditorReady}
+        onUrlChange={handleUrlChange}
       />
       <div className="flex gap-2 justify-end">
         {hasLink && (

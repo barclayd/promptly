@@ -4,7 +4,7 @@ import type { Editor } from '@tiptap/react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { useCallback, useMemo, useRef } from 'react';
 import { flattenSchemaFields } from '~/lib/flatten-schema-fields';
-import { deserializeLinkUrl } from '~/lib/link-url-template';
+import { deserializeLinkUrl, serializeLinkUrl } from '~/lib/link-url-template';
 import { useComposerEditorStore } from '~/stores/composer-editor-store';
 import { getLinkUrlExtensions } from './extensions/link-url-extensions';
 import { LinkUrlPaste } from './extensions/link-url-paste-extension';
@@ -12,11 +12,13 @@ import { LinkUrlPaste } from './extensions/link-url-paste-extension';
 type LinkUrlMiniEditorProps = {
   initialTemplate: string;
   onEditorReady: (editor: Editor) => void;
+  onUrlChange?: (serializedUrl: string) => void;
 };
 
 export const LinkUrlMiniEditor = ({
   initialTemplate,
   onEditorReady,
+  onUrlChange,
 }: LinkUrlMiniEditorProps) => {
   const schemaFields = useComposerEditorStore((s) => s.schemaFields);
   const variables = useMemo(
@@ -32,8 +34,16 @@ export const LinkUrlMiniEditor = ({
   const onEditorReadyRef = useRef(onEditorReady);
   onEditorReadyRef.current = onEditorReady;
 
+  const onUrlChangeRef = useRef(onUrlChange);
+  onUrlChangeRef.current = onUrlChange;
+
   const onCreate = useCallback(({ editor }: { editor: Editor }) => {
     onEditorReadyRef.current(editor);
+    onUrlChangeRef.current?.(serializeLinkUrl(editor));
+  }, []);
+
+  const onUpdate = useCallback(({ editor }: { editor: Editor }) => {
+    onUrlChangeRef.current?.(serializeLinkUrl(editor));
   }, []);
 
   const editor = useEditor({
@@ -56,6 +66,7 @@ export const LinkUrlMiniEditor = ({
       },
     },
     onCreate,
+    onUpdate,
   });
 
   // Listen for custom events from the inline VariableRefPicker.
