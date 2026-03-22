@@ -81,6 +81,7 @@ const createAuth = (ctx: Readonly<RouterContextProvider>) => {
       apiKey({
         defaultPrefix: 'promptly_',
         enableMetadata: true,
+        references: 'organization',
         rateLimit: {
           enabled: false,
         },

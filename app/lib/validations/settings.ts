@@ -18,10 +18,14 @@ export type DeleteApiKeyInput = z.infer<typeof deleteApiKeySchema>;
 
 export const scopeLabels: Record<string, string> = {
   'prompt:read': 'Read Prompts',
+  'snippet:read': 'Read Snippets',
+  'composer:read': 'Read Composers',
 };
 
 export const scopeDescriptions: Record<string, string> = {
   'prompt:read': 'Read access to published prompts via API',
+  'snippet:read': 'Read access to published snippets via API',
+  'composer:read': 'Read access to published composers via API',
 };
 
 export const availableScopes = Object.keys(scopeLabels);

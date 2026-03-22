@@ -114,6 +114,7 @@ export const RemovePromptVariablesModal = ({
               return (
                 <Field key={variable.field.id} orientation="horizontal">
                   <label
+                    htmlFor={`remove-var-${variable.field.id}`}
                     className={cn(
                       'flex w-full items-start gap-3',
                       isProtected ? 'cursor-not-allowed' : 'cursor-pointer',
@@ -121,6 +122,7 @@ export const RemovePromptVariablesModal = ({
                   >
                     <div className="pt-0.5">
                       <Checkbox
+                        id={`remove-var-${variable.field.id}`}
                         checked={isChecked}
                         onCheckedChange={(checked) =>
                           handleToggle(variable.field.id, checked === true)

@@ -126,13 +126,28 @@ const insertPromptAndTriggerModal = async (
  */
 const deleteAllPromptRefs = async (page: Page, promptId: string) => {
   await page.evaluate((pid) => {
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    const editorEl = document.querySelector('.ProseMirror') as any;
+    const editorEl = document.querySelector('.ProseMirror') as HTMLElement & {
+      editor?: {
+        state: {
+          tr: { delete: (from: number, to: number) => unknown };
+          doc: {
+            nodeAt: (pos: number) => { nodeSize: number } | null;
+            descendants: (
+              callback: (
+                node: { type: { name: string }; attrs: Record<string, string> },
+                pos: number,
+              ) => void,
+            ) => void;
+          };
+        };
+        view: { dispatch: (tr: unknown) => void };
+      };
+    };
     if (!editorEl?.editor) throw new Error('Editor not found');
 
     const editor = editorEl.editor;
     const positions: number[] = [];
-    editor.state.doc.descendants((node: any, pos: number) => {
+    editor.state.doc.descendants((node, pos) => {
       if (node.type.name === 'promptRef' && node.attrs.promptId === pid) {
         positions.push(pos);
       }
