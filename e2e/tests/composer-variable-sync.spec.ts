@@ -98,9 +98,9 @@ const insertPromptAndTriggerModal = async (
         sibling?: Fiber;
       };
 
-      const fiber: Fiber | undefined = (root as unknown as Record<string, Fiber>)[
-        fiberKey
-      ];
+      const fiber: Fiber | undefined = (
+        root as unknown as Record<string, Fiber>
+      )[fiberKey];
       const queue: Fiber[] = [fiber];
       const visited = new Set<Fiber>();
 

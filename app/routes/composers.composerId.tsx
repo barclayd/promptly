@@ -324,7 +324,8 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
   useComposerUndoRedo();
 
   const getEditorHtml = useCallback(
-    () => editorRef.current?.getHTML() ?? useComposerEditorStore.getState().content,
+    () =>
+      editorRef.current?.getHTML() ?? useComposerEditorStore.getState().content,
     [],
   );
 
