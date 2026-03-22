@@ -7,12 +7,14 @@ import { Button } from '~/components/ui/button';
 import { Checkbox } from '~/components/ui/checkbox';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '~/components/ui/dialog';
+import { Field, FieldGroup } from '~/components/ui/field';
 import type { SchemaField } from '~/lib/schema-types';
 import { cn } from '~/lib/utils';
 
@@ -89,8 +91,10 @@ export const RemovePromptVariablesModal = ({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <IconTrash className="size-5 text-destructive" />
+          <DialogTitle className="flex items-center gap-2 text-base font-normal">
+            <div className="flex size-8 items-center justify-center rounded-full bg-destructive/10 dark:bg-destructive/15 shrink-0">
+              <IconTrash className="size-4 text-destructive" />
+            </div>
             Clean up variables
           </DialogTitle>
           <DialogDescription>
@@ -100,60 +104,68 @@ export const RemovePromptVariablesModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-64 overflow-y-auto -mx-1 px-1">
-          <div className="flex flex-col gap-1">
+        <div className="my-6 max-h-72 overflow-y-auto">
+          <FieldGroup>
             {variables.map((variable) => {
               const isProtected = !variable.orphaned;
               const protection = getProtectionReason(variable);
               const isChecked = checkedIds.has(variable.field.id);
 
               return (
-                <label
-                  key={variable.field.id}
-                  className={cn(
-                    'flex items-center gap-3 rounded-md px-2 py-2 transition-colors',
-                    isProtected
-                      ? 'cursor-not-allowed'
-                      : 'cursor-pointer hover:bg-accent',
-                  )}
-                >
-                  <Checkbox
-                    checked={isChecked}
-                    onCheckedChange={(checked) =>
-                      handleToggle(variable.field.id, checked === true)
-                    }
-                    disabled={isProtected}
-                  />
-                  <span
+                <Field key={variable.field.id} orientation="horizontal">
+                  <label
                     className={cn(
-                      'flex-1 text-sm font-medium truncate',
-                      isProtected && 'opacity-50',
+                      'flex w-full items-start gap-3',
+                      isProtected ? 'cursor-not-allowed' : 'cursor-pointer',
                     )}
                   >
-                    {variable.field.name}
-                  </span>
-                  <Badge
-                    variant="outline"
-                    className={cn(isProtected && 'opacity-50')}
-                  >
-                    {variable.field.type}
-                  </Badge>
-                  {protection && (
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                      <IconShieldCheck className="size-3.5" />
-                      {protection.text}
-                    </span>
-                  )}
-                </label>
+                    <div className="pt-0.5">
+                      <Checkbox
+                        checked={isChecked}
+                        onCheckedChange={(checked) =>
+                          handleToggle(variable.field.id, checked === true)
+                        }
+                        disabled={isProtected}
+                      />
+                    </div>
+                    <div className="flex flex-1 flex-col gap-1.5 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            'text-sm font-medium truncate',
+                            isProtected && 'opacity-50',
+                          )}
+                        >
+                          {variable.field.name}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'text-xs ml-auto shrink-0',
+                            isProtected && 'opacity-50',
+                          )}
+                        >
+                          {variable.field.type}
+                        </Badge>
+                      </div>
+                      {protection && (
+                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <IconShieldCheck className="size-3.5 shrink-0" />
+                          {protection.text}
+                        </p>
+                      )}
+                    </div>
+                  </label>
+                </Field>
               );
             })}
-          </div>
+          </FieldGroup>
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Keep All
-          </Button>
+          <DialogClose asChild>
+            <Button variant="outline">Keep All</Button>
+          </DialogClose>
           <Button
             variant="destructive"
             disabled={selectedCount === 0}

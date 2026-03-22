@@ -11,12 +11,14 @@ import { Button } from '~/components/ui/button';
 import { Checkbox } from '~/components/ui/checkbox';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '~/components/ui/dialog';
+import { Field, FieldGroup } from '~/components/ui/field';
 import type { SchemaField } from '~/lib/schema-types';
 import { cn } from '~/lib/utils';
 
@@ -115,78 +117,86 @@ export const AddPromptVariablesModal = ({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <IconFileText className="size-5 text-blue-500" />
+          <DialogTitle className="flex items-center gap-2 text-base font-normal">
+            <div className="flex size-8 items-center justify-center rounded-full bg-blue-500/10 dark:bg-blue-500/15 shrink-0">
+              <IconFileText className="size-4 text-blue-500" />
+            </div>
             <span>
               Import variables from{' '}
               <span className="text-primary">{promptName}</span>
             </span>
           </DialogTitle>
           <DialogDescription>
-            Select which variables to add to your composer's schema.
+            Select which variables to add to your composer&apos;s schema.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-64 overflow-y-auto -mx-1 px-1">
+        <div className="my-6 max-h-72 overflow-y-auto">
           {categorized.length === 0 ? (
-            <p className="text-muted-foreground text-sm py-4 text-center">
+            <p className="text-muted-foreground text-sm py-6 text-center">
               This prompt has no variables.
             </p>
           ) : (
-            <div className="flex flex-col gap-1">
+            <FieldGroup>
               {categorized.map(({ field, category, existingType }) => (
-                <div
-                  key={field.id}
-                  className={cn(
-                    'flex items-center gap-3 rounded-md px-2 py-1.5',
-                    category === 'exists' && 'opacity-50',
-                  )}
-                >
-                  {category === 'conflict' ? (
-                    <IconAlertTriangle className="size-4 shrink-0 text-amber-500" />
-                  ) : (
-                    <Checkbox
-                      checked={
-                        category === 'exists' || checkedIds.has(field.id)
-                      }
-                      disabled={category === 'exists'}
-                      onCheckedChange={(checked) =>
-                        handleToggle(field.id, checked === true)
-                      }
-                    />
-                  )}
-
-                  <IconVariable className="size-3.5 shrink-0 text-muted-foreground" />
-
-                  <span className="text-sm font-medium truncate">
-                    {field.name}
-                  </span>
-
-                  <Badge variant="outline" className="text-xs ml-auto shrink-0">
-                    {field.type}
-                  </Badge>
-
-                  {category === 'exists' && (
-                    <span className="text-muted-foreground text-xs shrink-0">
-                      Already in schema
-                    </span>
-                  )}
-
-                  {category === 'conflict' && (
-                    <span className="text-amber-500 text-xs shrink-0">
-                      Exists as {existingType}
-                    </span>
-                  )}
-                </div>
+                <Field key={field.id} orientation="horizontal">
+                  <label
+                    className={cn(
+                      'flex w-full items-start gap-3 cursor-pointer',
+                      category === 'exists' && 'opacity-50 cursor-default',
+                      category === 'conflict' && 'cursor-default',
+                    )}
+                  >
+                    <div className="pt-0.5">
+                      {category === 'conflict' ? (
+                        <IconAlertTriangle className="size-4 shrink-0 text-amber-500" />
+                      ) : (
+                        <Checkbox
+                          checked={
+                            category === 'exists' || checkedIds.has(field.id)
+                          }
+                          disabled={category === 'exists'}
+                          onCheckedChange={(checked) =>
+                            handleToggle(field.id, checked === true)
+                          }
+                        />
+                      )}
+                    </div>
+                    <div className="flex flex-1 flex-col gap-1.5 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <IconVariable className="size-3.5 shrink-0 text-muted-foreground" />
+                        <span className="text-sm font-medium truncate">
+                          {field.name}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className="text-xs ml-auto shrink-0"
+                        >
+                          {field.type}
+                        </Badge>
+                      </div>
+                      {category === 'exists' && (
+                        <p className="text-muted-foreground text-xs">
+                          Already in schema
+                        </p>
+                      )}
+                      {category === 'conflict' && (
+                        <p className="text-amber-500 text-xs">
+                          Exists as {existingType}
+                        </p>
+                      )}
+                    </div>
+                  </label>
+                </Field>
               ))}
-            </div>
+            </FieldGroup>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Skip
-          </Button>
+          <DialogClose asChild>
+            <Button variant="outline">Skip</Button>
+          </DialogClose>
           <Button onClick={handleAdd} disabled={selectedFields.length === 0}>
             Add Selected ({selectedFields.length})
           </Button>
