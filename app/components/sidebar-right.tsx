@@ -72,6 +72,7 @@ const sidebarLightTheme: Theme = {
       fontFamily: 'inherit',
     },
     property: 'oklch(0.554 0.046 257.417)', // muted-foreground
+    itemCount: 'oklch(0.554 0.046 257.417)', // muted-foreground
     bracket: 'oklch(0.704 0.04 256.788)', // ring color
     string: 'oklch(0.65 0.19 50)', // #ED7117 orange
     number: 'oklch(0.65 0.19 50)', // #ED7117 orange
@@ -101,6 +102,7 @@ const sidebarDarkTheme: Theme = {
       fontFamily: 'inherit',
     },
     property: 'lab(66.128% 0 0)', // muted-foreground (zinc)
+    itemCount: 'lab(74% 0 0)', // soft muted white
     bracket: 'lab(48.496% 0 0)', // ring (zinc)
     string: 'lab(70% 45 65)', // warm orange (consistent with number)
     number: 'lab(70% 45 65)', // warm orange
