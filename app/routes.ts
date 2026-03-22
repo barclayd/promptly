@@ -20,6 +20,7 @@ export default [
   route('api/prompts/delete', './routes/api/prompts.delete.ts'),
   route('api/prompt-info', './routes/api/prompt-info.ts'),
   route('api/prompt-versions', './routes/api/prompt-versions.ts'),
+  route('api/prompt-schema', './routes/api/prompt-schema.ts'),
   // Snippet API routes
   route('api/snippets/create', './routes/api/snippets.create.ts'),
   route('api/snippets/run', './routes/api/snippets.run.ts'),

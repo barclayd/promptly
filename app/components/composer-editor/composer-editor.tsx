@@ -118,6 +118,12 @@ type ComposerEditorProps = {
   disabled?: boolean;
   prompts?: Array<{ id: string; name: string }>;
   onEditorReady?: (editor: Editor) => void;
+  onPromptAdded?: (promptId: string, promptName: string) => void;
+  onPromptRefRemoved?: (payload: {
+    promptId: string;
+    promptName: string;
+    promptVersionId: string | null;
+  }) => void;
 };
 
 export const ComposerEditor = ({
@@ -131,12 +137,14 @@ export const ComposerEditor = ({
   disabled,
   prompts,
   onEditorReady,
+  onPromptAdded,
+  onPromptRefRemoved,
 }: ComposerEditorProps) => {
   const isCurrentlySaving = isPendingSave || isSaving;
   const [copied, setCopied] = useState(false);
 
   const editor = useEditor({
-    extensions: getComposerExtensions(),
+    extensions: getComposerExtensions({ onPromptRefRemoved }),
     content,
     editable: !disabled,
     immediatelyRender: false,
@@ -182,7 +190,11 @@ export const ComposerEditor = ({
     <div className="grid w-full gap-4">
       <InputGroup>
         <InputGroupAddon align="block-start" className="border-b">
-          <ComposerToolbar editor={editor} prompts={prompts} />
+          <ComposerToolbar
+            editor={editor}
+            prompts={prompts}
+            onPromptAdded={onPromptAdded}
+          />
           <InputGroupButton
             variant="ghost"
             size="icon-xs"

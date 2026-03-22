@@ -28,12 +28,14 @@ type PromptRefPickerProps = {
   editor: Editor;
   prompts?: Array<{ id: string; name: string }>;
   collapsed?: boolean;
+  onPromptAdded?: (promptId: string, promptName: string) => void;
 };
 
 export const PromptRefPicker = ({
   editor,
   prompts,
   collapsed,
+  onPromptAdded,
 }: PromptRefPickerProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -48,10 +50,11 @@ export const PromptRefPicker = ({
   const handleSelect = useCallback(
     (promptId: string, promptName: string) => {
       editor.chain().focus().insertPromptRef({ promptId, promptName }).run();
+      onPromptAdded?.(promptId, promptName);
       setOpen(false);
       setSearch('');
     },
-    [editor],
+    [editor, onPromptAdded],
   );
 
   return (

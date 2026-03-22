@@ -256,9 +256,14 @@ const DROPDOWN_TO_GROUP: Record<string, string> = {
 type ComposerToolbarProps = {
   editor: Editor | null;
   prompts?: Array<{ id: string; name: string }>;
+  onPromptAdded?: (promptId: string, promptName: string) => void;
 };
 
-export const ComposerToolbar = ({ editor, prompts }: ComposerToolbarProps) => {
+export const ComposerToolbar = ({
+  editor,
+  prompts,
+  onPromptAdded,
+}: ComposerToolbarProps) => {
   const [linkOpen, setLinkOpen] = useState(false);
 
   const {
@@ -424,6 +429,7 @@ export const ComposerToolbar = ({ editor, prompts }: ComposerToolbarProps) => {
             editor={editor}
             prompts={prompts}
             collapsed={addPromptCollapsed}
+            onPromptAdded={onPromptAdded}
           />
         );
       case 'add-variable':
@@ -431,7 +437,13 @@ export const ComposerToolbar = ({ editor, prompts }: ComposerToolbarProps) => {
           <VariableRefPicker editor={editor} collapsed={addVariableCollapsed} />
         );
       case 'insert-merged':
-        return <ToolbarInsertPicker editor={editor} prompts={prompts} />;
+        return (
+          <ToolbarInsertPicker
+            editor={editor}
+            prompts={prompts}
+            onPromptAdded={onPromptAdded}
+          />
+        );
       default:
         return null;
     }

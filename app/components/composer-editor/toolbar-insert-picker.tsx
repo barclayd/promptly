@@ -28,11 +28,13 @@ import { useComposerEditorStore } from '~/stores/composer-editor-store';
 type ToolbarInsertPickerProps = {
   editor: Editor;
   prompts?: Array<{ id: string; name: string }>;
+  onPromptAdded?: (promptId: string, promptName: string) => void;
 };
 
 export const ToolbarInsertPicker = ({
   editor,
   prompts,
+  onPromptAdded,
 }: ToolbarInsertPickerProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -59,10 +61,11 @@ export const ToolbarInsertPicker = ({
   const handleSelectPrompt = useCallback(
     (promptId: string, promptName: string) => {
       editor.chain().focus().insertPromptRef({ promptId, promptName }).run();
+      onPromptAdded?.(promptId, promptName);
       setOpen(false);
       setSearch('');
     },
-    [editor],
+    [editor, onPromptAdded],
   );
 
   const handleSelectVariable = useCallback(

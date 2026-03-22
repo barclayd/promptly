@@ -13,10 +13,16 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Underline } from '@tiptap/extension-underline';
 import { StarterKit } from '@tiptap/starter-kit';
 import { AtomGap } from './atom-gap-extension';
+import type { PromptRefRemovedPayload } from './prompt-ref-delete-tracker';
+import { PromptRefDeleteTracker } from './prompt-ref-delete-tracker';
 import { PromptRefNode } from './prompt-ref-extension';
 import { VariableRefNode } from './variable-ref-extension';
 
-export const getComposerExtensions = () => [
+type ComposerExtensionOptions = {
+  onPromptRefRemoved?: (payload: PromptRefRemovedPayload) => void;
+};
+
+export const getComposerExtensions = (options?: ComposerExtensionOptions) => [
   StarterKit.configure({
     heading: { levels: [1, 2, 3] },
     link: false,
@@ -40,4 +46,7 @@ export const getComposerExtensions = () => [
   PromptRefNode,
   VariableRefNode,
   AtomGap,
+  PromptRefDeleteTracker.configure({
+    onPromptRefRemoved: options?.onPromptRefRemoved,
+  }),
 ];
