@@ -209,6 +209,7 @@ export const CreateApiKeyDialog = ({ children }: CreateApiKeyDialogProps) => {
                       name="scopes"
                       value={scope}
                       defaultChecked
+                      className="mt-0.5"
                     />
                     <div className="grid gap-0.5">
                       <Label
