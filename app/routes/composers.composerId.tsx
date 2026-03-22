@@ -18,6 +18,8 @@ import {
 } from 'react-router';
 import { useDebouncedCallback } from 'use-debounce';
 import { Skeleton } from '~/components/ui/skeleton';
+import { useVariableSyncModal } from '~/hooks/use-variable-sync-modal';
+import { usePromptSchemaCacheStore } from '~/stores/prompt-schema-cache';
 
 const ComposerEditor = lazy(() =>
   import('~/components/composer-editor').then((m) => ({
@@ -33,6 +35,16 @@ const PublishComposerDialog = lazy(() =>
   import('~/components/publish-composer-dialog').then((m) => ({
     default: m.PublishComposerDialog,
   })),
+);
+const AddPromptVariablesModal = lazy(() =>
+  import('~/components/composer-editor/add-prompt-variables-modal').then(
+    (m) => ({ default: m.AddPromptVariablesModal }),
+  ),
+);
+const RemovePromptVariablesModal = lazy(() =>
+  import('~/components/composer-editor/remove-prompt-variables-modal').then(
+    (m) => ({ default: m.RemovePromptVariablesModal }),
+  ),
 );
 
 import { Badge } from '~/components/ui/badge';
@@ -311,6 +323,22 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
 
   useComposerUndoRedo();
 
+  const getEditorHtml = useCallback(
+    () => editorRef.current?.getHTML() ?? useComposerEditorStore.getState().content,
+    [],
+  );
+
+  const {
+    addModal,
+    removeModal,
+    setAddModalOpen,
+    setRemoveModalOpen,
+    handlePromptAdded,
+    handlePromptRemoved,
+    handleAddSelected,
+    handleRemoveSelected,
+  } = useVariableSyncModal(getEditorHtml);
+
   const { sendContentUpdate, subscribeToEvents, sendCursorUpdate, cursors } =
     usePresence(isReadOnly ? undefined : loaderData.composer.id);
 
@@ -408,6 +436,7 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
       version: loaderData.currentVersion,
     };
     initialContentRef.current = loaderData.content;
+    usePromptSchemaCacheStore.getState().clear();
 
     useComposerEditorStore.getState().initialize({
       composerId: loaderData.composer.id,
@@ -642,6 +671,10 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
                 disabled={isReadOnly}
                 prompts={loaderData.prompts}
                 onEditorReady={handleEditorReady}
+                onPromptAdded={isReadOnly ? undefined : handlePromptAdded}
+                onPromptRefRemoved={
+                  isReadOnly ? undefined : handlePromptRemoved
+                }
               />
               {!isReadOnly && (
                 <div className="mt-4 md:hidden">
@@ -665,6 +698,29 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
           </Suspense>
         </div>
       </div>
+      {addModal.open && (
+        <Suspense fallback={null}>
+          <AddPromptVariablesModal
+            open={addModal.open}
+            onOpenChange={setAddModalOpen}
+            promptName={addModal.promptName}
+            variables={addModal.variables}
+            existingFields={addModal.existingFields}
+            onAddSelected={handleAddSelected}
+          />
+        </Suspense>
+      )}
+      {removeModal.open && (
+        <Suspense fallback={null}>
+          <RemovePromptVariablesModal
+            open={removeModal.open}
+            onOpenChange={setRemoveModalOpen}
+            promptName={removeModal.promptName}
+            variables={removeModal.variables}
+            onRemoveSelected={handleRemoveSelected}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
