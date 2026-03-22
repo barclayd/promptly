@@ -10,9 +10,12 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '~/components/ui/empty';
-import { CreateApiKeyDialog } from './create-api-key-dialog';
 
-export const ApiKeysEmptyState = () => {
+interface ApiKeysEmptyStateProps {
+  onAddKey: () => void;
+}
+
+export const ApiKeysEmptyState = ({ onAddKey }: ApiKeysEmptyStateProps) => {
   return (
     <Empty className="bg-card/60 backdrop-blur-sm border border-border shadow-sm">
       <EmptyHeader>
@@ -29,12 +32,10 @@ export const ApiKeysEmptyState = () => {
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
-        <CreateApiKeyDialog>
-          <Button className="gap-2 shadow-sm">
-            <IconKey className="size-4" />
-            Add API Key
-          </Button>
-        </CreateApiKeyDialog>
+        <Button className="gap-2 shadow-sm" onClick={onAddKey}>
+          <IconKey className="size-4" />
+          Add API Key
+        </Button>
       </EmptyContent>
     </Empty>
   );

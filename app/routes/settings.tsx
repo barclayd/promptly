@@ -93,27 +93,39 @@ const PromptlyApiKeysContent = ({
 }: {
   apiKeys: Route.ComponentProps['loaderData']['apiKeys'];
 }) => {
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const hasApiKeys = apiKeys.length > 0;
 
-  return hasApiKeys ? (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="text-sm font-medium text-foreground">
-          Promptly API Keys
+  return (
+    <>
+      {hasApiKeys ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-medium text-foreground">
+              Promptly API Keys
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => setCreateDialogOpen(true)}
+            >
+              <IconKey className="size-4" />
+              Add API Key
+            </Button>
+          </div>
+          <ApiKeysTable apiKeys={apiKeys} />
         </div>
-        <CreateApiKeyDialog>
-          <Button variant="outline" size="sm" className="gap-2">
-            <IconKey className="size-4" />
-            Add API Key
-          </Button>
-        </CreateApiKeyDialog>
-      </div>
-      <ApiKeysTable apiKeys={apiKeys} />
-    </div>
-  ) : (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <ApiKeysEmptyState />
-    </div>
+      ) : (
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <ApiKeysEmptyState onAddKey={() => setCreateDialogOpen(true)} />
+        </div>
+      )}
+      <CreateApiKeyDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+      />
+    </>
   );
 };
 

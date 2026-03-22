@@ -17,7 +17,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '~/components/ui/dialog';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
@@ -42,12 +41,15 @@ type ActionData = {
 };
 
 interface CreateApiKeyDialogProps {
-  children: React.ReactNode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export const CreateApiKeyDialog = ({ children }: CreateApiKeyDialogProps) => {
+export const CreateApiKeyDialog = ({
+  open,
+  onOpenChange,
+}: CreateApiKeyDialogProps) => {
   const fetcher = useFetcher<ActionData>();
-  const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   // Store the created key in state to persist it after page revalidation
   const [storedKey, setStoredKey] = useState<string | null>(null);
@@ -81,18 +83,15 @@ export const CreateApiKeyDialog = ({ children }: CreateApiKeyDialogProps) => {
   }, [createdKey]);
 
   const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
+    onOpenChange(newOpen);
     if (!newOpen) {
-      // Reset UI state when dialog closes
-      // Note: Don't reset lastFetcherDataRef - keeping it synced with fetcher.data
-      // prevents stale data from being processed as "new" on reopen
       setCopied(false);
       setStoredKey(null);
     }
   };
 
   const handleClose = () => {
-    setOpen(false);
+    onOpenChange(false);
     setCopied(false);
     setStoredKey(null);
   };
@@ -101,7 +100,6 @@ export const CreateApiKeyDialog = ({ children }: CreateApiKeyDialogProps) => {
   if (createdKey) {
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>{children}</DialogTrigger>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader className="space-y-3">
             <DialogTitle className="flex items-center gap-3">
@@ -167,7 +165,6 @@ export const CreateApiKeyDialog = ({ children }: CreateApiKeyDialogProps) => {
   // Show create form
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <fetcher.Form method="post" action="/api/settings/create-api-key">
           <DialogHeader>
@@ -242,7 +239,7 @@ export const CreateApiKeyDialog = ({ children }: CreateApiKeyDialogProps) => {
             <Button
               variant="ghost"
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={() => onOpenChange(false)}
               className="text-muted-foreground hover:text-foreground"
             >
               Cancel
