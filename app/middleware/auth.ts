@@ -38,7 +38,8 @@ export const authMiddleware: MiddlewareFunction<Response> = async ({
   }
 
   if (!session?.user) {
-    throw redirect('/login');
+    const redirectTo = url.pathname + url.search;
+    throw redirect(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 
   context.set(userContext, session.user);
