@@ -20,12 +20,11 @@ type ApiKey = {
   name: string | null;
   start: string | null;
   prefix: string | null;
-  userId: string;
-  createdAt: number;
-  updatedAt: number;
-  lastRequest: number | null;
-  permissions: string | null;
-  metadata: string | null;
+  referenceId: string;
+  createdAt: Date;
+  lastRequest: Date | null;
+  permissions: Record<string, string[]> | null;
+  metadata: Record<string, unknown> | null;
 };
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
@@ -49,34 +48,18 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const db = context.cloudflare.env.promptly;
 
   // Get Promptly API keys and LLM API keys in parallel
-  const [apiKeysResponse, llmApiKeys] = await Promise.all([
+  const [apiKeysResult, llmApiKeys] = await Promise.all([
     auth.api.listApiKeys({
       headers: request.headers,
-      asResponse: true,
+      query: { organizationId: org.organizationId },
     }),
     getLlmApiKeysForOrg(db, org.organizationId),
   ]);
 
-  let allApiKeys: ApiKey[] = [];
-
-  if (apiKeysResponse.ok) {
-    const apiKeysData = await apiKeysResponse.json();
-    allApiKeys = Array.isArray(apiKeysData) ? apiKeysData : [];
-  }
-
-  // Filter API keys by organization
-  const organizationApiKeys = allApiKeys.filter((key) => {
-    if (!key.metadata) return false;
-    try {
-      const metadata =
-        typeof key.metadata === 'string'
-          ? JSON.parse(key.metadata)
-          : key.metadata;
-      return metadata.organizationId === org.organizationId;
-    } catch {
-      return false;
-    }
-  });
+  // Better Auth v1.5.4 returns { apiKeys: [...], total: N }
+  const organizationApiKeys: ApiKey[] = Array.isArray(apiKeysResult?.apiKeys)
+    ? apiKeysResult.apiKeys
+    : [];
 
   // Transform to the format expected by the table
   const transformedKeys = organizationApiKeys.map((key) => ({
@@ -84,8 +67,12 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     name: key.name,
     start: key.start,
     prefix: key.prefix,
-    createdAt: key.createdAt,
-    lastRequest: key.lastRequest,
+    createdAt:
+      key.createdAt instanceof Date ? key.createdAt.getTime() : key.createdAt,
+    lastRequest:
+      key.lastRequest instanceof Date
+        ? key.lastRequest.getTime()
+        : key.lastRequest,
     permissions: key.permissions
       ? typeof key.permissions === 'string'
         ? JSON.parse(key.permissions)

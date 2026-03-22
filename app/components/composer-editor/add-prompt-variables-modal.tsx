@@ -141,6 +141,7 @@ export const AddPromptVariablesModal = ({
               {categorized.map(({ field, category, existingType }) => (
                 <Field key={field.id} orientation="horizontal">
                   <label
+                    htmlFor={`add-var-${field.id}`}
                     className={cn(
                       'flex w-full items-start gap-3 cursor-pointer',
                       category === 'exists' && 'opacity-50 cursor-default',
@@ -152,6 +153,7 @@ export const AddPromptVariablesModal = ({
                         <IconAlertTriangle className="size-4 shrink-0 text-amber-500" />
                       ) : (
                         <Checkbox
+                          id={`add-var-${field.id}`}
                           checked={
                             category === 'exists' || checkedIds.has(field.id)
                           }

@@ -51,42 +51,23 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   }
 
   try {
-    // Use userId for server-side creation (allows setting permissions)
-    const apiKeyResponse = await auth.api.createApiKey({
+    const apiKey = await auth.api.createApiKey({
       body: {
         name: result.data.name,
+        organizationId: org.organizationId,
         userId: session.user.id,
         permissions,
         metadata: {
           organizationId: org.organizationId,
         },
       },
-      asResponse: true,
     });
-
-    if (!apiKeyResponse.ok) {
-      const errorData = await apiKeyResponse.json();
-      return data(
-        {
-          errors: {
-            _form: [
-              (errorData as { message?: string }).message ||
-                'Failed to create API key',
-            ],
-          },
-        },
-        { status: apiKeyResponse.status },
-      );
-    }
-
-    const apiKey = await apiKeyResponse.json();
 
     return data({ success: true, apiKey });
   } catch (error) {
-    console.error('Failed to create API key:', error);
-    return data(
-      { errors: { _form: ['Failed to create API key'] } },
-      { status: 500 },
-    );
+    const message =
+      error instanceof Error ? error.message : 'Failed to create API key';
+    console.error('Failed to create API key:', message, error);
+    return data({ errors: { _form: [message] } }, { status: 500 });
   }
 };
