@@ -1,11 +1,13 @@
-import { data, redirect, useFetcher } from 'react-router';
+import { data, redirect, useFetcher, useSearchParams } from 'react-router';
 import { z } from 'zod';
 import { LoginForm } from '~/components/login-form';
+import { sessionContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
 import {
   forwardAuthCookies,
   toRequestCookieHeader,
 } from '~/lib/auth-cookies.server';
+import { getRedirectTarget } from '~/lib/redirect';
 import { loginSchema } from '~/lib/validations/auth';
 import type { Route } from './+types/login';
 
@@ -18,8 +20,20 @@ export const meta = ({}: Route.MetaArgs) => [
   },
 ];
 
+export const loader = async ({ request, context }: Route.LoaderArgs) => {
+  const session = context.get(sessionContext);
+  if (session?.user) {
+    const url = new URL(request.url);
+    const target = getRedirectTarget(url.searchParams.get('redirectTo'));
+    return redirect(target);
+  }
+  return null;
+};
+
 export const action = async ({ request, context }: Route.ActionArgs) => {
   const formData = await request.formData();
+  const redirectTo = formData.get('redirectTo');
+  const target = getRedirectTarget(redirectTo);
   const rawData = {
     email: formData.get('email'),
     password: formData.get('password'),
@@ -60,7 +74,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       }
     }
 
-    return redirect('/dashboard', {
+    return redirect(target, {
       headers: forwardAuthCookies(response),
     });
   } catch (error) {
@@ -74,11 +88,13 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
 export default function Login() {
   const fetcher = useFetcher();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirectTo');
 
   return (
     <div className="bg-muted flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm md:max-w-4xl">
-        <LoginForm fetcher={fetcher} />
+        <LoginForm fetcher={fetcher} redirectTo={redirectTo} />
       </div>
     </div>
   );

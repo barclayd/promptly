@@ -1,6 +1,7 @@
 import { redirect } from 'react-router';
 import { getAuth } from '~/lib/auth.server';
 import { forwardAuthCookies } from '~/lib/auth-cookies.server';
+import { isValidRedirectPath } from '~/lib/redirect';
 import type { Route } from './+types/social';
 
 // GET requests to this route should redirect to login
@@ -15,11 +16,16 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   }
 
   const auth = getAuth(context);
+  const redirectTo = formData.get('redirectTo');
+  const callbackURL =
+    typeof redirectTo === 'string' && isValidRedirectPath(redirectTo)
+      ? `/auth/oauth-complete?redirectTo=${encodeURIComponent(redirectTo)}`
+      : '/auth/oauth-complete';
 
   const response = await auth.api.signInSocial({
     body: {
       provider,
-      callbackURL: '/auth/oauth-complete',
+      callbackURL,
     },
     asResponse: true,
   });

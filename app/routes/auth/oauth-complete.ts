@@ -1,9 +1,12 @@
 import { redirect } from 'react-router';
 import { getAuth } from '~/lib/auth.server';
+import { getRedirectTarget } from '~/lib/redirect';
 import type { Route } from './+types/oauth-complete';
 
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const auth = getAuth(context);
+  const url = new URL(request.url);
+  const target = getRedirectTarget(url.searchParams.get('redirectTo'));
 
   const session = await auth.api.getSession({
     headers: request.headers,
@@ -47,7 +50,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
         body: { organizationId: joinedOrgId },
         headers: request.headers,
       });
-      return redirect('/dashboard');
+      return redirect(target);
     }
   }
 
@@ -71,7 +74,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
       .run();
   }
 
-  return redirect('/dashboard');
+  return redirect(target);
 };
 
 const OAuthComplete = () => null;

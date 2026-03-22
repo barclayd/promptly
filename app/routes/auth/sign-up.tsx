@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import { data, redirect, useFetcher } from 'react-router';
+import { data, redirect, useFetcher, useSearchParams } from 'react-router';
 import { z } from 'zod';
 import { SignUpForm } from '~/components/sign-up-form';
 import { getAuth } from '~/lib/auth.server';
@@ -7,6 +7,7 @@ import {
   forwardAuthCookies,
   toRequestCookieHeader,
 } from '~/lib/auth-cookies.server';
+import { getRedirectTarget } from '~/lib/redirect';
 import { signUpSchema } from '~/lib/validations/auth';
 import type { Route } from './+types/sign-up';
 
@@ -21,6 +22,8 @@ export const meta = ({}: Route.MetaArgs) => [
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
   const formData = await request.formData();
+  const redirectTo = formData.get('redirectTo');
+  const target = getRedirectTarget(redirectTo);
   const rawData = {
     name: formData.get('name'),
     email: formData.get('email'),
@@ -118,7 +121,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       }
     }
 
-    return redirect('/dashboard', {
+    return redirect(target, {
       headers: forwardAuthCookies(response),
     });
   } catch (error) {
@@ -132,11 +135,13 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
 export default function SignUp() {
   const fetcher = useFetcher();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirectTo');
 
   return (
     <div className="bg-muted flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm md:max-w-4xl">
-        <SignUpForm fetcher={fetcher} />
+        <SignUpForm fetcher={fetcher} redirectTo={redirectTo} />
       </div>
     </div>
   );

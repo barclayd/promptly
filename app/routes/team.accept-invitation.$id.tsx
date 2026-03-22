@@ -109,7 +109,7 @@ export const action = async ({
   if (!session?.user) {
     // Redirect to login with return URL
     const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', `/team/accept-invitation/${id}`);
+    loginUrl.searchParams.set('redirectTo', `/team/accept-invitation/${id}`);
     return redirect(loginUrl.toString());
   }
 

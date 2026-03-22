@@ -301,7 +301,7 @@ export const action = async ({
 
     if (!session?.user) {
       const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('redirect', `/invite/${id}`);
+      loginUrl.searchParams.set('redirectTo', `/invite/${id}`);
       return redirect(loginUrl.toString());
     }
 

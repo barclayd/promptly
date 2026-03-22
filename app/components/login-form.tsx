@@ -23,9 +23,15 @@ type ActionData = {
 
 interface LoginFormProps extends React.ComponentProps<'div'> {
   fetcher: FetcherWithComponents<ActionData>;
+  redirectTo?: string | null;
 }
 
-export const LoginForm = ({ className, fetcher, ...props }: LoginFormProps) => {
+export const LoginForm = ({
+  className,
+  fetcher,
+  redirectTo,
+  ...props
+}: LoginFormProps) => {
   const errors = fetcher.data?.errors;
   const isSubmitting = fetcher.state === 'submitting';
 
@@ -40,6 +46,9 @@ export const LoginForm = ({ className, fetcher, ...props }: LoginFormProps) => {
       <Card className="overflow-hidden p-0">
         <CardContent className="grid p-0 md:grid-cols-2">
           <fetcher.Form method="post" className="p-6 md:p-8">
+            {redirectTo && (
+              <input type="hidden" name="redirectTo" value={redirectTo} />
+            )}
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
                 <h1 className="text-2xl font-bold">Welcome back</h1>
@@ -88,6 +97,9 @@ export const LoginForm = ({ className, fetcher, ...props }: LoginFormProps) => {
               <Field className="grid grid-cols-3 gap-4">
                 <form method="post" action="/auth/social">
                   <input type="hidden" name="provider" value="apple" />
+                  {redirectTo && (
+                    <input type="hidden" name="redirectTo" value={redirectTo} />
+                  )}
                   <Button variant="outline" type="submit" className="w-full">
                     <svg
                       aria-hidden="true"
@@ -104,6 +116,9 @@ export const LoginForm = ({ className, fetcher, ...props }: LoginFormProps) => {
                 </form>
                 <form method="post" action="/auth/social">
                   <input type="hidden" name="provider" value="google" />
+                  {redirectTo && (
+                    <input type="hidden" name="redirectTo" value={redirectTo} />
+                  )}
                   <Button variant="outline" type="submit" className="w-full">
                     <svg
                       aria-hidden="true"
@@ -120,6 +135,9 @@ export const LoginForm = ({ className, fetcher, ...props }: LoginFormProps) => {
                 </form>
                 <form method="post" action="/auth/social">
                   <input type="hidden" name="provider" value="github" />
+                  {redirectTo && (
+                    <input type="hidden" name="redirectTo" value={redirectTo} />
+                  )}
                   <Button variant="outline" type="submit" className="w-full">
                     <svg
                       aria-hidden="true"
@@ -137,7 +155,14 @@ export const LoginForm = ({ className, fetcher, ...props }: LoginFormProps) => {
               </Field>
               <FieldDescription className="text-center">
                 Don&apos;t have an account?{' '}
-                <NavLink to="/sign-up" className="underline">
+                <NavLink
+                  to={
+                    redirectTo
+                      ? `/sign-up?redirectTo=${encodeURIComponent(redirectTo)}`
+                      : '/sign-up'
+                  }
+                  className="underline"
+                >
                   Sign up
                 </NavLink>
               </FieldDescription>
