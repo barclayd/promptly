@@ -56,9 +56,11 @@ export const useVariableSyncModal = (getEditorHtml: () => string) => {
       const html = getEditorHtml();
       // Count how many prompt ref badges exist for this promptId.
       // If > 1, it's a duplicate insertion — skip modal.
-      const allPromptIds = extractPromptIds(html);
-      const count = allPromptIds.filter((id) => id === promptId).length;
-      if (count > 1) return;
+      // Note: extractPromptIds deduplicates, so we count raw regex matches instead.
+      const matches = html.match(
+        new RegExp(`data-prompt-id="${promptId}"`, 'g'),
+      );
+      if (matches && matches.length > 1) return;
 
       addModalPendingRef.current = true;
       try {
