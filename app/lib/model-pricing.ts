@@ -9,7 +9,7 @@
  * 2. Update the relevant model entry in MODEL_PRICING
  * 3. If adding a new model, add it to MODEL_PRICING and update select-scrollable.tsx
  *
- * Last updated: February 2026
+ * Last updated: April 2026
  */
 
 export type Provider = 'openai' | 'anthropic' | 'google';
@@ -28,6 +28,54 @@ export type ModelPricing = {
 
 export const MODEL_PRICING: Record<string, ModelPricing> = {
   // OpenAI Models
+  'gpt-5.4': {
+    id: 'gpt-5.4',
+    displayName: 'GPT-5.4',
+    provider: 'openai',
+    inputPrice: 2.5,
+    cachedInputPrice: 0.25,
+    outputPrice: 15.0,
+  },
+  'gpt-5.4-mini': {
+    id: 'gpt-5.4-mini',
+    displayName: 'GPT-5.4 Mini',
+    provider: 'openai',
+    inputPrice: 0.75,
+    cachedInputPrice: 0.075,
+    outputPrice: 4.5,
+  },
+  'gpt-5.4-nano': {
+    id: 'gpt-5.4-nano',
+    displayName: 'GPT-5.4 Nano',
+    provider: 'openai',
+    inputPrice: 0.2,
+    cachedInputPrice: 0.02,
+    outputPrice: 1.25,
+  },
+  'gpt-5.4-pro': {
+    id: 'gpt-5.4-pro',
+    displayName: 'GPT-5.4 Pro',
+    provider: 'openai',
+    inputPrice: 30.0,
+    cachedInputPrice: 3.0,
+    outputPrice: 180.0,
+  },
+  'gpt-5.3-chat-latest': {
+    id: 'gpt-5.3-chat-latest',
+    displayName: 'GPT-5.3 Chat',
+    provider: 'openai',
+    inputPrice: 1.75,
+    cachedInputPrice: 0.175,
+    outputPrice: 14.0,
+  },
+  'gpt-5.3-codex': {
+    id: 'gpt-5.3-codex',
+    displayName: 'GPT-5.3 Codex',
+    provider: 'openai',
+    inputPrice: 1.75,
+    cachedInputPrice: 0.175,
+    outputPrice: 14.0,
+  },
   'gpt-5.2-pro': {
     id: 'gpt-5.2-pro',
     displayName: 'GPT-5.2 Pro',
@@ -35,22 +83,6 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     inputPrice: 21.0,
     cachedInputPrice: 2.1,
     outputPrice: 168.0,
-  },
-  'gpt-5.2-thinking': {
-    id: 'gpt-5.2-thinking',
-    displayName: 'GPT-5.2 Thinking',
-    provider: 'openai',
-    inputPrice: 1.75,
-    cachedInputPrice: 0.175,
-    outputPrice: 14.0,
-  },
-  'gpt-5.2-instant': {
-    id: 'gpt-5.2-instant',
-    displayName: 'GPT-5.2 Instant',
-    provider: 'openai',
-    inputPrice: 1.75,
-    cachedInputPrice: 0.175,
-    outputPrice: 14.0,
   },
   'gpt-5.2-codex': {
     id: 'gpt-5.2-codex',
@@ -68,13 +100,61 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     cachedInputPrice: 0.125,
     outputPrice: 10.0,
   },
-  'gpt-5-codex-mini': {
-    id: 'gpt-5-codex-mini',
-    displayName: 'GPT-5 Codex Mini',
+  'gpt-5.1-codex-mini': {
+    id: 'gpt-5.1-codex-mini',
+    displayName: 'GPT-5.1 Codex Mini',
     provider: 'openai',
     inputPrice: 0.25,
     cachedInputPrice: 0.025,
     outputPrice: 2.0,
+  },
+  'gpt-5': {
+    id: 'gpt-5',
+    displayName: 'GPT-5',
+    provider: 'openai',
+    inputPrice: 0.625,
+    cachedInputPrice: 0.125,
+    outputPrice: 5.0,
+  },
+  'gpt-5-mini': {
+    id: 'gpt-5-mini',
+    displayName: 'GPT-5 Mini',
+    provider: 'openai',
+    inputPrice: 0.25,
+    cachedInputPrice: 0.025,
+    outputPrice: 2.0,
+  },
+  'gpt-5-nano': {
+    id: 'gpt-5-nano',
+    displayName: 'GPT-5 Nano',
+    provider: 'openai',
+    inputPrice: 0.05,
+    cachedInputPrice: 0.005,
+    outputPrice: 0.4,
+  },
+  'gpt-5-pro': {
+    id: 'gpt-5-pro',
+    displayName: 'GPT-5 Pro',
+    provider: 'openai',
+    inputPrice: 15.0,
+    cachedInputPrice: 1.5,
+    outputPrice: 120.0,
+  },
+  'gpt-5-codex': {
+    id: 'gpt-5-codex',
+    displayName: 'GPT-5 Codex',
+    provider: 'openai',
+    inputPrice: 1.25,
+    cachedInputPrice: 0.125,
+    outputPrice: 10.0,
+  },
+  'gpt-5-chat-latest': {
+    id: 'gpt-5-chat-latest',
+    displayName: 'GPT-5 Chat',
+    provider: 'openai',
+    inputPrice: 1.25,
+    cachedInputPrice: 0.125,
+    outputPrice: 10.0,
   },
   'o4-mini': {
     id: 'o4-mini',
@@ -94,6 +174,14 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
 
   // Anthropic Models
+  'claude-opus-4.7': {
+    id: 'claude-opus-4.7',
+    displayName: 'Claude Opus 4.7',
+    provider: 'anthropic',
+    inputPrice: 5.0,
+    cachedInputPrice: 0.5,
+    outputPrice: 25.0,
+  },
   'claude-opus-4.6': {
     id: 'claude-opus-4.6',
     displayName: 'Claude Opus 4.6',
