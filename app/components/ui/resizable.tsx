@@ -11,7 +11,7 @@ import {
 
 import { cn } from '~/lib/utils';
 
-export { useDefaultLayout, type LayoutStorage };
+export { type LayoutStorage, useDefaultLayout };
 
 export const ResizablePanelGroup = ({
   className,
