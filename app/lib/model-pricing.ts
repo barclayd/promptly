@@ -94,6 +94,14 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
 
   // Anthropic Models
+  'claude-opus-4.7': {
+    id: 'claude-opus-4.7',
+    displayName: 'Claude Opus 4.7',
+    provider: 'anthropic',
+    inputPrice: 5.0,
+    cachedInputPrice: 0.5,
+    outputPrice: 25.0,
+  },
   'claude-opus-4.6': {
     id: 'claude-opus-4.6',
     displayName: 'Claude Opus 4.6',
