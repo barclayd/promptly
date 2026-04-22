@@ -16,6 +16,10 @@ export default defineConfig(() => ({
         import.meta.dirname,
         'app/lib/mocks/next-navigation.ts',
       ),
+      '@better-auth/telemetry': path.resolve(
+        import.meta.dirname,
+        'node_modules/@better-auth/telemetry/dist/index.mjs',
+      ),
     },
     tsconfigPaths: true,
   },
