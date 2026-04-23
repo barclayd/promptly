@@ -9,7 +9,7 @@
  * 2. Update the relevant model entry in MODEL_PRICING
  * 3. If adding a new model, add it to MODEL_PRICING and update select-scrollable.tsx
  *
- * Last updated: April 2026
+ * Last updated: April 2026 (added GPT-5.5 / GPT-5.5 Pro)
  */
 
 export type Provider = 'openai' | 'anthropic' | 'google';
@@ -28,6 +28,22 @@ export type ModelPricing = {
 
 export const MODEL_PRICING: Record<string, ModelPricing> = {
   // OpenAI Models
+  'gpt-5.5': {
+    id: 'gpt-5.5',
+    displayName: 'GPT-5.5',
+    provider: 'openai',
+    inputPrice: 5.0,
+    cachedInputPrice: 0.5,
+    outputPrice: 30.0,
+  },
+  'gpt-5.5-pro': {
+    id: 'gpt-5.5-pro',
+    displayName: 'GPT-5.5 Pro',
+    provider: 'openai',
+    inputPrice: 30.0,
+    cachedInputPrice: 3.0,
+    outputPrice: 180.0,
+  },
   'gpt-5.4': {
     id: 'gpt-5.4',
     displayName: 'GPT-5.4',
