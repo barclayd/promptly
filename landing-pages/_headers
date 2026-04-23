@@ -1,6 +1,8 @@
-# Homepage - serve cached, revalidate in background
+# Homepage - always revalidate via ETag (instant invalidation on deploy)
 /
-  Cache-Control: public, max-age=0, s-maxage=600, stale-while-revalidate=3600
+  Cache-Control: public, max-age=0, must-revalidate
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
 
 # Fingerprinted assets (JS, CSS) - cache aggressively (1 year)
 /assets/*
