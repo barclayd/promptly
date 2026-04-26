@@ -123,23 +123,40 @@ export default {
       return new Response('Not Found', { status: 404 });
     }
 
+    // The app subdomain has no SEO value — every page is auth-gated or a
+    // login wall, and `/` redirects to the marketing site. Tell crawlers to
+    // deindex everything so ranking authority consolidates on the bare domain.
+    // Headers (not <meta>) keep this invisible to the prerender pipeline that
+    // builds the static landing page deployed to promptlycms.com.
+    const isAppHost = url.hostname.startsWith('app.');
+    const withNoIndex = (response: Response): Response => {
+      if (!isAppHost) return response;
+      const headers = new Headers(response.headers);
+      headers.set('X-Robots-Tag', 'noindex, nofollow');
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      });
+    };
+
     // Redirect app subdomain root based on session cookie presence.
     // Lightweight check avoids betterAuth instantiation + D1 query (~3-5ms CPU).
     // If cookie is expired/invalid, user hits /dashboard → middleware redirects to /login.
-    if (url.pathname === '/' && url.hostname.startsWith('app.')) {
+    if (url.pathname === '/' && isAppHost) {
       const cookieHeader = request.headers.get('Cookie') || '';
       const hasSession = cookieHeader.includes('better-auth.session_token=');
       if (hasSession) {
-        return Response.redirect(`${url.origin}/dashboard`, 302);
+        return withNoIndex(Response.redirect(`${url.origin}/dashboard`, 302));
       }
       const landingUrl = url.hostname.replace('app.', '');
-      return Response.redirect(`https://${landingUrl}/`, 302);
+      return withNoIndex(Response.redirect(`https://${landingUrl}/`, 302));
     }
 
     // Handle presence WebSocket requests before React Router
     const presenceResponse = await handlePresenceWebSocket(request, env);
     if (presenceResponse) {
-      return presenceResponse;
+      return withNoIndex(presenceResponse);
     }
 
     const context = new RouterContextProvider();
@@ -160,6 +177,9 @@ export default {
         'Cache-Control',
         'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400',
       );
+      if (isAppHost) {
+        headers.set('X-Robots-Tag', 'noindex, nofollow');
+      }
 
       return new Response(response.body, {
         status: response.status,
@@ -168,6 +188,6 @@ export default {
       });
     }
 
-    return response;
+    return withNoIndex(response);
   },
 } satisfies ExportedHandler<Env>;
