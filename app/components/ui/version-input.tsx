@@ -35,12 +35,15 @@ export const VersionInput = ({
   const minorRef = useRef<HTMLInputElement>(null);
   const patchRef = useRef<HTMLInputElement>(null);
 
-  const majorRefCallback = (node: HTMLInputElement | null) => {
-    majorRef.current = node;
-    if (autoFocus) {
-      focusAtEnd(node);
-    }
-  };
+  const majorRefCallback = useCallback(
+    (node: HTMLInputElement | null) => {
+      majorRef.current = node;
+      if (autoFocus) {
+        focusAtEnd(node);
+      }
+    },
+    [autoFocus],
+  );
 
   const handleChange = useCallback(
     (segment: 'major' | 'minor' | 'patch', newValue: string) => {
