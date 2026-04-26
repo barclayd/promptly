@@ -220,3 +220,58 @@ test('can publish a version and view it in read-only mode', async ({
   await expect(authenticatedPage).toHaveURL(/\/prompts\/[a-zA-Z0-9_-]+$/);
   await expect(textarea).toBeEnabled();
 });
+
+test('publish dialog keeps focus on minor/patch fields while typing', async ({
+  authenticatedPage,
+}) => {
+  await authenticatedPage.goto(ROUTES.home);
+
+  const createButton = authenticatedPage.getByRole('button', {
+    name: 'Create',
+  });
+  await createButton.click();
+
+  const dialog = authenticatedPage.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+
+  const promptName = `E2E Version Focus ${Date.now()}`;
+  await dialog.locator('input[name="name"]').fill(promptName);
+  await dialog.getByRole('button', { name: /^create$/i }).click();
+
+  await authenticatedPage.waitForURL(/\/prompts\/[a-zA-Z0-9_-]+$/, {
+    timeout: 15000,
+  });
+
+  const textarea = authenticatedPage.locator('#textarea-system-prompt');
+  await expect(textarea).toBeVisible();
+  await textarea.fill(`Version focus test ${Date.now()}`);
+
+  await authenticatedPage.waitForTimeout(TIMEOUTS.autoSave);
+  await expect(authenticatedPage.getByText(/^Saved/).first()).toBeVisible({
+    timeout: 10000,
+  });
+
+  const publishButton = authenticatedPage.getByRole('button', {
+    name: /publish/i,
+  });
+  await expect(publishButton).toBeEnabled({ timeout: 10000 });
+  await publishButton.click();
+
+  const publishDialog = authenticatedPage.getByRole('dialog');
+  await expect(publishDialog).toBeVisible();
+
+  const minorInput = publishDialog.getByLabel('Minor version');
+  const patchInput = publishDialog.getByLabel('Patch version');
+
+  await minorInput.click();
+  await expect(minorInput).toBeFocused();
+  await authenticatedPage.keyboard.type('5');
+  await expect(minorInput).toBeFocused();
+  await expect(minorInput).toHaveValue(/5/);
+
+  await patchInput.click();
+  await expect(patchInput).toBeFocused();
+  await authenticatedPage.keyboard.type('7');
+  await expect(patchInput).toBeFocused();
+  await expect(patchInput).toHaveValue(/7/);
+});
