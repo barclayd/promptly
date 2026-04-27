@@ -2,6 +2,7 @@
 
 import {
   IconBlockquote,
+  IconBrandHtml5,
   IconChevronDown,
   IconCode,
   IconLine,
@@ -43,6 +44,13 @@ const TOOLS = [
     isActive: () => false,
     action: (editor: Editor) =>
       editor.chain().focus().setHorizontalRule().run(),
+  },
+  {
+    id: 'html-block' as const,
+    label: 'HTML Block',
+    Icon: IconBrandHtml5,
+    isActive: (editor: Editor) => editor.isActive('htmlBlock'),
+    action: (editor: Editor) => editor.chain().focus().insertHtmlBlock().run(),
   },
 ];
 

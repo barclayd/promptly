@@ -13,8 +13,10 @@ import { cn } from '~/lib/utils';
 
 type DocumentSegment = {
   index: number;
-  type: 'static' | 'prompt_ref';
+  type: 'static' | 'prompt_ref' | 'html_block';
   content: string;
+  /** Raw HTML preserved for full-fidelity output (html_block segments only). */
+  innerHtml?: string;
   promptId?: string;
   promptName?: string;
   status: 'pending' | 'streaming' | 'done' | 'error';
@@ -238,6 +240,13 @@ export const ComposerStreamingResponse = ({
                       dangerouslySetInnerHTML={{ __html: segment.content }}
                     />
                   );
+                }
+
+                if (segment.type === 'html_block') {
+                  // Test panel renders HTML blocks as plain text — the raw
+                  // HTML is preserved on segment.innerHtml for downstream
+                  // consumers (e.g. assembled output / API).
+                  return <span key={segment.index}>{segment.content}</span>;
                 }
 
                 return <span key={segment.index}>{segment.content}</span>;
