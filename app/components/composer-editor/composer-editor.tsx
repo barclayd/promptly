@@ -12,6 +12,7 @@ import {
   InputGroupText,
 } from '~/components/ui/input-group';
 import { cn } from '~/lib/utils';
+import { useComposerEditorStore } from '~/stores/composer-editor-store';
 import { ComposerToolbar } from './composer-toolbar';
 import { getComposerExtensions } from './extensions';
 import './composer-editor.css';
@@ -176,6 +177,13 @@ export const ComposerEditor = ({
       editor.setEditable(!disabled);
     }
   }, [editor, disabled]);
+
+  // Mirror prompts prop into the composer editor store so node views
+  // (e.g. the HTML block's prompt picker) can read them without prop-drilling.
+  const setStorePrompts = useComposerEditorStore((s) => s.setPrompts);
+  useEffect(() => {
+    setStorePrompts(prompts);
+  }, [prompts, setStorePrompts]);
 
   const handleCopy = useCallback(async () => {
     if (!editor) return;

@@ -33,6 +33,8 @@ type VariableRefPickerProps = {
   onInsertVariable?: (fieldId: string, fieldPath: string) => void;
   /** Render dropdown inline (no portal) — for use inside other popovers. */
   inline?: boolean;
+  triggerLabel?: string;
+  triggerIcon?: React.ReactNode;
 };
 
 const VariableCommandList = ({
@@ -86,6 +88,8 @@ export const VariableRefPicker = ({
   variant = 'ghost',
   onInsertVariable,
   inline,
+  triggerLabel,
+  triggerIcon,
 }: VariableRefPickerProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -160,8 +164,8 @@ export const VariableRefPicker = ({
           type="button"
           onClick={() => setOpen((prev) => !prev)}
         >
-          <IconCode className="size-3.5" />
-          {!collapsed && <span>Add variable</span>}
+          {triggerIcon ?? <IconCode className="size-3.5" />}
+          {!collapsed && <span>{triggerLabel ?? 'Add variable'}</span>}
         </Button>
         {open && (
           <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover shadow-md">
@@ -198,7 +202,7 @@ export const VariableRefPicker = ({
           </PopoverTrigger>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="text-xs">
-          Add variable reference
+          {triggerLabel ?? 'Add variable reference'}
         </TooltipContent>
       </Tooltip>
       <PopoverContent className="w-64 p-0" side="bottom" align="start">

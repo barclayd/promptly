@@ -14,13 +14,88 @@ const PROMPT_REF_TAG_ALT_REGEX =
 
 export type ComposerSegment =
   | { type: 'static'; content: string }
-  | { type: 'prompt'; promptId: string };
+  | { type: 'prompt'; promptId: string }
+  | { type: 'html_block'; innerHtml: string };
 
-export const parseComposerContent = (content: string): ComposerSegment[] => {
+const HTML_BLOCK_OPEN_REGEX =
+  /<div\b[^>]*\sdata-html-block(?:="[^"]*")?[^>]*>/gi;
+
+// Scans the document for <div data-html-block ...> ... </div> ranges,
+// tracking <div> nesting depth and skipping HTML comments so MSO
+// conditional comments containing </div> strings don't break matching.
+const findHtmlBlockRanges = (
+  content: string,
+): Array<{ start: number; end: number; innerHtml: string }> => {
+  const ranges: Array<{ start: number; end: number; innerHtml: string }> = [];
+  HTML_BLOCK_OPEN_REGEX.lastIndex = 0;
+  let openMatch: RegExpExecArray | null = HTML_BLOCK_OPEN_REGEX.exec(content);
+
+  while (openMatch !== null) {
+    const blockStart = openMatch.index;
+    const innerStart = blockStart + openMatch[0].length;
+    let i = innerStart;
+    let depth = 1;
+    let matched = false;
+
+    while (i < content.length) {
+      if (content.startsWith('<!--', i)) {
+        const commentEnd = content.indexOf('-->', i + 4);
+        if (commentEnd === -1) break;
+        i = commentEnd + 3;
+        continue;
+      }
+
+      if (content[i] !== '<') {
+        i++;
+        continue;
+      }
+
+      const lower3 = content.slice(i, i + 5).toLowerCase();
+      if (lower3.startsWith('<div') && /[\s/>]/.test(content[i + 4] ?? '')) {
+        const tagClose = content.indexOf('>', i);
+        if (tagClose === -1) break;
+        const isSelfClosing = content[tagClose - 1] === '/';
+        if (!isSelfClosing) depth++;
+        i = tagClose + 1;
+        continue;
+      }
+
+      if (lower3.startsWith('</div')) {
+        const tagClose = content.indexOf('>', i);
+        if (tagClose === -1) break;
+        depth--;
+        if (depth === 0) {
+          ranges.push({
+            start: blockStart,
+            end: tagClose + 1,
+            innerHtml: content.slice(innerStart, i),
+          });
+          HTML_BLOCK_OPEN_REGEX.lastIndex = tagClose + 1;
+          matched = true;
+          break;
+        }
+        i = tagClose + 1;
+        continue;
+      }
+
+      i++;
+    }
+
+    if (!matched) {
+      // Bail on this open tag — advance regex past it so we don't loop.
+      HTML_BLOCK_OPEN_REGEX.lastIndex = innerStart;
+    }
+    openMatch = HTML_BLOCK_OPEN_REGEX.exec(content);
+  }
+
+  return ranges;
+};
+
+const splitOnPromptRefs = (
+  content: string,
+  baseOffset: number,
+): ComposerSegment[] => {
   const segments: ComposerSegment[] = [];
-  let lastIndex = 0;
-
-  // Collect all matches from both attribute orderings
   const matches: Array<{ index: number; length: number; promptId: string }> =
     [];
 
@@ -33,7 +108,6 @@ export const parseComposerContent = (content: string): ComposerSegment[] => {
   }
 
   for (const match of content.matchAll(PROMPT_REF_TAG_ALT_REGEX)) {
-    // Avoid duplicates from overlapping patterns
     if (!matches.some((m) => m.index === match.index)) {
       matches.push({
         index: match.index,
@@ -43,9 +117,9 @@ export const parseComposerContent = (content: string): ComposerSegment[] => {
     }
   }
 
-  // Sort by position in the string
   matches.sort((a, b) => a.index - b.index);
 
+  let lastIndex = 0;
   for (const match of matches) {
     if (match.index > lastIndex) {
       segments.push({
@@ -53,13 +127,39 @@ export const parseComposerContent = (content: string): ComposerSegment[] => {
         content: content.slice(lastIndex, match.index),
       });
     }
-
     segments.push({ type: 'prompt', promptId: match.promptId });
     lastIndex = match.index + match.length;
   }
 
   if (lastIndex < content.length) {
     segments.push({ type: 'static', content: content.slice(lastIndex) });
+  }
+
+  // baseOffset is currently unused but kept for future positional metadata.
+  void baseOffset;
+  return segments;
+};
+
+export const parseComposerContent = (content: string): ComposerSegment[] => {
+  const htmlRanges = findHtmlBlockRanges(content);
+  if (htmlRanges.length === 0) {
+    return splitOnPromptRefs(content, 0);
+  }
+
+  const segments: ComposerSegment[] = [];
+  let cursor = 0;
+  for (const range of htmlRanges) {
+    if (range.start > cursor) {
+      segments.push(
+        ...splitOnPromptRefs(content.slice(cursor, range.start), cursor),
+      );
+    }
+    segments.push({ type: 'html_block', innerHtml: range.innerHtml });
+    cursor = range.end;
+  }
+
+  if (cursor < content.length) {
+    segments.push(...splitOnPromptRefs(content.slice(cursor), cursor));
   }
 
   return segments;

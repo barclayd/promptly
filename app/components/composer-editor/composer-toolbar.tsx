@@ -5,6 +5,7 @@ import {
   IconAlignLeft,
   IconAlignRight,
   IconBlockquote,
+  IconBrandHtml5,
   IconCode,
   IconHighlight,
   IconLetterCase,
@@ -214,6 +215,15 @@ const OVERFLOW_DEFS: OverflowItemDef[] = [
     label: 'Horizontal Rule',
     Icon: IconLine,
     action: (e) => e.chain().focus().setHorizontalRule().run(),
+  },
+  {
+    id: 'html-block',
+    groupId: 'blocks',
+    groupLabel: 'Blocks',
+    label: 'HTML Block',
+    Icon: IconBrandHtml5,
+    isActive: (e) => e.isActive('htmlBlock'),
+    action: (e) => e.chain().focus().insertHtmlBlock().run(),
   },
   {
     id: 'table',

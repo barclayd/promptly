@@ -321,3 +321,110 @@
   pointer-events: none;
   height: 0;
 }
+
+/* HTML Block — atomic node containing a CodeMirror surface for raw HTML */
+.html-block-cm {
+  position: relative;
+}
+
+.html-block-cm .cm-editor {
+  background-color: transparent;
+}
+
+.composer-editor .tiptap .html-block-view {
+  user-select: none;
+}
+
+.composer-editor .tiptap .html-block-view .cm-editor {
+  outline: none;
+}
+
+.html-block-cm .cm-content {
+  caret-color: var(--color-foreground);
+  color: var(--color-foreground);
+}
+
+/* HTML syntax highlighting — light mode (default) */
+.html-block-cm .tok-tagName {
+  color: oklch(0.5 0.16 265); /* indigo */
+}
+
+.html-block-cm .tok-attributeName {
+  color: oklch(0.55 0.14 30); /* warm orange-brown */
+}
+
+.html-block-cm .tok-attributeValue,
+.html-block-cm .tok-string {
+  color: oklch(0.55 0.14 150); /* emerald */
+}
+
+.html-block-cm .tok-comment {
+  color: oklch(0.6 0.02 280);
+  font-style: italic;
+}
+
+.html-block-cm .tok-bracket,
+.html-block-cm .tok-angleBracket {
+  color: var(--color-muted-foreground);
+}
+
+/* Dark-mode HTML syntax highlighting */
+.html-block-cm[data-theme="dark"] .tok-tagName {
+  color: oklch(0.78 0.14 265);
+}
+
+.html-block-cm[data-theme="dark"] .tok-attributeName {
+  color: oklch(0.78 0.12 60);
+}
+
+.html-block-cm[data-theme="dark"] .tok-attributeValue,
+.html-block-cm[data-theme="dark"] .tok-string {
+  color: oklch(0.78 0.13 150);
+}
+
+.html-block-cm[data-theme="dark"] .tok-comment {
+  color: oklch(0.62 0.02 280);
+}
+
+/* Inline chip widgets rendered inside CodeMirror */
+.html-block-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.4rem;
+  margin: 0 0.0625rem;
+  height: 1.4em;
+  border-radius: 0.3125rem;
+  font-family:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.78em;
+  font-weight: 500;
+  line-height: 1.4em;
+  letter-spacing: 0.005em;
+  white-space: nowrap;
+  vertical-align: baseline;
+  cursor: default;
+  user-select: none;
+  border: 1px solid transparent;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.html-block-chip-variable {
+  background-color: oklch(from var(--color-primary) l c h / 0.12);
+  color: var(--color-primary);
+  border-color: oklch(from var(--color-primary) l c h / 0.25);
+}
+
+.html-block-chip-prompt {
+  background-color: oklch(0.94 0.05 295 / 0.5);
+  color: oklch(0.45 0.15 295);
+  border-color: oklch(0.85 0.07 295);
+}
+
+.dark .html-block-chip-prompt {
+  background-color: oklch(0.32 0.07 295 / 0.55);
+  color: oklch(0.85 0.1 295);
+  border-color: oklch(0.45 0.1 295);
+}

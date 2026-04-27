@@ -2,6 +2,8 @@ import { temporal } from 'zundo';
 import { create } from 'zustand';
 import type { SchemaField } from '~/lib/schema-types';
 
+export type ComposerPromptOption = { id: string; name: string };
+
 export type ComposerEditorState = {
   content: string;
   _initialContent: string;
@@ -9,6 +11,7 @@ export type ComposerEditorState = {
   inputData: unknown;
   inputDataRootName: string | null;
   testVersionOverride: string | null;
+  prompts: ComposerPromptOption[] | undefined;
   _composerId: string | null;
   _initialized: boolean;
 };
@@ -29,6 +32,7 @@ export type ComposerEditorActions = {
   setSchemaFields: (fields: SchemaField[]) => void;
   setInputData: (data: unknown, rootName?: string | null) => void;
   setTestVersionOverride: (version: string | null) => void;
+  setPrompts: (prompts: ComposerPromptOption[] | undefined) => void;
 };
 
 type ComposerEditorStore = ComposerEditorState & ComposerEditorActions;
@@ -40,6 +44,7 @@ const initialState: ComposerEditorState = {
   inputData: null,
   inputDataRootName: null,
   testVersionOverride: null,
+  prompts: undefined,
   _composerId: null,
   _initialized: false,
 };
@@ -115,6 +120,8 @@ export const useComposerEditorStore = create<ComposerEditorStore>()(
 
       setTestVersionOverride: (version) =>
         set({ testVersionOverride: version }),
+
+      setPrompts: (prompts) => set({ prompts }),
     }),
     {
       partialize: (state) => ({

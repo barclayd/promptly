@@ -6,6 +6,7 @@ import {
   parseComposerContent,
   replaceVariableRefs,
 } from '~/lib/composer-content-parser';
+import { htmlToPlainText } from '~/lib/html-to-plain-text';
 import { preparePrompts } from '~/lib/prompt-interpolation';
 import { resolveModelForOrg } from '~/lib/resolve-model.server';
 import type { Route } from './+types/composers.run';
@@ -350,6 +351,21 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
           await writeLine({
             type: 'static',
             content: interpolatedContent,
+            index: i,
+          });
+        } else if (segment.type === 'html_block') {
+          let interpolatedHtml = segment.innerHtml;
+          if (inputData !== null) {
+            interpolatedHtml = replaceVariableRefs(
+              interpolatedHtml,
+              inputData,
+              inputDataRootName,
+            );
+          }
+          await writeLine({
+            type: 'html_block',
+            innerHtml: interpolatedHtml,
+            plainText: htmlToPlainText(interpolatedHtml),
             index: i,
           });
         } else {

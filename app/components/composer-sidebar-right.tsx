@@ -301,6 +301,24 @@ export const ComposerSidebarRight = forwardRef<
             ].sort((a, b) => a.index - b.index),
           );
           break;
+        case 'html_block':
+          setSegments((prev) => {
+            const existing = prev.findIndex((s) => s.index === msg.index);
+            const segment: DocumentSegment = {
+              index: msg.index,
+              type: 'html_block',
+              content: msg.plainText ?? '',
+              innerHtml: msg.innerHtml,
+              status: 'done',
+            };
+            if (existing >= 0) {
+              const updated = [...prev];
+              updated[existing] = segment;
+              return updated;
+            }
+            return [...prev, segment].sort((a, b) => a.index - b.index);
+          });
+          break;
         case 'prompt_start':
           setSegments((prev) =>
             prev.map((s) =>

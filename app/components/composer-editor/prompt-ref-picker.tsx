@@ -29,6 +29,14 @@ type PromptRefPickerProps = {
   prompts?: Array<{ id: string; name: string }>;
   collapsed?: boolean;
   onPromptAdded?: (promptId: string, promptName: string) => void;
+  /**
+   * If provided, replaces the default behaviour of inserting a `promptRef`
+   * node into the editor. Use this when the picker is hosted inside a node
+   * that owns its own insertion (e.g. the HTML Block's CodeMirror surface).
+   */
+  customInsert?: (promptId: string, promptName: string) => void;
+  triggerLabel?: string;
+  triggerIcon?: React.ReactNode;
 };
 
 export const PromptRefPicker = ({
@@ -36,6 +44,9 @@ export const PromptRefPicker = ({
   prompts,
   collapsed,
   onPromptAdded,
+  customInsert,
+  triggerLabel,
+  triggerIcon,
 }: PromptRefPickerProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -49,12 +60,16 @@ export const PromptRefPicker = ({
 
   const handleSelect = useCallback(
     (promptId: string, promptName: string) => {
-      editor.chain().focus().insertPromptRef({ promptId, promptName }).run();
-      onPromptAdded?.(promptId, promptName);
+      if (customInsert) {
+        customInsert(promptId, promptName);
+      } else {
+        editor.chain().focus().insertPromptRef({ promptId, promptName }).run();
+        onPromptAdded?.(promptId, promptName);
+      }
       setOpen(false);
       setSearch('');
     },
-    [editor, onPromptAdded],
+    [editor, onPromptAdded, customInsert],
   );
 
   return (
@@ -70,13 +85,13 @@ export const PromptRefPicker = ({
               )}
               type="button"
             >
-              <IconFileText className="size-3.5" />
-              {!collapsed && <span>Add prompt</span>}
+              {triggerIcon ?? <IconFileText className="size-3.5" />}
+              {!collapsed && <span>{triggerLabel ?? 'Add prompt'}</span>}
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="text-xs">
-          Add prompt reference
+          {triggerLabel ?? 'Add prompt reference'}
         </TooltipContent>
       </Tooltip>
       <PopoverContent className="w-64 p-0" side="bottom" align="start">
