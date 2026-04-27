@@ -20,9 +20,29 @@ export type ComposerSegment =
 const HTML_BLOCK_OPEN_REGEX =
   /<div\b[^>]*\sdata-html-block(?:="[^"]*")?[^>]*>/gi;
 
-// Scans the document for <div data-html-block ...> ... </div> ranges,
-// tracking <div> nesting depth and skipping HTML comments so MSO
-// conditional comments containing </div> strings don't break matching.
+const RAW_HTML_ATTR_REGEX = /\sdata-raw-html="([^"]*)"/i;
+
+// Decodes a `data-raw-html` attribute value as it appears in the
+// serialized HTML string. Two layers of encoding are present:
+//   1. Browser's HTML-attribute serialization: `&` → `&amp;`, `"` → `&quot;`
+//   2. The extension's pre-encoding: `<` → `&lt;`, `>` → `&gt;`
+// The browser's layer is undone first so that `&amp;lt;` becomes `&lt;`
+// before being recognised by the inner-layer rule.
+const decodeHtmlAttr = (s: string): string =>
+  s
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'");
+
+// Scans the document for <div data-html-block ...> ... </div> ranges.
+// New format stores the payload in a `data-raw-html` attribute on the
+// wrapper, which we extract and decode directly. Legacy blocks (no
+// attribute) keep the depth-tracking scanner that walks <div> nesting
+// and skips HTML comments so MSO conditional comments don't break
+// matching.
 const findHtmlBlockRanges = (
   content: string,
 ): Array<{ start: number; end: number; innerHtml: string }> => {
@@ -33,6 +53,26 @@ const findHtmlBlockRanges = (
   while (openMatch !== null) {
     const blockStart = openMatch.index;
     const innerStart = blockStart + openMatch[0].length;
+
+    const rawAttrMatch = openMatch[0].match(RAW_HTML_ATTR_REGEX);
+    if (rawAttrMatch) {
+      const closeIdx = content.indexOf('</div>', innerStart);
+      if (closeIdx === -1) {
+        HTML_BLOCK_OPEN_REGEX.lastIndex = innerStart;
+        openMatch = HTML_BLOCK_OPEN_REGEX.exec(content);
+        continue;
+      }
+      const blockEnd = closeIdx + '</div>'.length;
+      ranges.push({
+        start: blockStart,
+        end: blockEnd,
+        innerHtml: decodeHtmlAttr(rawAttrMatch[1]),
+      });
+      HTML_BLOCK_OPEN_REGEX.lastIndex = blockEnd;
+      openMatch = HTML_BLOCK_OPEN_REGEX.exec(content);
+      continue;
+    }
+
     let i = innerStart;
     let depth = 1;
     let matched = false;
@@ -167,10 +207,25 @@ export const parseComposerContent = (content: string): ComposerSegment[] => {
 
 const PROMPT_ID_REGEX = /data-prompt-id="([a-zA-Z0-9_-]+)"/g;
 
+// Yields the top-level content plus the decoded innerHtml of every
+// html_block range, so regex extractors can find chips that are
+// embedded (and therefore entity-escaped) inside a data-raw-html
+// attribute. Without this, chips placed inside an HTML block would
+// be invisible to the junction-table sync.
+const collectScannableSlices = (content: string): string[] => {
+  const slices = [content];
+  for (const range of findHtmlBlockRanges(content)) {
+    slices.push(range.innerHtml);
+  }
+  return slices;
+};
+
 export const extractPromptIds = (content: string): string[] => {
   const ids = new Set<string>();
-  for (const match of content.matchAll(PROMPT_ID_REGEX)) {
-    ids.add(match[1]);
+  for (const slice of collectScannableSlices(content)) {
+    for (const match of slice.matchAll(PROMPT_ID_REGEX)) {
+      ids.add(match[1]);
+    }
   }
   return [...ids];
 };
@@ -179,8 +234,10 @@ const VARIABLE_FIELD_ID_REGEX = /data-field-id="([a-zA-Z0-9_-]+)"/g;
 
 export const extractVariableIds = (content: string): string[] => {
   const ids = new Set<string>();
-  for (const match of content.matchAll(VARIABLE_FIELD_ID_REGEX)) {
-    ids.add(match[1]);
+  for (const slice of collectScannableSlices(content)) {
+    for (const match of slice.matchAll(VARIABLE_FIELD_ID_REGEX)) {
+      ids.add(match[1]);
+    }
   }
   return [...ids];
 };
@@ -196,14 +253,16 @@ export const extractPromptVersionPins = (
 ): Map<string, string> => {
   const pins = new Map<string, string>();
 
-  for (const match of content.matchAll(VERSION_PIN_REGEX)) {
-    pins.set(match[1], match[2]);
-  }
+  for (const slice of collectScannableSlices(content)) {
+    for (const match of slice.matchAll(VERSION_PIN_REGEX)) {
+      pins.set(match[1], match[2]);
+    }
 
-  for (const match of content.matchAll(VERSION_PIN_ALT_REGEX)) {
-    // Alt ordering: version-id first, then prompt-id
-    if (!pins.has(match[2])) {
-      pins.set(match[2], match[1]);
+    for (const match of slice.matchAll(VERSION_PIN_ALT_REGEX)) {
+      // Alt ordering: version-id first, then prompt-id
+      if (!pins.has(match[2])) {
+        pins.set(match[2], match[1]);
+      }
     }
   }
 
