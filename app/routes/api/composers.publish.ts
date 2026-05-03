@@ -56,6 +56,37 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return data({ error: 'No draft version to publish' }, { status: 400 });
   }
 
+  const unresolvedRefsResult = await db
+    .prepare(
+      `SELECT cvp.prompt_id AS promptId, p.name AS promptName
+       FROM composer_version_prompt cvp
+       JOIN prompt p ON p.id = cvp.prompt_id
+       WHERE cvp.composer_version_id = ?
+         AND cvp.prompt_version_id IS NULL
+         AND NOT EXISTS (
+           SELECT 1 FROM prompt_version pv
+           WHERE pv.prompt_id = cvp.prompt_id
+             AND pv.published_at IS NOT NULL
+         )
+       ORDER BY p.name ASC`,
+    )
+    .bind(currentDraft.id)
+    .all<{ promptId: string; promptName: string }>();
+
+  const unresolvedRefs = unresolvedRefsResult.results ?? [];
+
+  if (unresolvedRefs.length > 0) {
+    return data(
+      {
+        error:
+          'Cannot publish: some referenced prompts have no published version',
+        code: 'UNRESOLVED_PROMPT' as const,
+        unresolvedRefs,
+      },
+      { status: 422 },
+    );
+  }
+
   const lastPublished = await db
     .prepare(
       'SELECT major, minor, patch FROM composer_version WHERE composer_id = ? AND published_at IS NOT NULL ORDER BY major DESC, minor DESC, patch DESC LIMIT 1',
