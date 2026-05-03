@@ -279,6 +279,37 @@ export const loader = async ({
   const hasDraft =
     versionsResult.results?.some((v) => v.published_at === null) ?? false;
 
+  let unresolvedReferences: Array<{ promptId: string; promptName: string }> =
+    [];
+  if (hasDraft) {
+    const draftRow = await db
+      .prepare(
+        'SELECT id FROM composer_version WHERE composer_id = ? AND published_at IS NULL ORDER BY created_at DESC LIMIT 1',
+      )
+      .bind(composerId)
+      .first<{ id: string }>();
+
+    if (draftRow) {
+      const unresolvedResult = await db
+        .prepare(
+          `SELECT cvp.prompt_id AS promptId, p.name AS promptName
+           FROM composer_version_prompt cvp
+           JOIN prompt p ON p.id = cvp.prompt_id
+           WHERE cvp.composer_version_id = ?
+             AND cvp.prompt_version_id IS NULL
+             AND NOT EXISTS (
+               SELECT 1 FROM prompt_version pv
+               WHERE pv.prompt_id = cvp.prompt_id
+                 AND pv.published_at IS NOT NULL
+             )
+           ORDER BY p.name ASC`,
+        )
+        .bind(draftRow.id)
+        .all<{ promptId: string; promptName: string }>();
+      unresolvedReferences = unresolvedResult.results ?? [];
+    }
+  }
+
   const currentVersionString =
     targetVersion &&
     targetVersion.major !== null &&
@@ -309,6 +340,7 @@ export const loader = async ({
     requestedVersion,
     isOwner,
     prompts: promptsResult.results ?? [],
+    unresolvedReferences,
   };
 };
 
@@ -640,6 +672,7 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
                   suggestedVersion={suggestedVersion}
                   lastPublishedVersion={loaderData.lastPublishedVersion}
                   isSchemaChanged={!schemasEqual}
+                  unresolvedReferences={loaderData.unresolvedReferences}
                   disabled={!canPublish}
                 >
                   <Button className="cursor-pointer" disabled={!canPublish}>
@@ -684,6 +717,7 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
                     suggestedVersion={suggestedVersion}
                     lastPublishedVersion={loaderData.lastPublishedVersion}
                     isSchemaChanged={!schemasEqual}
+                    unresolvedReferences={loaderData.unresolvedReferences}
                     disabled={!canPublish}
                   >
                     <Button
