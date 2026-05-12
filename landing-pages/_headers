@@ -17,7 +17,10 @@
   Cache-Control: public, max-age=604800
 
 # Default for other static files
+# `frame-ancestors` (CSP) replaces the deprecated X-Frame-Options. Only
+# danbarclay.dev (and localhost during dev) may embed this site in a frame;
+# everywhere else is still blocked.
 /*
   X-Content-Type-Options: nosniff
-  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'self' https://danbarclay.dev https://*.danbarclay.dev http://localhost:* http://127.0.0.1:*
   Referrer-Policy: strict-origin-when-cross-origin
