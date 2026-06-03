@@ -131,5 +131,12 @@
     "vite": "8.0.16",
     "vite-plugin-devtools-json": "1.0.0",
     "wrangler": "4.97.0"
+  },
+  "overrides": {
+    "@codemirror/view": "^6.43.0",
+    "kysely": "^0.28.17",
+    "prosemirror-model": "^1.25.7",
+    "prosemirror-transform": "^1.12.0",
+    "prosemirror-view": "^1.41.8"
   }
 }
