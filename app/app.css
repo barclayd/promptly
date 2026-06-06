@@ -235,6 +235,30 @@ mark.cv-hl {
   }
 }
 
+/* Compare versions — section scroll viewports. A thin, quiet scrollbar plus
+   a fade along the bottom edge that signals clipped content and lifts once
+   the section is scrolled to its end. */
+.cv-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--muted-foreground) 30%, transparent)
+    transparent;
+}
+
+.cv-scroll-fade {
+  pointer-events: none;
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 2.25rem;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  background: linear-gradient(to top, var(--cv-fade, var(--card)), transparent);
+}
+
+.cv-scroll[data-overflowing="true"][data-at-bottom="false"] + .cv-scroll-fade {
+  opacity: 1;
+}
+
 /* Dashboard puzzle pieces */
 .puzzle-grid {
   --pz-a: #60a5fa;
