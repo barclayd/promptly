@@ -13,6 +13,7 @@ import { Button } from '~/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { useEnabledModels } from '~/hooks/use-enabled-models';
 import { useEqualBlockHeights } from '~/hooks/use-equal-block-heights';
+import { useSyncedSectionScroll } from '~/hooks/use-synced-section-scroll';
 import { cn } from '~/lib/utils';
 import type { CompareVersion } from '~/routes/prompts.promptId.compare';
 
@@ -258,6 +259,17 @@ export const CompareScreen = ({
   const anyRunning = Object.values(runState).some(
     (s) => s.status === 'running',
   );
+
+  // Mirror section scrolling across cards; outputs sync only once no run is
+  // streaming so pin-to-bottom can follow each stream independently.
+  const syncScrollRef = useSyncedSectionScroll(!anyRunning);
+  const carouselRef = useCallback(
+    (node: HTMLUListElement | null) => {
+      equalHeightsRef(node);
+      syncScrollRef(node);
+    },
+    [equalHeightsRef, syncScrollRef],
+  );
   const baselineOutput =
     runState[baselineKey]?.status === 'error'
       ? ''
@@ -393,7 +405,7 @@ export const CompareScreen = ({
       {/* Carousel */}
       <div className="min-h-0 flex-1 overflow-hidden bg-sidebar">
         <ul
-          ref={equalHeightsRef}
+          ref={carouselRef}
           aria-label="Version comparison cards"
           className="flex h-full list-none items-stretch gap-4 overflow-x-auto overflow-y-hidden px-5 py-4"
         >

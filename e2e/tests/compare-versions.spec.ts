@@ -117,3 +117,97 @@ test('compare versions page: CTA, cards, chip toggling and view modes', async ({
     timeout: 15000,
   });
 });
+
+test('compare cards: long sections scroll internally and stay in sync', async ({
+  authenticatedPage,
+}) => {
+  await authenticatedPage.setViewportSize({ width: 1280, height: 900 });
+
+  // Create a fresh prompt so the test owns its version history
+  await authenticatedPage.goto(ROUTES.home);
+  await authenticatedPage.getByRole('button', { name: 'Create' }).click();
+
+  const dialog = authenticatedPage.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  const promptName = `E2E Compare Overflow ${Date.now()}`;
+  await dialog.locator('input[name="name"]').fill(promptName);
+  await dialog.getByRole('button', { name: /^create$/i }).click();
+  await authenticatedPage.waitForURL(/\/prompts\/[a-zA-Z0-9_-]+$/, {
+    timeout: 15000,
+  });
+
+  // A system prompt far taller than any card so the section must overflow
+  const longSystemPrompt = Array.from(
+    { length: 60 },
+    (_, i) =>
+      `Rule ${i + 1}: respond helpfully and follow instruction ${i + 1}.`,
+  ).join('\n');
+
+  const textarea = authenticatedPage.locator('#textarea-system-prompt');
+  await expect(textarea).toBeVisible();
+  await textarea.fill(longSystemPrompt);
+  await authenticatedPage.waitForTimeout(TIMEOUTS.autoSave);
+  await expect(authenticatedPage.getByText(/^Saved/).first()).toBeVisible({
+    timeout: 10000,
+  });
+
+  // Publish v1 so a published baseline exists
+  const publishButton = authenticatedPage.getByRole('button', {
+    name: /publish/i,
+  });
+  await expect(publishButton).toBeEnabled({ timeout: 10000 });
+  await publishButton.click();
+  const publishDialog = authenticatedPage.getByRole('dialog');
+  await expect(publishDialog).toBeVisible();
+  await publishDialog.getByRole('button', { name: /publish/i }).click();
+  await expect(publishDialog).not.toBeVisible({ timeout: 10000 });
+
+  // Edit again so a draft exists alongside the published version
+  await textarea.fill(`${longSystemPrompt}\nRule 61: always be concise.`);
+  await authenticatedPage.waitForTimeout(TIMEOUTS.autoSave);
+  await expect(authenticatedPage.getByText(/^Saved/).first()).toBeVisible({
+    timeout: 10000,
+  });
+
+  await authenticatedPage.reload();
+  await authenticatedPage.waitForLoadState('networkidle');
+  await authenticatedPage.getByTestId('compare-versions-cta').click();
+  await authenticatedPage.waitForURL(/\/prompts\/[a-zA-Z0-9_-]+\/compare$/, {
+    timeout: 15000,
+  });
+
+  const cards = authenticatedPage.getByTestId('compare-version-card');
+  await expect(cards).toHaveCount(2);
+
+  // The long system prompt overflows its section and scrolls internally
+  const firstSystem = cards.first().locator('[data-cv-scroll="system"]');
+  await expect
+    .poll(
+      () => firstSystem.evaluate((el) => el.scrollHeight - el.clientHeight),
+      { timeout: 10000 },
+    )
+    .toBeGreaterThan(100);
+
+  // The overflow affordance (bottom fade) is armed
+  await expect(firstSystem).toHaveAttribute('data-overflowing', 'true');
+  await expect(firstSystem).toHaveAttribute('data-at-bottom', 'false');
+
+  // Output stays on screen without scrolling the card body
+  await expect(
+    cards.first().locator('[data-cv-block="output"]'),
+  ).toBeInViewport();
+  await expect(
+    cards.nth(1).locator('[data-cv-block="output"]'),
+  ).toBeInViewport();
+
+  // Scrolling one card's system prompt scrolls the other card's in sync
+  await firstSystem.evaluate((el) => {
+    el.scrollTop = 150;
+  });
+  const secondSystem = cards.nth(1).locator('[data-cv-scroll="system"]');
+  await expect
+    .poll(() => secondSystem.evaluate((el) => el.scrollTop), {
+      timeout: 5000,
+    })
+    .toBeGreaterThan(100);
+});

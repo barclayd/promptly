@@ -9,6 +9,7 @@ import {
 } from '@tabler/icons-react';
 import { useMemo, useRef } from 'react';
 import { DiffText } from '~/components/compare/diff-text';
+import { ScrollSection } from '~/components/compare/scroll-section';
 import { HighlightedPromptText } from '~/components/highlighted-prompt-text';
 import { Badge } from '~/components/ui/badge';
 import { computeDiff } from '~/lib/prompt-diff';
@@ -88,19 +89,24 @@ const PromptBlock = ({
   return (
     <div
       data-cv-block={blockType}
-      className="overflow-hidden rounded-lg border"
+      className="flex min-h-0 flex-col overflow-hidden rounded-lg border"
     >
-      <div className="flex items-center gap-1.5 border-b bg-muted px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground">
+      <div className="flex flex-none items-center gap-1.5 border-b bg-muted px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground">
         {icon}
         {title}
       </div>
-      <div className="whitespace-pre-wrap px-3 py-2.5 text-[13px] leading-relaxed">
-        {ops ? (
-          <DiffText ops={ops} />
-        ) : (
-          <HighlightedPromptText text={versionText} />
-        )}
-      </div>
+      <ScrollSection section={blockType}>
+        <div
+          data-cv-content
+          className="whitespace-pre-wrap px-3 py-2.5 text-[13px] leading-relaxed"
+        >
+          {ops ? (
+            <DiffText ops={ops} />
+          ) : (
+            <HighlightedPromptText text={versionText} />
+          )}
+        </div>
+      </ScrollSection>
     </div>
   );
 };
@@ -228,8 +234,11 @@ export const VersionCard = ({
           plain={plain}
         />
 
-        <div className="mt-0.5 overflow-hidden rounded-lg border">
-          <div className="flex items-center justify-between border-b bg-indigo-500/5 px-2.5 py-1.5">
+        <div
+          data-cv-block="output"
+          className="mt-0.5 flex min-h-0 flex-col overflow-hidden rounded-lg border"
+        >
+          <div className="flex flex-none items-center justify-between border-b bg-indigo-500/5 px-2.5 py-1.5">
             <span className="flex items-center gap-1.5 text-[11px] font-semibold">
               <IconSparkles className="size-3 text-indigo-500 dark:text-indigo-400" />
               Output
@@ -240,33 +249,43 @@ export const VersionCard = ({
               </span>
             )}
           </div>
-          <div className="min-h-[90px] bg-background p-3">
-            {status === 'idle' && (
-              <div className="flex min-h-[66px] flex-col items-center justify-center gap-1.5 text-xs text-muted-foreground/80">
-                <IconPlayerPlay className="size-4 opacity-60" />
-                <span>Run to compare</span>
-              </div>
-            )}
-            {status === 'error' && (
-              <p className="text-[13px] leading-relaxed text-destructive">
-                {run?.error ?? 'Something went wrong running this version.'}
-              </p>
-            )}
-            {(status === 'running' || status === 'done') && (
-              <div className="whitespace-pre-wrap text-[13px] leading-[1.75]">
-                {outputOps ? (
-                  <DiffText ops={outputOps} streaming={status === 'running'} />
-                ) : (
-                  <>
-                    {outputText}
-                    {status === 'running' && (
-                      <span className="cv-stream-cursor" />
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+          <ScrollSection
+            section="output"
+            follow={status === 'running'}
+            className="bg-background"
+            fadeClassName="[--cv-fade:var(--background)]"
+          >
+            <div data-cv-content className="min-h-[90px] p-3">
+              {status === 'idle' && (
+                <div className="flex min-h-[66px] flex-col items-center justify-center gap-1.5 text-xs text-muted-foreground/80">
+                  <IconPlayerPlay className="size-4 opacity-60" />
+                  <span>Run to compare</span>
+                </div>
+              )}
+              {status === 'error' && (
+                <p className="text-[13px] leading-relaxed text-destructive">
+                  {run?.error ?? 'Something went wrong running this version.'}
+                </p>
+              )}
+              {(status === 'running' || status === 'done') && (
+                <div className="whitespace-pre-wrap text-[13px] leading-[1.75]">
+                  {outputOps ? (
+                    <DiffText
+                      ops={outputOps}
+                      streaming={status === 'running'}
+                    />
+                  ) : (
+                    <>
+                      {outputText}
+                      {status === 'running' && (
+                        <span className="cv-stream-cursor" />
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </ScrollSection>
         </div>
       </div>
     </li>
