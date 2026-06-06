@@ -96,6 +96,15 @@ export default [
         id: 'prompt-detail',
       }),
     ]),
+    layout('./routes/layouts/prompt-compare.tsx', [
+      route(
+        'prompts/:promptId/compare',
+        './routes/prompts.promptId.compare.tsx',
+        {
+          id: 'prompt-compare',
+        },
+      ),
+    ]),
     layout('./routes/layouts/snippet-detail.tsx', [
       route('snippets/:snippetId', './routes/snippets.snippetId.tsx', {
         id: 'snippet-detail',
