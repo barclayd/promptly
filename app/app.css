@@ -188,6 +188,53 @@ body {
   }
 }
 
+/* Compare versions — hand-drawn highlighter diff marks.
+   Each mark gets per-token CSS vars (--ang, --rot, --s1, --s2) from a
+   deterministic hash so the sweep looks hand-applied but doesn't jitter
+   between renders. */
+.cv-screen {
+  --mk-add: rgba(255, 201, 7, 0.62);
+}
+.dark .cv-screen {
+  --mk-add: rgba(255, 210, 48, 0.34);
+}
+
+mark.cv-hl {
+  color: inherit;
+  display: inline;
+  padding: 0.04em 0.16em;
+  margin: 0 -0.05em;
+  border-radius: 0.5em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  transform: rotate(var(--rot, 0deg));
+  background-color: transparent;
+  background-image: linear-gradient(
+    var(--ang, 106deg),
+    transparent var(--s1, 1.4%),
+    var(--mk-add) calc(var(--s1, 1.4%) + 1.2%),
+    var(--mk-add) var(--s2, 96%),
+    transparent calc(var(--s2, 96%) + 3%)
+  );
+}
+
+.cv-stream-cursor {
+  display: inline-block;
+  width: 6px;
+  height: 1.05em;
+  margin-left: 1px;
+  vertical-align: -2px;
+  border-radius: 1px;
+  background: var(--primary);
+  animation: cursor-blink 1s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cv-stream-cursor {
+    animation: none;
+  }
+}
+
 /* Dashboard puzzle pieces */
 .puzzle-grid {
   --pz-a: #60a5fa;

@@ -17,6 +17,7 @@ import {
 
 import { cn } from '~/lib/utils';
 import type { loader as promptLoader } from '~/routes/prompts.promptId';
+import type { loader as promptCompareLoader } from '~/routes/prompts.promptId.compare';
 import type { loader as snippetLoader } from '~/routes/snippets.snippetId';
 
 const SECTIONS = [
@@ -49,6 +50,8 @@ export const BreadcrumbWithDropdown = () => {
   const promptData = useRouteLoaderData<typeof promptLoader>('prompt-detail');
   const snippetData =
     useRouteLoaderData<typeof snippetLoader>('snippet-detail');
+  const compareData =
+    useRouteLoaderData<typeof promptCompareLoader>('prompt-compare');
 
   const segments = location.pathname.split('/').filter(Boolean);
 
@@ -58,6 +61,7 @@ export const BreadcrumbWithDropdown = () => {
   );
 
   const folder = promptData?.folder ?? snippetData?.folder;
+  const promptEntity = promptData?.prompt ?? compareData?.prompt;
 
   const deepSegments = segments
     .slice(1)
@@ -69,8 +73,8 @@ export const BreadcrumbWithDropdown = () => {
           return acc;
         }
         acc.push({ label: folder.name, path });
-      } else if (promptData?.prompt && segment === promptData.prompt.id) {
-        acc.push({ label: promptData.prompt.name, path });
+      } else if (promptEntity && segment === promptEntity.id) {
+        acc.push({ label: promptEntity.name, path });
       } else if (snippetData?.snippet && segment === snippetData.snippet.id) {
         acc.push({ label: snippetData.snippet.name, path });
       } else {
