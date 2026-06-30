@@ -135,31 +135,14 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     .bind(now, composerId)
     .run();
 
-  // Pin on publish: resolve NULL prompt_version_id entries to latest published prompt versions
-  const unpinnedRefs = await db
-    .prepare(
-      'SELECT id, prompt_id FROM composer_version_prompt WHERE composer_version_id = ? AND prompt_version_id IS NULL',
-    )
-    .bind(currentDraft.id)
-    .all<{ id: string; prompt_id: string }>();
-
-  for (const ref of unpinnedRefs.results ?? []) {
-    const latestPublished = await db
-      .prepare(
-        'SELECT id FROM prompt_version WHERE prompt_id = ? AND published_at IS NOT NULL ORDER BY major DESC, minor DESC, patch DESC LIMIT 1',
-      )
-      .bind(ref.prompt_id)
-      .first<{ id: string }>();
-
-    if (latestPublished) {
-      await db
-        .prepare(
-          'UPDATE composer_version_prompt SET prompt_version_id = ? WHERE id = ?',
-        )
-        .bind(latestPublished.id, ref.id)
-        .run();
-    }
-  }
+  // Auto-update refs (auto_update = 1, prompt_version_id IS NULL) are deliberately
+  // left unpinned so the read path resolves the latest published prompt version at
+  // request time — that is the whole point of marking a ref auto-update. Pinning them
+  // here would freeze the composer to the prompt versions current at publish time and
+  // silently break auto-update. Explicitly pinned refs (auto_update = 0) already carry
+  // a non-NULL prompt_version_id and are left untouched, so they stay frozen as intended.
+  // The unresolved-ref guard above guarantees every auto-update ref has at least one
+  // published prompt version, so the read path's "latest published" lookup will resolve.
 
   return { success: true, version: `${major}.${minor}.${patch}` };
 };
