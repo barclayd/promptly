@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import { data } from 'react-router';
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import {
   extractPromptIds,
   extractPromptVersionPins,
@@ -28,7 +28,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return data({ error: 'Missing composerId' }, { status: 400 });
   }
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   // Verify composer ownership
   const composerOwnership = await db

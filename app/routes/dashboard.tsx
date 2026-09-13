@@ -11,7 +11,7 @@ import {
 } from '~/components/ui/item';
 import { PaperStack } from '~/components/ui/paper-stack';
 import { PuzzlePieces } from '~/components/ui/puzzle-pieces';
-import { orgContext } from '~/context';
+import { cloudflareContext, orgContext } from '~/context';
 import type { Route } from './+types/dashboard';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
@@ -29,7 +29,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     return { latestComposer: null };
   }
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   const result = await db
     .prepare(

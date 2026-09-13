@@ -2,6 +2,7 @@ import { nanoid } from 'nanoid';
 import { data, redirect, useFetcher, useSearchParams } from 'react-router';
 import { z } from 'zod';
 import { SignUpForm } from '~/components/sign-up-form';
+import { cloudflareContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
 import {
   forwardAuthCookies,
@@ -55,7 +56,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     const cookieHeader = toRequestCookieHeader(response);
 
     if (cookieHeader) {
-      const db = context.cloudflare.env.promptly;
+      const db = context.get(cloudflareContext).env.promptly;
       const now = Date.now();
 
       // Check for pending invitations matching the user's email

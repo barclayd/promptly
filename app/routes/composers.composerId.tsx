@@ -51,7 +51,12 @@ import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import type { Version } from '~/components/versions-table';
-import { authContext, orgContext, sessionContext } from '~/context';
+import {
+  authContext,
+  cloudflareContext,
+  orgContext,
+  sessionContext,
+} from '~/context';
 import { useComposerUndoRedo } from '~/hooks/use-composer-undo-redo';
 import {
   type CursorPosition,
@@ -114,7 +119,7 @@ export const loader = async ({
   }
 
   const { composerId } = params;
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   const url = new URL(request.url);
   const versionParam = url.searchParams.get('version');

@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid';
 import { data } from 'react-router';
 import { z } from 'zod';
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import { encryptApiKey, getKeyHint } from '~/lib/encryption.server';
 import { createLlmApiKeySchema } from '~/lib/validations/llm-api-keys';
 import type { Route } from './+types/settings.create-llm-api-key';
@@ -43,7 +43,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   }
 
   // Check user is admin or owner
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
   const member = await db
     .prepare(
       'SELECT role FROM member WHERE user_id = ? AND organization_id = ?',
@@ -59,7 +59,8 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   }
 
   try {
-    const encryptionKey = context.cloudflare.env.API_KEY_ENCRYPTION_KEY;
+    const encryptionKey =
+      context.get(cloudflareContext).env.API_KEY_ENCRYPTION_KEY;
     if (!encryptionKey) {
       console.error(
         'API_KEY_ENCRYPTION_KEY environment variable is not configured',

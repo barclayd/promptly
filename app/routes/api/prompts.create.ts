@@ -1,7 +1,12 @@
 import { nanoid } from 'nanoid';
 import { data, redirect } from 'react-router';
 import { z } from 'zod';
-import { authContext, orgContext, sessionContext } from '~/context';
+import {
+  authContext,
+  cloudflareContext,
+  orgContext,
+  sessionContext,
+} from '~/context';
 import { getSubscriptionStatus } from '~/lib/subscription.server';
 import type { Route } from './+types/prompts.create';
 
@@ -58,7 +63,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     orgId = newOrg.id;
   }
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   // Check prompt limit
   const subscription = await getSubscriptionStatus(db, orgId);

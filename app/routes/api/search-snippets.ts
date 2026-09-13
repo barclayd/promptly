@@ -1,4 +1,4 @@
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import type { Route } from './+types/search-snippets';
 
 type SnippetResult = {
@@ -28,7 +28,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     return Response.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   const results = await db
     .prepare(

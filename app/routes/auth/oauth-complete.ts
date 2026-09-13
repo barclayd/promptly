@@ -1,4 +1,5 @@
 import { redirect } from 'react-router';
+import { cloudflareContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
 import { getRedirectTarget } from '~/lib/redirect';
 import type { Route } from './+types/oauth-complete';
@@ -16,7 +17,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     return redirect('/login');
   }
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
   const now = Date.now();
 
   // Check for pending invitations matching the user's email

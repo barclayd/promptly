@@ -3,10 +3,11 @@
 import { IconDotsVertical, IconEye } from '@tabler/icons-react';
 import {
   type ColumnDef,
+  createPaginatedRowModel,
   flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
+  rowPaginationFeature,
+  tableFeatures,
+  useTable,
 } from '@tanstack/react-table';
 import { useSearchParams } from 'react-router';
 import { Badge } from '~/components/ui/badge';
@@ -101,7 +102,12 @@ const ViewVersionAction = ({ version }: { version: Version }) => {
   );
 };
 
-const columns: ColumnDef<Version>[] = [
+const features = tableFeatures({
+  rowPaginationFeature,
+  paginatedRowModel: createPaginatedRowModel(),
+});
+
+const columns: ColumnDef<typeof features, Version>[] = [
   {
     id: 'version',
     header: () => <span className="text-xs">Version</span>,
@@ -185,14 +191,14 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentVersion = searchParams.get('version');
 
-  const table = useReactTable({
+  const table = useTable({
+    features,
     data: versions,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getRowId: (row) => formatVersion(row) ?? 'draft',
     initialState: {
       pagination: {
+        pageIndex: 0,
         pageSize: 5,
       },
     },
@@ -267,7 +273,7 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
                     )}
                     onClick={() => handleRowClick(row.original)}
                   >
-                    {row.getVisibleCells().map((cell) => {
+                    {row.getAllCells().map((cell) => {
                       const meta = cell.column.columnDef.meta as
                         | { className?: string }
                         | undefined;
@@ -303,7 +309,7 @@ export const VersionsTable = ({ versions }: { versions: Version[] }) => {
               />
             </PaginationItem>
             {(() => {
-              const currentPage = table.getState().pagination.pageIndex;
+              const currentPage = table.state.pagination.pageIndex;
               const totalPages = table.getPageCount();
               const pages: (number | 'ellipsis')[] = [];
 

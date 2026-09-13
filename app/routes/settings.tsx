@@ -10,7 +10,12 @@ import { LlmApiKeysEmptyState } from '~/components/llm-api-keys-empty-state';
 import { LlmApiKeysTable } from '~/components/llm-api-keys-table';
 import { Button } from '~/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
-import { authContext, orgContext, userContext } from '~/context';
+import {
+  authContext,
+  cloudflareContext,
+  orgContext,
+  userContext,
+} from '~/context';
 import { useSubscription } from '~/hooks/use-subscription';
 import { getLlmApiKeysForOrg } from '~/lib/llm-api-keys.server';
 import type { Route } from './+types/settings';
@@ -45,7 +50,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   }
 
   const auth = context.get(authContext);
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   // Get Promptly API keys and LLM API keys in parallel
   const [apiKeysResult, llmApiKeys] = await Promise.all([

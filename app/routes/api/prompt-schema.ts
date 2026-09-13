@@ -1,4 +1,4 @@
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import type { Route } from './+types/prompt-schema';
 
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
@@ -22,7 +22,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 
   const versionId = url.searchParams.get('versionId');
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   const prompt = await db
     .prepare(

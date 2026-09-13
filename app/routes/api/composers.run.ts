@@ -1,6 +1,6 @@
 import { generateText } from 'ai';
 import { data } from 'react-router';
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import {
   type ComposerSegment,
   parseComposerContent,
@@ -55,7 +55,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return data({ error: 'Missing composerId' }, { status: 400 });
   }
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   // Verify composer ownership
   const composer = await db
@@ -269,8 +269,10 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
             db,
             organizationId: org.organizationId,
             modelId: info.model,
-            encryptionKey: context.cloudflare.env.API_KEY_ENCRYPTION_KEY,
-            systemAnthropicKey: context.cloudflare.env.ANTHROPIC_API_KEY,
+            encryptionKey:
+              context.get(cloudflareContext).env.API_KEY_ENCRYPTION_KEY,
+            systemAnthropicKey:
+              context.get(cloudflareContext).env.ANTHROPIC_API_KEY,
           });
 
           if (!modelResult.ok) {
@@ -290,7 +292,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
           // Update token counts (waitUntil — doesn't block response)
           const { usage } = result;
           if (info.versionId && usage) {
-            context.cloudflare.ctx.waitUntil(
+            context.get(cloudflareContext).ctx.waitUntil(
               (async () => {
                 const { inputTokens, outputTokens } = usage;
                 let systemInputTokens: number | null = null;
@@ -433,7 +435,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     }
   };
 
-  context.cloudflare.ctx.waitUntil(pumpStream());
+  context.get(cloudflareContext).ctx.waitUntil(pumpStream());
 
   return new Response(readable, {
     headers: { 'Content-Type': 'application/x-ndjson' },

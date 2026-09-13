@@ -1,4 +1,4 @@
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import type { Route } from './+types/composer-info';
 
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
@@ -20,7 +20,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     return Response.json({ error: 'Missing composerId' }, { status: 400 });
   }
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   const composer = await db
     .prepare(

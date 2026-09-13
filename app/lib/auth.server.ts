@@ -6,6 +6,7 @@ import { CamelCasePlugin, Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
 import type { RouterContextProvider } from 'react-router';
 import { Resend } from 'resend';
+import { cloudflareContext } from '~/context';
 import { InvitationEmail } from '~/emails/invitation';
 import { UpgradeConfirmedEmail } from '~/emails/upgrade-confirmed';
 import { trialStripe } from '~/plugins/trial-stripe';
@@ -18,10 +19,10 @@ type Database = Record<string, string>;
 let cachedSecret: string | null = null;
 
 const createAuth = (ctx: Readonly<RouterContextProvider>) => {
-  const baseURL = ctx.cloudflare.env.BETTER_AUTH_URL;
-  const resendApiKey = ctx.cloudflare.env.RESEND_API_KEY;
+  const baseURL = ctx.get(cloudflareContext).env.BETTER_AUTH_URL;
+  const resendApiKey = ctx.get(cloudflareContext).env.RESEND_API_KEY;
 
-  const kvCache = ctx.cloudflare.env.AUTH_CACHE;
+  const kvCache = ctx.get(cloudflareContext).env.AUTH_CACHE;
 
   return betterAuth({
     secondaryStorage: {
@@ -36,6 +37,20 @@ const createAuth = (ctx: Readonly<RouterContextProvider>) => {
       },
       delete: async (key) => {
         await kvCache.delete(key);
+      },
+      getAndDelete: async (key) => {
+        const val = await kvCache.get(key);
+        if (val !== null) await kvCache.delete(key);
+        return val;
+      },
+      // ponytail: KV has no atomic increment; read-modify-write is fine for
+      // best-effort rate-limit counters. Move to a Durable Object if it must be exact.
+      increment: async (key, ttl) => {
+        const next = Number((await kvCache.get(key)) ?? 0) + 1;
+        await kvCache.put(key, String(next), {
+          expirationTtl: Math.max(ttl, 60),
+        });
+        return next;
       },
     },
     session: {
@@ -57,25 +72,33 @@ const createAuth = (ctx: Readonly<RouterContextProvider>) => {
     trustedOrigins: [baseURL, 'https://appleid.apple.com'],
     socialProviders: {
       google: {
-        clientId: ctx.cloudflare.env.GOOGLE_CLIENT_ID,
-        clientSecret: ctx.cloudflare.env.GOOGLE_CLIENT_SECRET,
+        clientId: ctx.get(cloudflareContext).env.GOOGLE_CLIENT_ID,
+        clientSecret: ctx.get(cloudflareContext).env.GOOGLE_CLIENT_SECRET,
       },
       apple: {
-        clientId: ctx.cloudflare.env.APPLE_CLIENT_ID,
-        clientSecret: ctx.cloudflare.env.APPLE_CLIENT_SECRET,
+        clientId: ctx.get(cloudflareContext).env.APPLE_CLIENT_ID,
+        clientSecret: ctx.get(cloudflareContext).env.APPLE_CLIENT_SECRET,
       },
       github: {
-        clientId: ctx.cloudflare.env.GITHUB_CLIENT_ID,
-        clientSecret: ctx.cloudflare.env.GITHUB_CLIENT_SECRET,
+        clientId: ctx.get(cloudflareContext).env.GITHUB_CLIENT_ID,
+        clientSecret: ctx.get(cloudflareContext).env.GITHUB_CLIENT_SECRET,
       },
     },
-    secret: ctx.cloudflare.env.BETTER_AUTH_SECRET,
+    secret: ctx.get(cloudflareContext).env.BETTER_AUTH_SECRET,
     database: {
       db: new Kysely<Database>({
-        dialect: new D1Dialect({ database: ctx.cloudflare.env.promptly }),
+        dialect: new D1Dialect({
+          database: ctx.get(cloudflareContext).env.promptly,
+        }),
         plugins: [new CamelCasePlugin()],
       }),
       type: 'sqlite',
+    },
+    advanced: {
+      database: {
+        // ponytail: 1.7 introspects sqlite_master on boot; D1 rejects it with SQLITE_AUTH.
+        validateSchema: false,
+      },
     },
     plugins: [
       apiKey({
@@ -91,8 +114,9 @@ const createAuth = (ctx: Readonly<RouterContextProvider>) => {
         },
       }),
       trialStripe({
-        stripeSecretKey: ctx.cloudflare.env.STRIPE_SECRET_KEY,
-        stripeWebhookSecret: ctx.cloudflare.env.STRIPE_WEBHOOK_SECRET,
+        stripeSecretKey: ctx.get(cloudflareContext).env.STRIPE_SECRET_KEY,
+        stripeWebhookSecret:
+          ctx.get(cloudflareContext).env.STRIPE_WEBHOOK_SECRET,
         trial: { days: 14, plan: 'pro' },
         freePlan: {
           name: 'free',
@@ -101,7 +125,7 @@ const createAuth = (ctx: Readonly<RouterContextProvider>) => {
         plans: [
           {
             name: 'pro',
-            priceId: ctx.cloudflare.env.STRIPE_PRICE_ID,
+            priceId: ctx.get(cloudflareContext).env.STRIPE_PRICE_ID,
             limits: { prompts: -1, teamMembers: 5, apiCalls: 50000 },
           },
           {
@@ -114,7 +138,7 @@ const createAuth = (ctx: Readonly<RouterContextProvider>) => {
           async onSubscriptionChange(userId, plan, status) {
             if (status !== 'active' || plan === 'free') return;
 
-            const db = ctx.cloudflare.env.promptly;
+            const db = ctx.get(cloudflareContext).env.promptly;
 
             // Find the user's org
             const member = await db
@@ -238,7 +262,7 @@ const createAuth = (ctx: Readonly<RouterContextProvider>) => {
 let cachedAuth: ReturnType<typeof createAuth> | null = null;
 
 export const getAuth = (ctx: Readonly<RouterContextProvider>) => {
-  const secret = ctx.cloudflare.env.BETTER_AUTH_SECRET;
+  const secret = ctx.get(cloudflareContext).env.BETTER_AUTH_SECRET;
 
   if (cachedAuth && cachedSecret === secret) {
     return cachedAuth;

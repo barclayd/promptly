@@ -4,7 +4,7 @@ import { data } from 'react-router';
 import { Resend } from 'resend';
 import Stripe from 'stripe';
 import { z } from 'zod';
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import { UpgradeRequestEmail } from '~/emails/upgrade-request';
 import { getResourceCounts } from '~/lib/subscription.server';
 import type { Route } from './+types/request-upgrade';
@@ -52,7 +52,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     );
   }
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
   const now = Date.now();
   const twentyFourHoursAgo = now - 24 * 60 * 60 * 1000;
 
@@ -104,7 +104,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   // Get resource counts for the email
   const resourceCounts = await getResourceCounts(db, org.organizationId);
 
-  const env = context.cloudflare.env;
+  const env = context.get(cloudflareContext).env;
   const baseURL = env.BETTER_AUTH_URL;
   const isApiKeyContext =
     result.data.context === 'invalid-api-key' ||

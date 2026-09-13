@@ -1,5 +1,5 @@
 import { data } from 'react-router';
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import type { Route } from './+types/snippets.publish';
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
@@ -34,7 +34,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   const minor = Number.parseInt(versionMatch[2], 10);
   const patch = Number.parseInt(versionMatch[3], 10);
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   const snippetOwnership = await db
     .prepare('SELECT id FROM snippet WHERE id = ? AND organization_id = ?')

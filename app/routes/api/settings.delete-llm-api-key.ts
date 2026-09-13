@@ -1,5 +1,5 @@
 import { data, redirect } from 'react-router';
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import type { Route } from './+types/settings.delete-llm-api-key';
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
@@ -22,7 +22,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return data({ error: 'Organization not found' }, { status: 400 });
   }
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   // Check user is admin or owner
   const member = await db

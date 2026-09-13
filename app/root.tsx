@@ -14,7 +14,7 @@ import {
   useTheme,
 } from 'remix-themes';
 import { Toaster } from '~/components/ui/sonner';
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import { parseCookie } from '~/lib/cookies';
 import { authMiddleware } from '~/middleware/auth';
 import { orgMiddleware } from '~/middleware/org';
@@ -51,7 +51,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   try {
     const org = context.get(orgContext);
     organizationId = org.organizationId;
-    const db = context.cloudflare.env.promptly;
+    const db = context.get(cloudflareContext).env.promptly;
     const userId = session?.user?.id;
 
     const now = new Date();

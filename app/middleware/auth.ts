@@ -21,6 +21,7 @@ const isPublicRoute = (pathname: string) =>
 
 export const authMiddleware: MiddlewareFunction<Response> = async ({
   request,
+  url,
   context,
 }) => {
   // Create auth instance ONCE and cache in context
@@ -30,8 +31,6 @@ export const authMiddleware: MiddlewareFunction<Response> = async ({
   // Fetch session ONCE and cache in context
   const session = await auth.api.getSession({ headers: request.headers });
   context.set(sessionContext, session);
-
-  const url = new URL(request.url);
 
   if (isPublicRoute(url.pathname)) {
     return;

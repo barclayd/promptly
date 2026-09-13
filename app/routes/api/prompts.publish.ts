@@ -1,5 +1,5 @@
 import { data } from 'react-router';
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import { cachePublishedVersion } from '~/lib/cache-invalidation.server';
 import type { Route } from './+types/prompts.publish';
 
@@ -35,7 +35,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   const minor = Number.parseInt(versionMatch[2], 10);
   const patch = Number.parseInt(versionMatch[3], 10);
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   const promptOwnership = await db
     .prepare('SELECT id FROM prompt WHERE id = ? AND organization_id = ?')
@@ -143,7 +143,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       config: string;
     }>();
 
-  const cache = context.cloudflare.env.PROMPTS_CACHE;
+  const cache = context.get(cloudflareContext).env.PROMPTS_CACHE;
   if (cache && publishedVersion) {
     let config: Record<string, unknown> = {};
     try {
@@ -152,7 +152,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       // Keep empty config on parse error
     }
 
-    context.cloudflare.ctx.waitUntil(
+    context.get(cloudflareContext).ctx.waitUntil(
       cachePublishedVersion(cache, promptId, `${major}.${minor}.${patch}`, {
         systemMessage: publishedVersion.system_message ?? '',
         userMessage: publishedVersion.user_message ?? '',

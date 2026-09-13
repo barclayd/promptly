@@ -1,5 +1,5 @@
 import { data } from 'react-router';
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import { updateComposerSchema } from '~/lib/validations/composer';
 import type { Route } from './+types/composers.update';
 
@@ -30,7 +30,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   }
 
   const { composerId, name, description } = result.data;
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   // Verify composer ownership
   const composerOwnership = await db

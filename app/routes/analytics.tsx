@@ -35,7 +35,7 @@ import {
   ChartTooltipContent,
 } from '~/components/ui/chart';
 import { UpgradeGateModal } from '~/components/upgrade-gate-modal';
-import { orgContext } from '~/context';
+import { cloudflareContext, orgContext } from '~/context';
 import { useCanManageBilling } from '~/hooks/use-can-manage-billing';
 import { useResourceLimits } from '~/hooks/use-resource-limits';
 import {
@@ -68,7 +68,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     throw new Response('Unauthorized', { status: 403 });
   }
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
   const dailyApiUsage = await getDailyApiUsage(db, org.organizationId);
 
   return { dailyApiUsage };

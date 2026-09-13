@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import { data } from 'react-router';
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import { syncPromptSnippetRefs } from '~/lib/prompt-snippet-sync.server';
 import type { Route } from './+types/prompts.save-snippets';
 
@@ -23,7 +23,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return data({ error: 'Missing promptId' }, { status: 400 });
   }
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   const promptOwnership = await db
     .prepare('SELECT id FROM prompt WHERE id = ? AND organization_id = ?')

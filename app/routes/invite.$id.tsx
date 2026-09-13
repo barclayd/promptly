@@ -14,6 +14,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from '~/components/ui/item';
+import { cloudflareContext } from '~/context';
 import { getAuth } from '~/lib/auth.server';
 import {
   forwardAuthCookies,
@@ -108,7 +109,9 @@ export const loader = async ({
   // Query invitation directly from database (no auth required)
   // This is needed because auth.api.getInvitation requires an authenticated session
   const db = new Kysely<InvitationDatabase>({
-    dialect: new D1Dialect({ database: context.cloudflare.env.promptly }),
+    dialect: new D1Dialect({
+      database: context.get(cloudflareContext).env.promptly,
+    }),
     plugins: [new CamelCasePlugin()],
   });
 
@@ -201,7 +204,9 @@ export const action = async ({
 
   // Query invitation directly from database (no auth required)
   const db = new Kysely<InvitationDatabase>({
-    dialect: new D1Dialect({ database: context.cloudflare.env.promptly }),
+    dialect: new D1Dialect({
+      database: context.get(cloudflareContext).env.promptly,
+    }),
     plugins: [new CamelCasePlugin()],
   });
 
