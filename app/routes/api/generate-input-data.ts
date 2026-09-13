@@ -1,6 +1,6 @@
 import { generateText, Output } from 'ai';
 import { data } from 'react-router';
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import { buildZodSchema } from '~/lib/build-zod-schema';
 import { generateZodSchema } from '~/lib/generate-schema';
 import { resolveModelForOrg } from '~/lib/resolve-model.server';
@@ -63,11 +63,11 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   // Use claude-haiku-4.5 as the default model for test data generation
   const modelId = 'claude-haiku-4.5';
   const result = await resolveModelForOrg({
-    db: context.cloudflare.env.promptly,
+    db: context.get(cloudflareContext).env.promptly,
     organizationId: org.organizationId,
     modelId,
-    encryptionKey: context.cloudflare.env.API_KEY_ENCRYPTION_KEY,
-    systemAnthropicKey: context.cloudflare.env.ANTHROPIC_API_KEY,
+    encryptionKey: context.get(cloudflareContext).env.API_KEY_ENCRYPTION_KEY,
+    systemAnthropicKey: context.get(cloudflareContext).env.ANTHROPIC_API_KEY,
   });
 
   if (!result.ok) {

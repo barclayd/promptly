@@ -1,5 +1,10 @@
 import { data } from 'react-router';
-import { authContext, orgContext, sessionContext } from '~/context';
+import {
+  authContext,
+  cloudflareContext,
+  orgContext,
+  sessionContext,
+} from '~/context';
 import { deleteComposerSchema } from '~/lib/validations/composer';
 import type { Route } from './+types/composers.delete';
 
@@ -55,7 +60,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   }
 
   const { composerId } = result.data;
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   // Verify composer ownership
   const composerOwnership = await db

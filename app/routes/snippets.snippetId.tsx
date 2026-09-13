@@ -19,7 +19,12 @@ import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import type { Version } from '~/components/versions-table';
-import { authContext, orgContext, sessionContext } from '~/context';
+import {
+  authContext,
+  cloudflareContext,
+  orgContext,
+  sessionContext,
+} from '~/context';
 import {
   type CursorPosition,
   type PresenceEventCallbacks,
@@ -78,7 +83,7 @@ export const loader = async ({
   }
 
   const { snippetId } = params;
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   const url = new URL(request.url);
   const versionParam = url.searchParams.get('version');
@@ -268,7 +273,7 @@ export const action = async ({
   }
 
   const { snippetId } = params;
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   const session = context.get(sessionContext);
 

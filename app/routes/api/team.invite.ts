@@ -1,6 +1,11 @@
 import { data, redirect } from 'react-router';
 import { z } from 'zod';
-import { authContext, orgContext, sessionContext } from '~/context';
+import {
+  authContext,
+  cloudflareContext,
+  orgContext,
+  sessionContext,
+} from '~/context';
 import { getSubscriptionStatus } from '~/lib/subscription.server';
 import { inviteMemberSchema } from '~/lib/validations/team';
 import type { Route } from './+types/team.invite';
@@ -39,7 +44,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   }
 
   // Check team member limit
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
   const subscription = await getSubscriptionStatus(db, org.organizationId);
   if (subscription.limits.teamMembers !== -1) {
     const countResult = await db

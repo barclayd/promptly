@@ -14,7 +14,7 @@ import {
 } from '~/components/ui/empty';
 import { Folder } from '~/components/ui/folder';
 import { Paper } from '~/components/ui/paper';
-import { orgContext } from '~/context';
+import { cloudflareContext, orgContext } from '~/context';
 import type { Route } from './+types/composers';
 
 // biome-ignore lint/correctness/noEmptyPattern: react router default
@@ -32,7 +32,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     throw new Response('Unauthorized', { status: 403 });
   }
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   const folders = await db
     .prepare('SELECT id, name FROM composer_folder WHERE organization_id = ?')

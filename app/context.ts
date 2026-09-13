@@ -2,6 +2,11 @@ import type { Session, User } from 'better-auth';
 import { createContext } from 'react-router';
 import type { getAuth } from '~/lib/auth.server';
 
+export const cloudflareContext = createContext<{
+  env: Env;
+  ctx: ExecutionContext;
+}>();
+
 export const userContext = createContext<User>();
 
 export type OrgContext = {

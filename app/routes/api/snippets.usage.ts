@@ -1,5 +1,5 @@
 import { data } from 'react-router';
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import type { Route } from './+types/snippets.usage';
 
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
@@ -22,7 +22,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     return data({ error: 'Missing snippetId' }, { status: 400 });
   }
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   // Verify snippet ownership
   const snippetOwnership = await db

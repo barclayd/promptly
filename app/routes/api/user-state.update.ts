@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import { data } from 'react-router';
-import { sessionContext } from '~/context';
+import { cloudflareContext, sessionContext } from '~/context';
 import type { Route } from './+types/user-state.update';
 
 // Allowlisted key prefixes — only these can be written
@@ -38,7 +38,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return data({ error: 'Key not allowed' }, { status: 403 });
   }
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
   const id = nanoid();
   const now = Date.now();
 

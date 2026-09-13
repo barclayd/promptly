@@ -1,5 +1,5 @@
 import { data } from 'react-router';
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import { invalidatePromptCache } from '~/lib/cache-invalidation.server';
 import { updatePromptSchema } from '~/lib/validations/prompt';
 import type { Route } from './+types/prompts.update';
@@ -31,7 +31,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   }
 
   const { promptId, name, description } = result.data;
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   // Verify prompt ownership
   const promptOwnership = await db
@@ -52,9 +52,11 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     .run();
 
   // Invalidate API cache
-  const cache = context.cloudflare.env.PROMPTS_CACHE;
+  const cache = context.get(cloudflareContext).env.PROMPTS_CACHE;
   if (cache) {
-    context.cloudflare.ctx.waitUntil(invalidatePromptCache(cache, promptId));
+    context
+      .get(cloudflareContext)
+      .ctx.waitUntil(invalidatePromptCache(cache, promptId));
   }
 
   return { success: true };

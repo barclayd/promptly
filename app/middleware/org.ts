@@ -21,10 +21,9 @@ const isPublicRoute = (pathname: string) =>
 
 export const orgMiddleware: MiddlewareFunction<Response> = async ({
   request,
+  url,
   context,
 }) => {
-  const url = new URL(request.url);
-
   if (isPublicRoute(url.pathname)) {
     return;
   }

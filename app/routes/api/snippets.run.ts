@@ -1,6 +1,6 @@
 import { streamText } from 'ai';
 import { data } from 'react-router';
-import { orgContext, sessionContext } from '~/context';
+import { cloudflareContext, orgContext, sessionContext } from '~/context';
 import { resolveModelForOrg } from '~/lib/resolve-model.server';
 import type { Route } from './+types/snippets.run';
 
@@ -26,7 +26,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return data({ error: 'Missing snippetId' }, { status: 400 });
   }
 
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   const snippetOwnership = await db
     .prepare('SELECT id FROM snippet WHERE id = ? AND organization_id = ?')
@@ -86,8 +86,8 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     db,
     organizationId: org.organizationId,
     modelId,
-    encryptionKey: context.cloudflare.env.API_KEY_ENCRYPTION_KEY,
-    systemAnthropicKey: context.cloudflare.env.ANTHROPIC_API_KEY,
+    encryptionKey: context.get(cloudflareContext).env.API_KEY_ENCRYPTION_KEY,
+    systemAnthropicKey: context.get(cloudflareContext).env.ANTHROPIC_API_KEY,
   });
 
   if (!modelResult.ok) {
@@ -136,7 +136,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   });
 
   // After the response is sent, update the database with token counts
-  context.cloudflare.ctx.waitUntil(
+  context.get(cloudflareContext).ctx.waitUntil(
     Promise.resolve(result.usage)
       .then(async (usage) => {
         if (versionId && usage) {
@@ -184,7 +184,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     }
   };
 
-  context.cloudflare.ctx.waitUntil(pumpStream());
+  context.get(cloudflareContext).ctx.waitUntil(pumpStream());
 
   const headers = new Headers({ 'Content-Type': 'text/plain; charset=utf-8' });
   return new Response(readable, { headers });

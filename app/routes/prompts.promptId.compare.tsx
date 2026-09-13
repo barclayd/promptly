@@ -1,5 +1,5 @@
 import { CompareScreen } from '~/components/compare/compare-screen';
-import { orgContext } from '~/context';
+import { cloudflareContext, orgContext } from '~/context';
 import type { Route } from './+types/prompts.promptId.compare';
 
 export type CompareVersionStatus = 'live' | 'published' | 'draft';
@@ -32,7 +32,7 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
   }
 
   const { promptId } = params;
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   const prompt = await db
     .prepare(

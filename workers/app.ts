@@ -3,17 +3,9 @@ import { organization } from 'better-auth/plugins';
 import { CamelCasePlugin, Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
 import { createRequestHandler, RouterContextProvider } from 'react-router';
+import { cloudflareContext } from '~/context';
 
 export { PresenceRoom } from './presence-room';
-
-declare module 'react-router' {
-  export interface RouterContextProvider {
-    cloudflare: {
-      env: Env;
-      ctx: ExecutionContext;
-    };
-  }
-}
 
 type Database = Record<string, string>;
 
@@ -160,7 +152,7 @@ export default {
     }
 
     const context = new RouterContextProvider();
-    Object.assign(context, { cloudflare: { env, ctx } });
+    context.set(cloudflareContext, { env, ctx });
     const response = await requestHandler(request, context);
 
     // Add edge caching ONLY for the landing page

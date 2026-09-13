@@ -1,5 +1,10 @@
 import { data } from 'react-router';
-import { authContext, orgContext, sessionContext } from '~/context';
+import {
+  authContext,
+  cloudflareContext,
+  orgContext,
+  sessionContext,
+} from '~/context';
 import { deleteSnippetSchema } from '~/lib/validations/snippet';
 import type { Route } from './+types/snippets.delete';
 
@@ -55,7 +60,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   }
 
   const { snippetId } = result.data;
-  const db = context.cloudflare.env.promptly;
+  const db = context.get(cloudflareContext).env.promptly;
 
   // Verify snippet ownership
   const snippetOwnership = await db
