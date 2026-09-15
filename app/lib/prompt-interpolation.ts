@@ -59,11 +59,14 @@ export const getNestedValue = (
     if (current === null || current === undefined) return undefined;
 
     if (isRecord(current)) {
+      if (!Object.hasOwn(current, key)) return undefined;
       current = current[key];
       continue;
     }
 
     if (Array.isArray(current)) {
+      if (!/^(0|[1-9]\d*)$/.test(key) || !Object.hasOwn(current, key))
+        return undefined;
       const index = parseInt(key, 10);
       if (Number.isNaN(index)) return undefined;
       current = current[index];

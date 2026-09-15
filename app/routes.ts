@@ -11,6 +11,11 @@ export default [
 
   // API routes
   route('api/set-theme', './routes/api/set-theme.ts'),
+  route('api/mcp/revoke', './routes/api/mcp.revoke.ts'),
+  route('api/authoring/save', './routes/api/authoring.save.ts'),
+  route('api/authoring/read', './routes/api/authoring.read.ts'),
+  route('api/authoring/restore', './routes/api/authoring.restore.ts'),
+  route('oauth/authorize', './routes/oauth.authorize.tsx'),
   route('api/auth/*', './routes/api/auth.ts'),
   route('api/prompts/create', './routes/api/prompts.create.ts'),
   route('api/prompts/run', './routes/api/prompts.run.ts'),
@@ -88,8 +93,10 @@ export default [
       route('snippets', './routes/snippets.tsx'),
       route('composers', './routes/composers.tsx'),
       route('analytics', './routes/analytics.tsx'),
+      route('activity', './routes/activity.tsx'),
       route('team', './routes/team.tsx'),
       route('settings', './routes/settings.tsx'),
+      route('settings/mcp/clients', './routes/settings.mcp-clients.tsx'),
     ]),
     layout('./routes/layouts/prompt-detail.tsx', [
       route('prompts/:promptId', './routes/prompts.promptId.tsx', {

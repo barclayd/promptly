@@ -160,4 +160,8 @@ test('validation prevents saving with empty name', async ({
   // Verify Save button is disabled when name is empty
   const saveButton = editDialog.getByRole('button', { name: 'Save' });
   await expect(saveButton).toBeDisabled();
+  await editDialog.locator('input[name="name"]').fill('   ');
+  await expect(saveButton).toBeDisabled();
+  await editDialog.locator('input[name="name"]').fill('Valid name');
+  await expect(saveButton).toBeEnabled();
 });

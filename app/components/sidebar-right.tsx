@@ -1,4 +1,6 @@
-'use client';
+import { getActiveEditorSession } from '~/lib/authoring/editor-session';
+
+('use client');
 
 import { IconGitCompare, IconKeyOff, IconX } from '@tabler/icons-react';
 import { JsonEditor } from 'json-edit-react';
@@ -12,16 +14,8 @@ import {
   useRef,
   useState,
 } from 'react';
-import {
-  Link,
-  useFetcher,
-  useLocation,
-  useNavigate,
-  useParams,
-  useSearchParams,
-} from 'react-router';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
-import { useDebouncedCallback } from 'use-debounce';
 import { CodePreview } from '~/components/code-preview';
 import { NoLlmApiKeysModal } from '~/components/no-llm-api-keys-modal';
 import { NoModelsWarning } from '~/components/no-models-warning';
@@ -86,7 +80,19 @@ type SidebarRightProps = React.ComponentProps<typeof Sidebar> & {
 };
 
 export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
-  ({ versions = [], isReadonly = false, ...props }, ref) => {
+  (
+    {
+      versions = [],
+      isReadonly = false,
+      schema: _schema,
+      model: _model,
+      temperature: _temperature,
+      inputData: _inputData,
+      inputDataRootName: _inputDataRootName,
+      ...props
+    },
+    ref,
+  ) => {
     const isOnboardingActive = useOnboardingStore((s) => s.isActive);
     const enabledModels = useEnabledModels();
     const hasNoModels = !isOnboardingActive && enabledModels.length === 0;
@@ -140,8 +146,6 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
     const [testOpen, setTestOpen] = useState(true);
     const testSectionRef = useRef<HTMLDivElement>(null);
 
-    const configFetcher = useFetcher();
-    const location = useLocation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const params = useParams();
@@ -158,51 +162,32 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
     const hasTestConfigChanges =
       testModel !== model || testTemperature !== temperature;
 
-    const debouncedSaveConfig = useDebouncedCallback(() => {
-      const state = usePromptEditorStore.getState();
-      const config = {
-        schema: state.schemaFields,
-        model: state.model,
-        temperature: state.temperature,
-        inputData: state.inputData,
-        inputDataRootName: state.inputDataRootName,
-      };
-      configFetcher.submit(
-        { intent: 'saveConfig', config: JSON.stringify(config) },
-        { method: 'post', action: location.pathname },
-      );
-    }, 1000);
-
     const handleSchemaChange = useCallback(
       (fields: SchemaField[]) => {
         setSchemaFields(fields);
-        debouncedSaveConfig();
       },
-      [debouncedSaveConfig, setSchemaFields],
+      [setSchemaFields],
     );
 
     const handleModelChange = useCallback(
       (value: string | null) => {
         setModel(value);
-        debouncedSaveConfig();
       },
-      [debouncedSaveConfig, setModel],
+      [setModel],
     );
 
     const handleTemperatureChange = useCallback(
       (value: number) => {
         setTemperature(value);
-        debouncedSaveConfig();
       },
-      [debouncedSaveConfig, setTemperature],
+      [setTemperature],
     );
 
     const handleInputDataChange = useCallback(
       (value: unknown) => {
         setInputData(value);
-        debouncedSaveConfig();
       },
-      [debouncedSaveConfig, setInputData],
+      [setInputData],
     );
 
     const versionParam = searchParams.get('version');
@@ -235,13 +220,11 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         );
 
         setInputData(result.inputData, result.inputDataRootName);
-        debouncedSaveConfig();
       },
       [
         schemaFields,
         inputData,
         inputDataRootName,
-        debouncedSaveConfig,
         setSchemaFields,
         setInputData,
       ],
@@ -375,7 +358,6 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
         };
         if (result.inputData !== undefined) {
           setInputData(result.inputData, result.rootName ?? null);
-          debouncedSaveConfig();
         }
       } catch (error) {
         console.error('Failed to generate input data:', error);
@@ -385,7 +367,7 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       } finally {
         setIsGeneratingInputData(false);
       }
-    }, [schemaFields, debouncedSaveConfig, setInputData, showApiKeyErrorToast]);
+    }, [schemaFields, setInputData, showApiKeyErrorToast]);
 
     // Handle running the prompt
     const handleRunPrompt = useCallback(async () => {
@@ -553,30 +535,27 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
       [triggerTest, isStreaming],
     );
 
-    // Save test config to main config and DB
-    const handleSaveTestConfig = useCallback(() => {
+    const [isSavingTestConfig, setIsSavingTestConfig] = useState(false);
+    const handleSaveTestConfig = useCallback(async () => {
       setModel(testModel);
       setTemperature(testTemperature ?? temperature);
 
-      // Save to DB
-      const state = usePromptEditorStore.getState();
-      const config = {
-        schema: state.schemaFields,
-        model: testModel,
-        temperature: testTemperature ?? temperature,
-        inputData: state.inputData,
-        inputDataRootName: state.inputDataRootName,
-      };
-      configFetcher.submit(
-        { intent: 'saveConfig', config: JSON.stringify(config) },
-        { method: 'post', action: location.pathname },
-      );
+      const session = params.promptId
+        ? getActiveEditorSession('prompt', params.promptId)
+        : undefined;
+      if (session) {
+        setIsSavingTestConfig(true);
+        try {
+          await session.flush();
+        } finally {
+          setIsSavingTestConfig(false);
+        }
+      }
     }, [
       testModel,
       testTemperature,
       temperature,
-      configFetcher,
-      location.pathname,
+      params.promptId,
       setModel,
       setTemperature,
     ]);
@@ -945,12 +924,13 @@ export const SidebarRight = forwardRef<SidebarRightHandle, SidebarRightProps>(
                           className="w-full"
                           onClick={handleSaveTestConfig}
                           disabled={
+                            isReadonly ||
                             isOnboardingActive ||
                             !hasTestConfigChanges ||
-                            configFetcher.state !== 'idle'
+                            isSavingTestConfig
                           }
                         >
-                          {configFetcher.state !== 'idle' ? (
+                          {isSavingTestConfig ? (
                             <span className="flex items-center gap-2">
                               <span className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                               Saving...

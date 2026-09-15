@@ -7,8 +7,8 @@ import {
   IconRss,
   IconTag,
 } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
-import { useFetcher, useNavigate } from 'react-router';
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { PublishPromptDialog } from '~/components/publish-prompt-dialog';
 import { Button } from '~/components/ui/button';
 import {
@@ -32,11 +32,7 @@ import {
 } from '~/components/ui/item';
 import { Label } from '~/components/ui/label';
 import { VersionInput } from '~/components/ui/version-input';
-
-type ActionData = {
-  error?: string;
-  success?: boolean;
-};
+import { useAuthoringDialog } from '~/hooks/use-authoring-dialog';
 
 export type UnresolvedReference = {
   promptId: string;
@@ -62,26 +58,15 @@ export const PublishComposerDialog = ({
   unresolvedReferences,
   disabled,
 }: PublishComposerDialogProps) => {
-  const fetcher = useFetcher<ActionData>();
-  const isSubmitting = fetcher.state === 'submitting';
+  const authoring = useAuthoringDialog('composer', composerId);
   const navigate = useNavigate();
 
   const [version, setVersion] = useState(suggestedVersion);
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    setVersion(suggestedVersion);
-  }, [suggestedVersion]);
-
-  useEffect(() => {
-    if (fetcher.data?.success) {
-      setOpen(false);
-    }
-  }, [fetcher.data]);
-
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
-    if (!isOpen) {
+    if (isOpen) {
       setVersion(suggestedVersion);
     }
   };
@@ -95,6 +80,7 @@ export const PublishComposerDialog = ({
         {children}
       </DialogTrigger>
       <DialogContent
+        ref={authoring.mount}
         className="sm:max-w-md"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
@@ -162,7 +148,12 @@ export const PublishComposerDialog = ({
             </DialogFooter>
           </>
         ) : (
-          <fetcher.Form method="post" action="/api/composers/publish">
+          <form
+            onSubmit={async (event) => {
+              event.preventDefault();
+              if (await authoring.publish(version)) setOpen(false);
+            }}
+          >
             <input type="hidden" name="composerId" value={composerId} />
             <input type="hidden" name="version" value={version} />
             <DialogHeader>
@@ -194,10 +185,11 @@ export const PublishComposerDialog = ({
                   value={version}
                   onChange={setVersion}
                   autoFocus={open}
+                  disabled={authoring.busy || authoring.retrying}
                 />
-                {fetcher.data?.error && (
-                  <p className="text-destructive text-sm">
-                    {fetcher.data.error}
+                {authoring.error && (
+                  <p role="alert" className="text-destructive text-sm">
+                    {authoring.error}
                   </p>
                 )}
               </div>
@@ -208,11 +200,15 @@ export const PublishComposerDialog = ({
                   Cancel
                 </Button>
               </DialogClose>
-              <Button type="submit" disabled={isSubmitting || !version}>
-                {isSubmitting ? 'Publishing...' : 'Publish'}
+              <Button type="submit" disabled={authoring.disabled || !version}>
+                {authoring.busy
+                  ? 'Publishing...'
+                  : authoring.retrying
+                    ? 'Retry publish'
+                    : 'Publish'}
               </Button>
             </DialogFooter>
-          </fetcher.Form>
+          </form>
         )}
       </DialogContent>
     </Dialog>

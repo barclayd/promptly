@@ -2,14 +2,13 @@ import { ArrowLeft, GitBranch, RssIcon } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  data,
-  useFetcher,
   useLocation,
   useNavigate,
   useOutletContext,
   useSearchParams,
 } from 'react-router';
 import { useDebouncedCallback } from 'use-debounce';
+import { AuthoringStatus } from '~/components/authoring-status';
 import { PromptEditor } from '~/components/prompt-editor';
 import { PromptEditorMenubar } from '~/components/prompt-editor-menubar';
 import { PublishPromptDialog } from '~/components/publish-prompt-dialog';
@@ -27,6 +26,7 @@ import {
   orgContext,
   sessionContext,
 } from '~/context';
+import { useBrowserAuthoring } from '~/hooks/use-browser-authoring';
 import {
   type CursorPosition,
   type PresenceEventCallbacks,
@@ -34,13 +34,15 @@ import {
 } from '~/hooks/use-presence';
 import { useResourceLimits } from '~/hooks/use-resource-limits';
 import { useUndoRedo } from '~/hooks/use-undo-redo';
+import {
+  browserAuthoringAction,
+  readBrowserAuthoringDocument,
+} from '~/lib/authoring/browser.server';
+import { initializeAuthoringStore } from '~/lib/authoring/editor-session';
 import type { SchemaField } from '~/lib/schema-types';
 import { getSubscriptionStatus } from '~/lib/subscription.server';
 import { useOnboardingStore } from '~/stores/onboarding-store';
-import {
-  type AttachedSnippet,
-  usePromptEditorStore,
-} from '~/stores/prompt-editor-store';
+import { usePromptEditorStore } from '~/stores/prompt-editor-store';
 import type { Route } from './+types/prompts.promptId';
 
 type PromptDetailContext = {
@@ -114,14 +116,14 @@ export const loader = async ({
 
   const prompt = await db
     .prepare(
-      'SELECT id, name, description, folder_id FROM prompt WHERE id = ? AND organization_id = ?',
+      'SELECT id, name, description, folder_id FROM prompt WHERE id = ? AND organization_id = ? AND deleted_at IS NULL',
     )
     .bind(promptId, org.organizationId)
     .first<{
       id: string;
       name: string;
       description: string;
-      folder_id: string;
+      folder_id: string | null;
     }>();
 
   if (!prompt) {
@@ -145,12 +147,14 @@ export const loader = async ({
     isReadOnlyDueToLimit = !editableIds.has(promptId);
   }
 
-  const folder = await db
-    .prepare(
-      'SELECT id, name FROM prompt_folder WHERE id = ? AND organization_id = ?',
-    )
-    .bind(prompt.folder_id, org.organizationId)
-    .first<{ id: string; name: string }>();
+  const folder =
+    (await db
+      .prepare(
+        'SELECT id, name FROM prompt_folder WHERE id = ? AND organization_id = ?',
+      )
+      .bind(prompt.folder_id, org.organizationId)
+      .first<{ id: string; name: string }>()) ??
+    (prompt.folder_id === null ? { id: '', name: 'Unfiled' } : null);
 
   if (!folder) {
     throw new Response('Folder not found', { status: 404 });
@@ -181,7 +185,7 @@ export const loader = async ({
 
   // If version param provided, try to fetch that specific version
   let versionNotFound = false;
-  let isViewingOldVersion = false;
+  let isViewingOldVersion = Boolean(versionParam);
   let requestedVersion: string | null = null;
 
   let targetVersion: {
@@ -234,7 +238,7 @@ export const loader = async ({
   }
 
   // If not viewing specific version (or version not found), get the latest
-  if (!targetVersion) {
+  if (!targetVersion && !versionParam) {
     targetVersion = await db
       .prepare(
         'SELECT id, system_message, user_message, config, major, minor, patch, last_output_tokens, last_system_input_tokens, last_user_input_tokens FROM prompt_version WHERE prompt_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
@@ -371,7 +375,14 @@ export const loader = async ({
     ? `${lastPublishedResult.major}.${lastPublishedResult.minor}.${lastPublishedResult.patch}`
     : null;
 
+  const authoring = await readBrowserAuthoringDocument(
+    context,
+    'prompt',
+    promptId,
+  );
+
   return {
+    authoring,
     folder,
     prompt,
     currentVersion: currentVersionString,
@@ -400,212 +411,10 @@ export const loader = async ({
   };
 };
 
-const copySnippetRefsToNewVersion = async (
-  db: D1Database,
-  sourceVersionId: string,
-  targetVersionId: string,
-) => {
-  const existingRefs = await db
-    .prepare(
-      'SELECT snippet_id, snippet_version_id, sort_order FROM prompt_version_snippet WHERE prompt_version_id = ?',
-    )
-    .bind(sourceVersionId)
-    .all<{
-      snippet_id: string;
-      snippet_version_id: string | null;
-      sort_order: number;
-    }>();
-
-  for (const ref of existingRefs.results ?? []) {
-    await db
-      .prepare(
-        'INSERT INTO prompt_version_snippet (id, prompt_version_id, snippet_id, snippet_version_id, sort_order) VALUES (?, ?, ?, ?, ?)',
-      )
-      .bind(
-        nanoid(),
-        targetVersionId,
-        ref.snippet_id,
-        ref.snippet_version_id,
-        ref.sort_order,
-      )
-      .run();
-  }
-};
-
-export const action = async ({
-  request,
-  params,
-  context,
-}: Route.ActionArgs) => {
-  const org = context.get(orgContext);
-  if (!org) {
-    return data({ error: 'Unauthorized' }, { status: 403 });
-  }
-
-  const { promptId } = params;
-  const db = context.get(cloudflareContext).env.promptly;
-
-  const session = context.get(sessionContext);
-
-  if (!session?.user) {
-    return data({ error: 'Not authenticated' }, { status: 401 });
-  }
-
-  const promptOwnership = await db
-    .prepare('SELECT id FROM prompt WHERE id = ? AND organization_id = ?')
-    .bind(promptId, org.organizationId)
-    .first();
-
-  if (!promptOwnership) {
-    return data({ error: 'Prompt not found' }, { status: 404 });
-  }
-
-  // Guard: reject saves on read-only prompts (plan limit)
-  const subscription = await getSubscriptionStatus(db, org.organizationId);
-  if (subscription.status === 'expired' && subscription.hadTrial) {
-    const editablePrompts = await db
-      .prepare(
-        'SELECT id FROM prompt WHERE organization_id = ? AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 3',
-      )
-      .bind(org.organizationId)
-      .all<{ id: string }>();
-
-    const editableIds = new Set(
-      editablePrompts.results?.map((p) => p.id) ?? [],
-    );
-    if (!editableIds.has(promptId)) {
-      return data(
-        { error: 'This prompt is read-only on the Free plan' },
-        { status: 403 },
-      );
-    }
-  }
-
-  const formData = await request.formData();
-  const intent = formData.get('intent') as string | null;
-
-  if (intent === 'saveConfig') {
-    const configJson = (formData.get('config') as string) ?? '{}';
-
-    const currentVersion = await db
-      .prepare(
-        'SELECT id, published_at, system_message, user_message FROM prompt_version WHERE prompt_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
-      )
-      .bind(promptId)
-      .first<{
-        id: string;
-        published_at: number | null;
-        system_message: string | null;
-        user_message: string | null;
-      }>();
-
-    const now = Date.now();
-    if (!currentVersion) {
-      await db
-        .prepare(
-          'INSERT INTO prompt_version (id, prompt_id, config, created_by, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?)',
-        )
-        .bind(
-          nanoid(),
-          promptId,
-          configJson,
-          session.user.id,
-          now,
-          session.user.id,
-        )
-        .run();
-    } else if (currentVersion.published_at === null) {
-      await db
-        .prepare(
-          'UPDATE prompt_version SET config = ?, updated_at = ?, updated_by = ? WHERE id = ?',
-        )
-        .bind(configJson, now, session.user.id, currentVersion.id)
-        .run();
-    } else {
-      const newDraftId = nanoid();
-      await db
-        .prepare(
-          'INSERT INTO prompt_version (id, prompt_id, config, system_message, user_message, created_by, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        )
-        .bind(
-          newDraftId,
-          promptId,
-          configJson,
-          currentVersion.system_message,
-          currentVersion.user_message,
-          session.user.id,
-          now,
-          session.user.id,
-        )
-        .run();
-      await copySnippetRefsToNewVersion(db, currentVersion.id, newDraftId);
-    }
-
-    return { success: true, savedAt: Date.now(), intent: 'saveConfig' };
-  }
-
-  const systemMessage = (formData.get('systemMessage') as string)?.trim() ?? '';
-  const userMessage = (formData.get('userMessage') as string)?.trim() ?? '';
-
-  const currentVersion = await db
-    .prepare(
-      'SELECT id, published_at, config FROM prompt_version WHERE prompt_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
-    )
-    .bind(promptId)
-    .first<{
-      id: string;
-      published_at: number | null;
-      config: string | null;
-    }>();
-
-  const now = Date.now();
-  if (!currentVersion) {
-    await db
-      .prepare(
-        'INSERT INTO prompt_version (id, prompt_id, system_message, user_message, created_by, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      )
-      .bind(
-        nanoid(),
-        promptId,
-        systemMessage,
-        userMessage,
-        session.user.id,
-        now,
-        session.user.id,
-      )
-      .run();
-  } else if (currentVersion.published_at === null) {
-    await db
-      .prepare(
-        'UPDATE prompt_version SET system_message = ?, user_message = ?, updated_at = ?, updated_by = ? WHERE id = ?',
-      )
-      .bind(systemMessage, userMessage, now, session.user.id, currentVersion.id)
-      .run();
-  } else {
-    const newDraftId = nanoid();
-    await db
-      .prepare(
-        'INSERT INTO prompt_version (id, prompt_id, system_message, user_message, config, created_by, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      )
-      .bind(
-        newDraftId,
-        promptId,
-        systemMessage,
-        userMessage,
-        currentVersion.config,
-        session.user.id,
-        now,
-        session.user.id,
-      )
-      .run();
-    await copySnippetRefsToNewVersion(db, currentVersion.id, newDraftId);
-  }
-
-  return { success: true, savedAt: Date.now() };
-};
+export const action = (args: Route.ActionArgs) =>
+  browserAuthoringAction(args, 'prompt', 'messages', args.params.promptId);
 
 export default function PromptDetail({ loaderData }: Route.ComponentProps) {
-  const fetcher = useFetcher<typeof action>();
   const { triggerTest } = useOutletContext<PromptDetailContext>();
   const location = useLocation();
   const navigate = useNavigate();
@@ -617,8 +426,22 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
     isReadOnlyDueToLimit,
   } = loaderData;
   const isOnboardingActive = useOnboardingStore((s) => s.isActive);
+  const {
+    session: authoringSession,
+    snapshot: saveState,
+    editorRef: authoringRef,
+  } = useBrowserAuthoring(
+    loaderData.authoring,
+    isViewingOldVersion || versionNotFound || isReadOnlyDueToLimit,
+  );
   const isReadOnly =
-    isViewingOldVersion || isReadOnlyDueToLimit || isOnboardingActive;
+    isViewingOldVersion ||
+    versionNotFound ||
+    isReadOnlyDueToLimit ||
+    isOnboardingActive ||
+    !saveState.attached ||
+    saveState.isDeleting ||
+    saveState.deleted;
 
   const [planLimitModalOpen, setPlanLimitModalOpen] = useState(false);
   const { promptCount, memberCount } = useResourceLimits();
@@ -627,24 +450,14 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   useUndoRedo();
 
   // Connect to presence/collaboration system
-  const { sendContentUpdate, subscribeToEvents, sendCursorUpdate, cursors } =
-    usePresence(isReadOnly ? undefined : loaderData.prompt.id);
+  const { subscribeToEvents, sendCursorUpdate, cursors } = usePresence(
+    isReadOnly ? undefined : loaderData.prompt.id,
+  );
 
   // Track cursor state for each textarea
   const [remoteCursors, setRemoteCursors] = useState<CursorPosition[]>([]);
   const systemTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const userTextareaRef = useRef<HTMLTextAreaElement | null>(null);
-
-  // Get remote update actions from store
-  const setSystemMessageFromRemote = usePromptEditorStore(
-    (state) => state.setSystemMessageFromRemote,
-  );
-  const setUserMessageFromRemote = usePromptEditorStore(
-    (state) => state.setUserMessageFromRemote,
-  );
-
-  // Track local content version to compare with server
-  const localVersionRef = useRef(0);
 
   // Track our last known cursor position to re-broadcast when new users join
   const lastCursorRef = useRef<{
@@ -652,63 +465,13 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
     position: number;
   } | null>(null);
 
-  // Subscribe to content sync events from other users
+  // Content comes only from authorized saved revisions; presence carries cursors.
   // Note: Using useEffect here is acceptable because this is for external state sync (WebSocket)
   // and not for DOM-related side effects which the CLAUDE.md guidelines warn against
   useEffect(() => {
     if (!subscribeToEvents || isReadOnly) return;
 
     const callbacks: PresenceEventCallbacks = {
-      onContentSync: (field, value, version) => {
-        // Full-text sync (paste, undo/redo, or large changes)
-        localVersionRef.current = version;
-
-        if (field === 'systemMessage') {
-          setSystemMessageFromRemote(value);
-        } else if (field === 'userMessage') {
-          setUserMessageFromRemote(value);
-        }
-        // Note: Do NOT call debouncedSave - only originator saves to D1
-      },
-      onContentDiffSync: (diff, version) => {
-        // Apply positional diff to current local value
-        localVersionRef.current = version;
-
-        const currentValue =
-          diff.field === 'systemMessage'
-            ? usePromptEditorStore.getState().systemMessage
-            : usePromptEditorStore.getState().userMessage;
-
-        const newValue =
-          currentValue.slice(0, diff.position) +
-          diff.insertText +
-          currentValue.slice(diff.position + diff.deleteCount);
-
-        if (diff.field === 'systemMessage') {
-          setSystemMessageFromRemote(newValue);
-        } else {
-          setUserMessageFromRemote(newValue);
-        }
-      },
-      onContentState: (state) => {
-        // Handle initial content state when joining a room
-        // Only apply if server has content (version > 0) and it differs from our loader data
-        if (state.version > 0) {
-          localVersionRef.current = state.version;
-
-          const currentSystemMessage =
-            usePromptEditorStore.getState().systemMessage;
-          const currentUserMessage =
-            usePromptEditorStore.getState().userMessage;
-
-          if (state.systemMessage !== currentSystemMessage) {
-            setSystemMessageFromRemote(state.systemMessage);
-          }
-          if (state.userMessage !== currentUserMessage) {
-            setUserMessageFromRemote(state.userMessage);
-          }
-        }
-      },
       onCursorSync: (cursor) => {
         // Update cursor state when receiving cursor sync from another user
         setRemoteCursors((prev) => {
@@ -736,13 +499,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
     };
 
     return subscribeToEvents(callbacks);
-  }, [
-    subscribeToEvents,
-    isReadOnly,
-    setSystemMessageFromRemote,
-    setUserMessageFromRemote,
-    sendCursorUpdate,
-  ]);
+  }, [subscribeToEvents, isReadOnly, sendCursorUpdate]);
 
   // Update remote cursors when user leaves (remove their cursor)
   useEffect(() => {
@@ -764,7 +521,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
 
   // Initialize store synchronously before first render if needed
   // This pattern avoids the "setState during render" warning by using getState/setState
-  const currentKey = `${loaderData.prompt.id}:${loaderData.currentVersion}`;
+  const currentKey = `${loaderData.prompt.id}:${isViewingOldVersion ? loaderData.requestedVersion : 'working'}`;
   const lastKey = lastInitializedRef.current
     ? `${lastInitializedRef.current.promptId}:${lastInitializedRef.current.version}`
     : null;
@@ -775,29 +532,31 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   if (needsInit) {
     lastInitializedRef.current = {
       promptId: loaderData.prompt.id,
-      version: loaderData.currentVersion,
+      version: isViewingOldVersion ? loaderData.requestedVersion : 'working',
     };
     initialSystemRef.current = loaderData.systemMessage;
     initialUserRef.current = loaderData.userMessage;
 
     // Use getState().initialize() to avoid triggering React's render warning
-    usePromptEditorStore.getState().initialize({
-      systemMessage: loaderData.systemMessage,
-      userMessage: loaderData.userMessage,
-      schemaFields: (loaderData.schema ?? []) as unknown as SchemaField[],
-      model: loaderData.model,
-      temperature: loaderData.temperature,
-      inputData: loaderData.inputData,
-      inputDataRootName: loaderData.inputDataRootName,
-      testModel: loaderData.model,
-      testTemperature: loaderData.temperature,
-      testVersionOverride: null,
-      lastOutputTokens: loaderData.lastOutputTokens,
-      lastSystemInputTokens: loaderData.lastSystemInputTokens,
-      lastUserInputTokens: loaderData.lastUserInputTokens,
-      attachedSnippets: loaderData.attachedSnippets,
-      promptId: loaderData.prompt.id,
-    });
+    initializeAuthoringStore(() =>
+      usePromptEditorStore.getState().initialize({
+        systemMessage: loaderData.systemMessage,
+        userMessage: loaderData.userMessage,
+        schemaFields: (loaderData.schema ?? []) as unknown as SchemaField[],
+        model: loaderData.model,
+        temperature: loaderData.temperature,
+        inputData: loaderData.inputData,
+        inputDataRootName: loaderData.inputDataRootName,
+        testModel: loaderData.model,
+        testTemperature: loaderData.temperature,
+        testVersionOverride: null,
+        lastOutputTokens: loaderData.lastOutputTokens,
+        lastSystemInputTokens: loaderData.lastSystemInputTokens,
+        lastUserInputTokens: loaderData.lastUserInputTokens,
+        attachedSnippets: loaderData.attachedSnippets,
+        promptId: loaderData.prompt.id,
+      }),
+    );
   }
 
   // Get state and actions from store (after initialization)
@@ -808,53 +567,17 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   );
   const setUserMessage = usePromptEditorStore((state) => state.setUserMessage);
 
-  // Separate pending states and timestamps for each field
-  const isPendingSystemSaveRef = useRef(false);
-  const isPendingUserSaveRef = useRef(false);
-  const lastSystemSavedAtRef = useRef<number | null>(null);
-  const lastUserSavedAtRef = useRef<number | null>(null);
-
-  const debouncedSave = useDebouncedCallback(() => {
-    const state = usePromptEditorStore.getState();
-    const now = Date.now();
-
-    // Update timestamps for fields that were pending (optimistic update)
-    if (isPendingSystemSaveRef.current) {
-      lastSystemSavedAtRef.current = now;
-    }
-    if (isPendingUserSaveRef.current) {
-      lastUserSavedAtRef.current = now;
-    }
-
-    fetcher.submit(
-      { systemMessage: state.systemMessage, userMessage: state.userMessage },
-      { method: 'post' },
-    );
-
-    isPendingSystemSaveRef.current = false;
-    isPendingUserSaveRef.current = false;
-  }, 1000);
-
   const handleSystemChange = useCallback(
     (value: string) => {
       setSystemMessage(value);
-      // Broadcast to other users for real-time collaboration
-      sendContentUpdate?.('systemMessage', value);
-      isPendingSystemSaveRef.current = true;
-      debouncedSave();
     },
-    [setSystemMessage, sendContentUpdate, debouncedSave],
+    [setSystemMessage],
   );
-
   const handleUserChange = useCallback(
     (value: string) => {
       setUserMessage(value);
-      // Broadcast to other users for real-time collaboration
-      sendContentUpdate?.('userMessage', value);
-      isPendingUserSaveRef.current = true;
-      debouncedSave();
     },
-    [setUserMessage, sendContentUpdate, debouncedSave],
+    [setUserMessage],
   );
 
   // Debounced cursor position updates (50ms to prevent flooding)
@@ -900,30 +623,9 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
     (state) => state.updateSnippetVersion,
   );
 
-  const snippetFetcher = useFetcher();
-
-  const saveSnippets = useCallback(
-    (snippets: AttachedSnippet[]) => {
-      snippetFetcher.submit(
-        {
-          promptId: loaderData.prompt.id,
-          snippets: JSON.stringify(
-            snippets.map((s) => ({
-              snippetId: s.snippetId,
-              snippetVersionId: s.snippetVersionId,
-              sortOrder: s.sortOrder,
-            })),
-          ),
-        },
-        { method: 'post', action: '/api/prompts/save-snippets' },
-      );
-    },
-    [snippetFetcher, loaderData.prompt.id],
-  );
-
   const handleAddSnippet = useCallback(
     (snippetId: string, snippetName: string) => {
-      const newSnippet: AttachedSnippet = {
+      addSnippet({
         id: nanoid(),
         snippetId,
         snippetName,
@@ -931,52 +633,13 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
         snippetVersionLabel: null,
         sortOrder: attachedSnippets.length,
         isDeleted: false,
-      };
-      addSnippet(newSnippet);
-      saveSnippets([...attachedSnippets, newSnippet]);
+      });
     },
-    [attachedSnippets, addSnippet, saveSnippets],
+    [attachedSnippets.length, addSnippet],
   );
-
-  const handleRemoveSnippet = useCallback(
-    (snippetId: string) => {
-      const filtered = attachedSnippets
-        .filter((s) => s.snippetId !== snippetId)
-        .map((s, i) => ({ ...s, sortOrder: i }));
-      removeSnippet(snippetId);
-      saveSnippets(filtered);
-    },
-    [attachedSnippets, removeSnippet, saveSnippets],
-  );
-
-  const handleReorderSnippets = useCallback(
-    (reordered: AttachedSnippet[]) => {
-      reorderSnippets(reordered);
-      saveSnippets(reordered);
-    },
-    [reorderSnippets, saveSnippets],
-  );
-
-  const handleSnippetVersionChange = useCallback(
-    (
-      snippetId: string,
-      versionId: string | null,
-      versionLabel: string | null,
-    ) => {
-      updateSnippetVersion(snippetId, versionId, versionLabel);
-      const updated = attachedSnippets.map((s) =>
-        s.snippetId === snippetId
-          ? {
-              ...s,
-              snippetVersionId: versionId,
-              snippetVersionLabel: versionLabel,
-            }
-          : s,
-      );
-      saveSnippets(updated);
-    },
-    [attachedSnippets, updateSnippetVersion, saveSnippets],
-  );
+  const handleRemoveSnippet = removeSnippet;
+  const handleReorderSnippets = reorderSnippets;
+  const handleSnippetVersionChange = updateSnippetVersion;
 
   const isSystemDirty = systemMessage !== initialSystemRef.current;
   const isUserDirty = userMessage !== initialUserRef.current;
@@ -989,7 +652,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
         return aName.localeCompare(bName);
       });
 
-    const currentSchema = loaderData.schema as unknown[];
+    const currentSchema = saveState.definition.config.schema as unknown[];
     const lastSchema = loaderData.lastPublishedSchema as unknown[];
 
     if (currentSchema.length !== lastSchema.length) return false;
@@ -997,7 +660,7 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
       JSON.stringify(sortByName(currentSchema)) ===
       JSON.stringify(sortByName(lastSchema))
     );
-  }, [loaderData.schema, loaderData.lastPublishedSchema]);
+  }, [saveState.definition.config.schema, loaderData.lastPublishedSchema]);
 
   const suggestedVersion = useMemo(() => {
     const lastVersion = loaderData.lastPublishedVersion;
@@ -1012,27 +675,11 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
     return `${major}.${minor + 1}.${patch}`;
   }, [loaderData.lastPublishedVersion, schemasEqual]);
 
-  const hasContentChanges = useMemo(() => {
-    if (!loaderData.lastPublishedVersion) return true;
-
-    const systemChanged =
-      loaderData.systemMessage !==
-      (loaderData.lastPublishedSystemMessage ?? '');
-    const userChanged =
-      loaderData.userMessage !== (loaderData.lastPublishedUserMessage ?? '');
-    const schemaChanged = !schemasEqual;
-
-    return systemChanged || userChanged || schemaChanged;
-  }, [
-    loaderData.lastPublishedVersion,
-    loaderData.systemMessage,
-    loaderData.userMessage,
-    loaderData.lastPublishedSystemMessage,
-    loaderData.lastPublishedUserMessage,
-    schemasEqual,
-  ]);
-
-  const canPublish = loaderData.hasDraft && hasContentChanges && !isReadOnly;
+  const canPublish =
+    !isReadOnly &&
+    !saveState.conflict &&
+    saveState.error?.kind !== 'network' &&
+    (saveState.dirty || saveState.document.version.status === 'draft');
 
   // Handle navigating back to latest version
   const handleBackToLatest = useCallback(() => {
@@ -1133,7 +780,8 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col" ref={authoringRef}>
+      {!isViewingOldVersion && <AuthoringStatus session={authoringSession} />}
       {/* Readonly banner when viewing old version */}
       {isViewingOldVersion && (
         <div className="bg-muted border-b px-4 pl-6 py-2 flex items-center justify-between">
@@ -1153,7 +801,11 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
           {!isReadOnly && (
             <div className="hidden md:flex px-4 lg:px-6 items-center justify-between gap-2">
               <PromptEditorMenubar
-                prompt={loaderData.prompt}
+                prompt={{
+                  ...loaderData.prompt,
+                  name: saveState.definition.name,
+                  description: saveState.definition.description,
+                }}
                 isOwner={loaderData.isOwner}
               />
               <PublishPromptDialog
@@ -1170,15 +822,27 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
             </div>
           )}
           <div className="px-4 lg:px-6 flex flex-col gap-y-4">
-            <h1 className="text-3xl">{loaderData.prompt.name}</h1>
+            <h1 className="break-words text-3xl">
+              {isViewingOldVersion
+                ? loaderData.prompt.name
+                : saveState.definition.name}
+            </h1>
             <div className="text-muted-foreground text-sm -mt-2">
-              {loaderData.currentVersion
-                ? `v${loaderData.currentVersion}`
+              {(
+                isViewingOldVersion
+                  ? loaderData.currentVersion
+                  : saveState.document.version.version
+              )
+                ? `v${isViewingOldVersion ? loaderData.currentVersion : saveState.document.version.version}`
                 : 'Draft'}
             </div>
-            {loaderData.prompt.description && (
-              <p className="text-secondary-foreground">
-                {loaderData.prompt.description}
+            {(isViewingOldVersion
+              ? loaderData.prompt.description
+              : saveState.definition.description) && (
+              <p className="break-words text-secondary-foreground">
+                {isViewingOldVersion
+                  ? loaderData.prompt.description
+                  : saveState.definition.description}
               </p>
             )}
             <Separator className="my-4" />
@@ -1187,9 +851,9 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               value={systemMessage}
               onChange={isReadOnly ? undefined : handleSystemChange}
               isDirty={isSystemDirty}
-              isPendingSave={isPendingSystemSaveRef.current}
-              isSaving={false}
-              lastSavedAt={lastSystemSavedAtRef.current}
+              isPendingSave={saveState.dirty}
+              isSaving={saveState.isSaving}
+              lastSavedAt={saveState.lastSavedAt}
               onTest={triggerTest}
               textareaRef={(el) => {
                 systemTextareaRef.current = el;
@@ -1223,9 +887,9 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
               value={userMessage}
               onChange={isReadOnly ? undefined : handleUserChange}
               isDirty={isUserDirty}
-              isPendingSave={isPendingUserSaveRef.current}
-              isSaving={false}
-              lastSavedAt={lastUserSavedAtRef.current}
+              isPendingSave={saveState.dirty}
+              isSaving={saveState.isSaving}
+              lastSavedAt={saveState.lastSavedAt}
               onTest={triggerTest}
               textareaRef={(el) => {
                 userTextareaRef.current = el;

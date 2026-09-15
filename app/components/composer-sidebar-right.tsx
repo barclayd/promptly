@@ -12,9 +12,8 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useFetcher, useParams, useSearchParams } from 'react-router';
+import { useParams, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
-import { useDebouncedCallback } from 'use-debounce';
 import { CodePreview } from '~/components/code-preview';
 import {
   ComposerStreamingResponse,
@@ -154,7 +153,6 @@ export const ComposerSidebarRight = forwardRef<
   const [testOpen, setTestOpen] = useState(true);
   const testSectionRef = useRef<HTMLDivElement>(null);
 
-  const configFetcher = useFetcher();
   const [searchParams] = useSearchParams();
   const params = useParams();
   const isMobile = useIsMobile();
@@ -187,35 +185,18 @@ export const ComposerSidebarRight = forwardRef<
     versionParam || (hasDraftVersion ? 'draft' : latestPublishedVersion);
   const testVersionToUse = testVersionOverride ?? selectedVersion;
 
-  const debouncedSaveConfig = useDebouncedCallback(() => {
-    const { composerId } = params;
-    if (!composerId) return;
-    const state = useComposerEditorStore.getState();
-    const config = {
-      schema: state.schemaFields,
-      inputData: state.inputData,
-      inputDataRootName: state.inputDataRootName,
-    };
-    configFetcher.submit(
-      { composerId, config: JSON.stringify(config) },
-      { action: '/api/composers/save-config', method: 'post' },
-    );
-  }, 1000);
-
   const handleSchemaChange = useCallback(
     (fields: SchemaField[]) => {
       setSchemaFields(fields);
-      debouncedSaveConfig();
     },
-    [debouncedSaveConfig, setSchemaFields],
+    [setSchemaFields],
   );
 
   const handleInputDataChange = useCallback(
     (value: unknown) => {
       setInputData(value);
-      debouncedSaveConfig();
     },
-    [debouncedSaveConfig, setInputData],
+    [setInputData],
   );
 
   const handleGenerateInputData = useCallback(async () => {
@@ -253,7 +234,6 @@ export const ComposerSidebarRight = forwardRef<
       };
       if (result.inputData !== undefined) {
         setInputData(result.inputData, result.rootName ?? null);
-        debouncedSaveConfig();
       }
     } catch (error) {
       console.error('Failed to generate input data:', error);
@@ -263,7 +243,7 @@ export const ComposerSidebarRight = forwardRef<
     } finally {
       setIsGeneratingInputData(false);
     }
-  }, [schemaFields, debouncedSaveConfig, setInputData]);
+  }, [schemaFields, setInputData]);
 
   const processNdjsonLine = useCallback((line: string) => {
     try {

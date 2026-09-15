@@ -8,6 +8,7 @@ import {
   IconFiles,
   IconFileText,
   IconHelp,
+  IconHistory,
   IconPuzzle,
   IconSearch,
   IconSettings,
@@ -114,6 +115,11 @@ const data = {
     },
   ],
   navSecondary: [
+    {
+      title: 'Activity',
+      url: '/activity',
+      icon: IconHistory,
+    },
     {
       title: 'Settings',
       url: '/settings',

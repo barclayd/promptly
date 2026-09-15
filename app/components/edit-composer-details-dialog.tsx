@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useFetcher } from 'react-router';
+import { useCallback, useState } from 'react';
+import { Link } from 'react-router';
 import { Button } from '~/components/ui/button';
 import {
   Dialog,
@@ -15,11 +15,7 @@ import {
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { Textarea } from '~/components/ui/textarea';
-
-type ActionData = {
-  error?: string;
-  success?: boolean;
-};
+import { useAuthoringDialog } from '~/hooks/use-authoring-dialog';
 
 type EditComposerDetailsDialogProps = {
   open: boolean;
@@ -32,35 +28,30 @@ export const EditComposerDetailsDialog = ({
   onOpenChange,
   composer,
 }: EditComposerDetailsDialogProps) => {
-  const fetcher = useFetcher<ActionData>();
-  const isSubmitting = fetcher.state === 'submitting';
-  const [name, setName] = useState(composer.name);
-  const [description, setDescription] = useState(composer.description);
-
-  const handleOpenChange = (isOpen: boolean) => {
-    onOpenChange(isOpen);
-    if (!isOpen) {
-      setName(composer.name);
-      setDescription(composer.description);
-    }
-  };
-
-  useEffect(() => {
-    if (fetcher.data?.success) {
-      onOpenChange(false);
-    }
-  }, [fetcher.data, onOpenChange]);
-
-  useEffect(() => {
-    setName(composer.name);
-    setDescription(composer.description);
-  }, [composer.name, composer.description]);
+  const authoring = useAuthoringDialog('composer', composer.id);
+  const [hasName, setHasName] = useState(false);
+  const nameRef = useCallback((node: HTMLInputElement | null) => {
+    if (node) setHasName(node.value.trim().length > 0);
+  }, []);
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <fetcher.Form method="post" action="/api/composers/update">
-          <input type="hidden" name="composerId" value={composer.id} />
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent ref={authoring.mount} className="sm:max-w-md">
+        <form
+          onSubmit={async (event) => {
+            event.preventDefault();
+            const form = new FormData(event.currentTarget);
+            const name = String(form.get('name') ?? '');
+            if (!name.trim()) return;
+            if (
+              await authoring.saveDetails({
+                name,
+                description: String(form.get('description') ?? ''),
+              })
+            )
+              onOpenChange(false);
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Edit composer details</DialogTitle>
             <DialogDescription>
@@ -68,30 +59,52 @@ export const EditComposerDetailsDialog = ({
             </DialogDescription>
           </DialogHeader>
           <div className="py-6 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-composer-name">Name</Label>
-              <Input
-                id="edit-composer-name"
-                name="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Composer name"
-                autoFocus
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-composer-description">Description</Label>
-              <Textarea
-                id="edit-composer-description"
-                name="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Optional description"
-                rows={3}
-              />
-            </div>
-            {fetcher.data?.error && (
-              <p className="text-destructive text-sm">{fetcher.data.error}</p>
+            {authoring.loading ? (
+              <p className="text-sm text-muted-foreground">
+                Loading current details...
+              </p>
+            ) : (
+              authoring.initialDetails && (
+                <fieldset disabled={authoring.busy} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-composer-name">Name</Label>
+                    <Input
+                      id="edit-composer-name"
+                      name="name"
+                      ref={nameRef}
+                      onChange={(event) =>
+                        setHasName(event.currentTarget.value.trim().length > 0)
+                      }
+                      defaultValue={authoring.initialDetails.name}
+                      required
+                      placeholder="Composer name"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-composer-description">
+                      Description
+                    </Label>
+                    <Textarea
+                      id="edit-composer-description"
+                      name="description"
+                      defaultValue={authoring.initialDetails.description}
+                      placeholder="Optional description"
+                      rows={3}
+                    />
+                  </div>
+                </fieldset>
+              )
+            )}
+            {authoring.error && (
+              <p role="alert" className="text-destructive text-sm">
+                {authoring.error}{' '}
+                {authoring.snapshot?.conflict && (
+                  <Link to={`/composers/${composer.id}`} className="underline">
+                    Open editor
+                  </Link>
+                )}
+              </p>
             )}
           </div>
           <DialogFooter>
@@ -100,11 +113,15 @@ export const EditComposerDetailsDialog = ({
                 Cancel
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={isSubmitting || !name.trim()}>
-              {isSubmitting ? 'Saving...' : 'Save'}
+            <Button type="submit" disabled={authoring.disabled || !hasName}>
+              {authoring.busy
+                ? 'Saving...'
+                : authoring.retrying
+                  ? 'Retry save'
+                  : 'Save'}
             </Button>
           </DialogFooter>
-        </fetcher.Form>
+        </form>
       </DialogContent>
     </Dialog>
   );

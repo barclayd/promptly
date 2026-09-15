@@ -17,10 +17,14 @@ import {
 } from '~/components/ui/resizable';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 import type { Version } from '~/components/versions-table';
+import { useBrowserAuthoringState } from '~/hooks/use-browser-authoring';
 import { useIsMobile } from '~/hooks/use-mobile';
+import type { BrowserAuthoringDocument } from '~/lib/authoring/browser-types';
 import type { loader as rootLoader } from '~/root';
 
 type ComposerDetailLoaderData = {
+  authoring: BrowserAuthoringDocument;
+  versionNotFound: boolean;
   versions: Version[];
   isViewingOldVersion?: boolean;
 };
@@ -59,7 +63,16 @@ export default function ComposerDetailLayout() {
 
   const versions = composerDetailData?.versions ?? [];
   const isViewingOldVersion = composerDetailData?.isViewingOldVersion ?? false;
-  const isReadonly = isViewingOldVersion;
+  const authoringState = useBrowserAuthoringState(
+    composerDetailData?.authoring,
+  );
+  const isReadonly =
+    Boolean(
+      !authoringState?.attached ||
+        authoringState?.isDeleting ||
+        authoringState?.deleted ||
+        composerDetailData?.versionNotFound,
+    ) || isViewingOldVersion;
 
   const sidebarRightRef = useRef<ComposerSidebarRightHandle>(null);
 

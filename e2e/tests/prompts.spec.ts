@@ -1,3 +1,6 @@
+import { randomUUID } from 'node:crypto';
+import type { Page } from '@playwright/test';
+import { z } from 'zod';
 import { expect, test } from '../fixtures/base';
 import { ROUTES, TIMEOUTS } from '../helpers/test-data';
 
@@ -5,105 +8,197 @@ import { ROUTES, TIMEOUTS } from '../helpers/test-data';
 // We avoid describe blocks to reduce cognitive load and nesting.
 // See: https://kentcdodds.com/blog/avoid-nesting-when-youre-testing
 
-test('can navigate to a prompt and run a test', async ({
-  authenticatedPage,
-}) => {
-  // Navigate to prompts page
-  await authenticatedPage.goto(ROUTES.prompts);
-  await authenticatedPage.waitForLoadState('networkidle');
-  await expect(authenticatedPage).toHaveURL(ROUTES.prompts);
-
-  // Wait for prompt list to load and click on the first prompt
-  const firstPromptLink = authenticatedPage
-    .locator('a[href^="/prompts/"]')
-    .first();
-  await firstPromptLink.waitFor({ state: 'visible', timeout: 15000 });
-  await firstPromptLink.click();
-
-  // Verify URL changed to a specific prompt
-  await expect(authenticatedPage).toHaveURL(/\/prompts\/[a-zA-Z0-9_-]+$/, {
-    timeout: 15000,
+const withFreshPrompt = async (
+  page: Page,
+  label: string,
+  run: (prompt: {
+    id: string;
+    path: string;
+    revision: string;
+  }) => Promise<void>,
+) => {
+  const created = await page.request.post('/api/prompts/create', {
+    form: { requestKey: randomUUID(), name: `${label} ${randomUUID()}` },
+    maxRedirects: 0,
   });
+  expect(created.status()).toBe(302);
+  const path = created.headers().location;
+  const id = path?.match(/^\/prompts\/([a-zA-Z0-9_-]+)$/)?.[1];
+  if (!id) throw new Error('Prompt creation did not return a document URL');
+  const read = async () => {
+    const response = await page.request.get(
+      `/api/authoring/read?kind=prompt&id=${id}`,
+    );
+    expect(response.ok()).toBe(true);
+    return z
+      .object({ revision: z.string(), userId: z.string() })
+      .parse(await response.json());
+  };
+  try {
+    const initial = await read();
+    // These tests cover the regular editor, independently of the introductory
+    // tour. This preference belongs only to this test's browser context.
+    await page.addInitScript((userId) => {
+      localStorage.setItem(`promptly:onboarding-skipped:${userId}`, '1');
+    }, initial.userId);
+    await run({ id, path, revision: initial.revision });
+  } finally {
+    const current = await read();
+    const removed = await page.request.post('/api/prompts/delete', {
+      form: {
+        promptId: id,
+        expectedRevision: current.revision,
+        requestKey: randomUUID(),
+      },
+    });
+    expect(removed.ok(), await removed.text()).toBe(true);
+  }
+};
 
-  // Click "Test" button - it's a button with variant="default" containing "Test" text
-  const testButton = authenticatedPage
-    .locator('[data-slot="button"][data-variant="default"]')
-    .filter({ hasText: 'Test' })
-    .first();
-  await expect(testButton).toBeVisible();
-  await testButton.click();
-
-  // Wait for button to show "Running..." state
-  await expect(
-    authenticatedPage
-      .locator('[data-slot="button"]')
-      .filter({ hasText: 'Running...' }),
-  ).toBeVisible({ timeout: TIMEOUTS.navigation });
-
-  // Wait for response to complete (button returns to "Test")
-  await expect(testButton).toBeVisible({ timeout: TIMEOUTS.streaming });
-  await expect(testButton).toContainText('Test');
+test('can navigate to a prompt and run a test', async ({
+  authenticatedPage: page,
+}) => {
+  await withFreshPrompt(
+    page,
+    'E2E Run Prompt',
+    async ({ id, path, revision }) => {
+      const saved = await page.request.post('/api/authoring/save', {
+        form: {
+          kind: 'prompt',
+          id,
+          expectedRevision: revision,
+          requestKey: randomUUID(),
+          patch: JSON.stringify({
+            systemMessage: 'Return a deterministic greeting.',
+            userMessage: 'Greet Acme.',
+            config: {
+              model: 'openai/gpt-5.5',
+              temperature: 0.25,
+              inputData: { customer: 'Acme' },
+            },
+          }),
+        },
+      });
+      expect(saved.ok(), await saved.text()).toBe(true);
+      let releaseResponse = () => {};
+      const responseGate = new Promise<void>((resolve) => {
+        releaseResponse = resolve;
+      });
+      let captureRequest: (form: FormData) => void = () => {};
+      const requestReceived = new Promise<FormData>((resolve) => {
+        captureRequest = resolve;
+      });
+      const output = 'Hello Acme — deterministic prompt test output.';
+      await page.route('**/api/prompts/run', async (route) => {
+        const request = route.request();
+        const form = await new Request(request.url(), {
+          method: request.method(),
+          headers: { 'Content-Type': request.headers()['content-type'] },
+          body: request.postData(),
+        }).formData();
+        captureRequest(form);
+        await responseGate;
+        await route.fulfill({
+          status: 200,
+          contentType: 'text/plain; charset=utf-8',
+          body: output,
+        });
+      });
+      try {
+        await page.goto(path);
+        await expect(page).toHaveURL(path);
+        await expect(page.locator('#textarea-system-prompt')).toHaveValue(
+          'Return a deterministic greeting.',
+        );
+        const testButton = page.locator('#onboarding-test-button');
+        await expect(testButton).toBeEnabled();
+        await testButton.click();
+        await expect(testButton).toHaveText('Running...');
+        await expect(testButton).toBeDisabled();
+        const submitted = await requestReceived;
+        expect(submitted.get('promptId')).toBe(id);
+        expect(submitted.get('version')).toBe('draft');
+        expect(submitted.get('model')).toBe('openai/gpt-5.5');
+        expect(submitted.get('temperature')).toBe('0.25');
+        expect(JSON.parse(String(submitted.get('inputData')))).toEqual({
+          customer: 'Acme',
+        });
+        releaseResponse();
+        await expect(page.locator('#onboarding-test-response')).toContainText(
+          output,
+        );
+        await expect(testButton).toHaveText('Test');
+        await expect(testButton).toBeEnabled();
+      } finally {
+        releaseResponse();
+        await page.unrouteAll({ behavior: 'wait' });
+      }
+    },
+  );
 });
 
-test('prompt editor has expected sections', async ({ authenticatedPage }) => {
-  // Navigate to a prompt
-  await authenticatedPage.goto(ROUTES.prompts);
-  await authenticatedPage.waitForLoadState('networkidle');
-
-  const firstPromptLink = authenticatedPage
-    .locator('a[href^="/prompts/"]')
-    .first();
-  await firstPromptLink.waitFor({ state: 'visible', timeout: 15000 });
-  await firstPromptLink.click();
-  await expect(authenticatedPage).toHaveURL(/\/prompts\/[a-zA-Z0-9_-]+$/, {
-    timeout: 15000,
+test('prompt editor has expected sections', async ({
+  authenticatedPage: page,
+}) => {
+  await withFreshPrompt(page, 'E2E Prompt Sections', async ({ path }) => {
+    await page.goto(path);
+    await expect(page).toHaveURL(path);
+    await expect(page.getByText('System Prompt')).toBeVisible();
+    await expect(page.getByText('User Prompt')).toBeVisible();
+    await expect(page.locator('#onboarding-test-button')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Versions' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Model' })).toBeVisible();
   });
-
-  // Verify System Prompt section exists
-  await expect(authenticatedPage.getByText('System Prompt')).toBeVisible();
-
-  // Verify User Prompt section exists
-  await expect(authenticatedPage.getByText('User Prompt')).toBeVisible();
-
-  // Verify the Test button exists in the input groups
-  const testButtons = authenticatedPage
-    .locator('[data-slot="button"]')
-    .filter({ hasText: 'Test' });
-  await expect(testButtons.first()).toBeVisible();
-
-  // Verify sidebar sections exist (on the right)
-  await expect(
-    authenticatedPage.getByRole('button', { name: 'Versions' }),
-  ).toBeVisible();
-  await expect(
-    authenticatedPage.getByRole('button', { name: 'Model' }),
-  ).toBeVisible();
 });
 
 test('can edit prompt text', async ({ authenticatedPage }) => {
-  // Navigate to a prompt
-  await authenticatedPage.goto(ROUTES.prompts);
-  await authenticatedPage.waitForLoadState('networkidle');
-
-  const firstPromptLink = authenticatedPage
-    .locator('a[href^="/prompts/"]')
-    .first();
-  await firstPromptLink.waitFor({ state: 'visible', timeout: 15000 });
-  await firstPromptLink.click();
-  await expect(authenticatedPage).toHaveURL(/\/prompts\/[a-zA-Z0-9_-]+$/, {
-    timeout: 15000,
+  const created = await authenticatedPage.request.post('/api/prompts/create', {
+    form: { requestKey: randomUUID(), name: `E2E Edit Prompt ${randomUUID()}` },
+    maxRedirects: 0,
   });
-
-  // Find the System Prompt textarea
-  const textarea = authenticatedPage.locator('#textarea-system-prompt');
-  await expect(textarea).toBeVisible();
-
-  // Clear existing content and enter test text
-  const testText = `Test input ${Date.now()}`;
-  await textarea.fill(testText);
-
-  // Verify the text was entered
-  await expect(textarea).toHaveValue(testText);
+  expect(created.status()).toBe(302);
+  const path = created.headers().location;
+  const id = path?.match(/^\/prompts\/([a-zA-Z0-9_-]+)$/)?.[1];
+  if (!id) throw new Error('Prompt creation did not return a document URL');
+  const read = async () => {
+    const response = await authenticatedPage.request.get(
+      `/api/authoring/read?kind=prompt&id=${id}`,
+    );
+    expect(response.ok()).toBe(true);
+    return z
+      .object({
+        revision: z.string(),
+        definition: z.object({ systemMessage: z.string() }),
+      })
+      .parse(await response.json());
+  };
+  try {
+    await authenticatedPage.goto(path);
+    const textarea = authenticatedPage.locator('#textarea-system-prompt');
+    await expect(textarea).toBeVisible();
+    await expect(textarea).toBeEnabled();
+    const testText = `Test input ${randomUUID()}`;
+    await textarea.fill(testText);
+    await expect(textarea).toHaveValue(testText);
+    await expect
+      .poll(async () => (await read()).definition.systemMessage)
+      .toBe(testText);
+    await authenticatedPage.reload();
+    await expect(textarea).toHaveValue(testText);
+  } finally {
+    const current = await read();
+    const removed = await authenticatedPage.request.post(
+      '/api/prompts/delete',
+      {
+        form: {
+          promptId: id,
+          expectedRevision: current.revision,
+          requestKey: randomUUID(),
+        },
+      },
+    );
+    expect(removed.ok(), await removed.text()).toBe(true);
+  }
 });
 
 test('can publish a version and view it in read-only mode', async ({

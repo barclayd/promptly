@@ -1,4 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
+import type { SavedRevisionNotification } from '../app/lib/authoring/outbox.server';
 
 export type PresenceUser = {
   id: string;
@@ -32,6 +33,7 @@ type ContentState = {
 
 // Server -> Client messages
 type PresenceMessage =
+  | SavedRevisionNotification
   | { type: 'presence'; users: PresenceUser[] }
   | { type: 'user_joined'; user: PresenceUser }
   | { type: 'user_left'; userId: string }
@@ -121,6 +123,12 @@ export class PresenceRoom extends DurableObject<Env> {
     version: 0,
   };
   private contentSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Binding-only RPC: WebSocket messages cannot invoke this method. Saved
+  // content is always fetched through an authorized application read.
+  async savedRevision(notification: SavedRevisionNotification): Promise<void> {
+    this.broadcast(notification);
+  }
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);

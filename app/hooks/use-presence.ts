@@ -32,7 +32,16 @@ type PresenceState = {
   cursors: Map<string, CursorPosition>;
 };
 
+export type SavedRevision = {
+  type: 'saved_revision';
+  documentId: string;
+  kind: 'prompt' | 'composer';
+  revision: string;
+  changeId: string;
+};
+
 type ServerMessage =
+  | SavedRevision
   | { type: 'presence'; users: PresenceUser[] }
   | { type: 'user_joined'; user: PresenceUser }
   | { type: 'user_left'; userId: string }
@@ -109,6 +118,8 @@ export type CursorSyncCallback = (cursor: CursorPosition) => void;
 
 // Event callback types for presence notifications
 export type PresenceEventCallbacks = {
+  onSavedRevision?: (revision: SavedRevision) => void;
+  onConnected?: () => void;
   onUserJoined?: (user: PresenceUser) => void;
   onInitialPresence?: (users: PresenceUser[]) => void;
   onContentSync?: ContentSyncCallback;
@@ -175,6 +186,8 @@ const updateState = (
 const fireEventCallbacks = (
   promptId: string,
   event:
+    | 'savedRevision'
+    | 'connected'
     | 'userJoined'
     | 'initialPresence'
     | 'contentSync'
@@ -189,7 +202,11 @@ const fireEventCallbacks = (
   if (!callbacks) return;
 
   for (const cb of callbacks) {
-    if (event === 'userJoined' && cb.onUserJoined) {
+    if (event === 'savedRevision') {
+      cb.onSavedRevision?.(payload as SavedRevision);
+    } else if (event === 'connected') {
+      cb.onConnected?.();
+    } else if (event === 'userJoined' && cb.onUserJoined) {
       cb.onUserJoined(payload as PresenceUser);
     } else if (event === 'initialPresence' && cb.onInitialPresence) {
       cb.onInitialPresence(payload as PresenceUser[]);
@@ -231,6 +248,10 @@ const handleMessage = (promptId: string, data: ServerMessage): void => {
   const current = getState(promptId);
 
   switch (data.type) {
+    case 'saved_revision':
+      if (data.documentId === promptId)
+        fireEventCallbacks(promptId, 'savedRevision', data);
+      break;
     case 'presence':
       updateState(promptId, { users: data.users });
       // Fire initial presence callback if there are users
@@ -389,6 +410,7 @@ const connect = (promptId: string): void => {
 
   socket.onopen = () => {
     updateState(promptId, { isConnected: true, error: null });
+    fireEventCallbacks(promptId, 'connected', null);
     // Reset retry count on successful connection
     retryCountByPromptId.delete(promptId);
 
@@ -680,7 +702,7 @@ const sendCursorUpdate = (
   );
 };
 
-const subscribeToEvents = (
+export const subscribeToPresenceEvents = (
   promptId: string,
   callbacks: PresenceEventCallbacks,
 ): (() => void) => {
@@ -718,7 +740,7 @@ export const usePresence = (promptId: string | undefined) => {
     cursors: state.cursors,
     subscribeToEvents: promptId
       ? (callbacks: PresenceEventCallbacks) =>
-          subscribeToEvents(promptId, callbacks)
+          subscribeToPresenceEvents(promptId, callbacks)
       : undefined,
     sendContentUpdate: promptId
       ? (field: 'systemMessage' | 'userMessage', value: string) =>
