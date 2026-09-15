@@ -1,4 +1,7 @@
-'use client';
+import { nanoid } from 'nanoid';
+import { getActiveEditorSession } from '~/lib/authoring/editor-session';
+
+('use client');
 
 import { useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router';
@@ -67,20 +70,25 @@ export const fillCreateDialogInputs = (firstName: string) => {
  * `setCurrentStep` does NOT trigger `onStepChange`).
  */
 export const fillPromptEditor = async (firstName: string) => {
-  // Wait for prompt editor store to initialize
-  await new Promise<void>((resolve) => {
+  const promptId = useOnboardingStore.getState().createdPromptId;
+  if (!promptId) return;
+  const ready = await new Promise<boolean>((resolve) => {
+    const deadline = Date.now() + 10000;
     const check = () => {
-      if (usePromptEditorStore.getState()._initialized) {
-        resolve();
-      } else {
-        setTimeout(check, 200);
-      }
+      if (
+        usePromptEditorStore.getState()._promptId === promptId &&
+        getActiveEditorSession('prompt', promptId)
+      )
+        resolve(true);
+      else if (Date.now() >= deadline) resolve(false);
+      else setTimeout(check, 100);
     };
     check();
   });
-
-  // Small extra delay for DOM to be ready
-  await new Promise((r) => setTimeout(r, 400));
+  if (!ready) {
+    toast.error('The prompt editor is still loading. Try the step again.');
+    return;
+  }
 
   const editorStore = usePromptEditorStore.getState();
   const schemaFields = getSchemaFields();
@@ -91,36 +99,18 @@ export const fillPromptEditor = async (firstName: string) => {
   editorStore.setTestTemperature(0.7);
   editorStore.setInputData(getInputData(firstName));
 
-  // Persist config to DB
-  const promptId = useOnboardingStore.getState().createdPromptId;
-  if (promptId) {
-    const config = {
-      schema: schemaFields,
-      model: editorStore.model,
-      temperature: editorStore.temperature,
-      inputData: getInputData(firstName),
-      inputDataRootName: null,
-    };
-
-    // Save messages
-    const msgFormData = new FormData();
-    msgFormData.append('intent', 'saveMessages');
-    msgFormData.append('systemMessage', SYSTEM_MESSAGE);
-    msgFormData.append('userMessage', USER_MESSAGE);
-    fetch(`/prompts/${promptId}`, {
-      method: 'POST',
-      body: msgFormData,
-    }).catch(() => {});
-
-    // Save config
-    const configFormData = new FormData();
-    configFormData.append('intent', 'saveConfig');
-    configFormData.append('config', JSON.stringify(config));
-    fetch(`/prompts/${promptId}`, {
-      method: 'POST',
-      body: configFormData,
-    }).catch(() => {});
+  const session = promptId
+    ? getActiveEditorSession('prompt', promptId)
+    : undefined;
+  if (!session) {
+    toast.error('The prompt editor is still loading. Try the step again.');
+    return;
   }
+  const result = await session.flush();
+  if (result.status === 'blocked')
+    toast.error(
+      'Your onboarding draft is preserved. Resolve the save notice in the editor to continue.',
+    );
 };
 
 export const useOnboardingOrchestrator = (
@@ -129,6 +119,7 @@ export const useOnboardingOrchestrator = (
 ) => {
   const navigate = useNavigate();
   const processingRef = useRef(false);
+  const createRequest = useRef<{ key: string; name: string } | null>(null);
 
   const onStepChange = useCallback(
     async (step: number, tourName: string | null) => {
@@ -160,7 +151,11 @@ export const useOnboardingOrchestrator = (
         const firstName = store.userName ?? 'there';
         try {
           const formData = new FormData();
-          formData.append('name', getPromptName(firstName));
+          const name = getPromptName(firstName);
+          if (!createRequest.current || createRequest.current.name !== name)
+            createRequest.current = { key: nanoid(), name };
+          formData.append('requestKey', createRequest.current.key);
+          formData.append('name', name);
           formData.append('description', getPromptDescription(firstName));
 
           const response = await fetch('/api/prompts/create', {
@@ -178,6 +173,7 @@ export const useOnboardingOrchestrator = (
           const promptId = finalUrl.split('/prompts/').pop();
           if (!promptId) throw new Error('Could not extract prompt ID');
 
+          createRequest.current = null;
           useOnboardingStore.getState().setCreatedPromptId(promptId);
           if (userId) setOnboardingPromptId(userId, promptId);
           navigate(`/prompts/${promptId}`);

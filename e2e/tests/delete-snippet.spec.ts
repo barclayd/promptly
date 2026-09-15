@@ -1,9 +1,37 @@
+import { randomUUID } from 'node:crypto';
+import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures/base';
 import { ROUTES } from '../helpers/test-data';
 
 // Each test is self-contained and independent.
 // We avoid describe blocks to reduce cognitive load and nesting.
 // See: https://kentcdodds.com/blog/avoid-nesting-when-youre-testing
+
+const withFreshSnippet = async (
+  page: Page,
+  label: string,
+  run: (snippet: { id: string; name: string; path: string }) => Promise<void>,
+) => {
+  const name = `${label} ${randomUUID()}`;
+  const created = await page.request.post('/api/snippets/create', {
+    form: { name },
+    maxRedirects: 0,
+  });
+  expect(created.status()).toBe(302);
+  const path = created.headers().location;
+  const id = path?.match(/^\/snippets\/([a-zA-Z0-9_-]+)$/)?.[1];
+  if (!id) throw new Error('Snippet creation did not return a document URL');
+  try {
+    await page.goto(path);
+    await expect(page.locator('h1')).toContainText(name);
+    await run({ id, name, path });
+  } finally {
+    const removed = await page.request.post('/api/snippets/delete', {
+      form: { snippetId: id },
+    });
+    expect(removed.ok(), await removed.text()).toBe(true);
+  }
+};
 
 test('can delete a snippet via File menu', async ({ authenticatedPage }) => {
   // Create a fresh snippet for this test to avoid affecting other tests
@@ -85,57 +113,21 @@ test('can delete a snippet via File menu', async ({ authenticatedPage }) => {
 test('cancel button in delete dialog preserves snippet', async ({
   authenticatedPage,
 }) => {
-  // Navigate to snippets page and open first snippet
-  await authenticatedPage.goto(ROUTES.snippets);
-  await authenticatedPage.waitForLoadState('networkidle');
-
-  const firstSnippetLink = authenticatedPage
-    .locator('a[href^="/snippets/"]')
-    .first();
-  await firstSnippetLink.waitFor({ state: 'visible', timeout: 15000 });
-  await firstSnippetLink.click();
-
-  await expect(authenticatedPage).toHaveURL(/\/snippets\/[a-zA-Z0-9_-]+$/, {
-    timeout: 15000,
-  });
-
-  // Wait for page to fully load after navigation
-  await authenticatedPage.waitForLoadState('networkidle');
-
-  // Get the snippet name from the h1 heading after page loads
-  const h1 = authenticatedPage.locator('h1');
-  await expect(h1).toBeVisible();
-  const snippetName = await h1.textContent();
-
-  // Open File menu and click Delete
-  const fileMenuTrigger = authenticatedPage
-    .getByRole('menubar')
-    .getByText('File');
-  await fileMenuTrigger.click();
-
-  const deleteItem = authenticatedPage.getByRole('menuitem', {
-    name: 'Delete',
-  });
-  await expect(deleteItem).toBeVisible();
-  await deleteItem.click();
-
-  // Verify delete confirmation dialog opens
-  const deleteDialog = authenticatedPage.getByRole('dialog');
-  await expect(deleteDialog).toBeVisible();
-
-  // Click Cancel
-  const cancelButton = deleteDialog.getByRole('button', { name: 'Cancel' });
-  await cancelButton.click();
-
-  // Verify dialog is closed
-  await expect(deleteDialog).not.toBeVisible();
-
-  // Verify we're still on the snippet page
-  await expect(authenticatedPage).toHaveURL(/\/snippets\/[a-zA-Z0-9_-]+$/);
-
-  // Verify snippet name is still displayed
-  await expect(authenticatedPage.locator('h1')).toContainText(
-    snippetName ?? '',
+  await withFreshSnippet(
+    authenticatedPage,
+    'E2E Cancel Snippet',
+    async ({ name, path }) => {
+      await authenticatedPage.getByRole('menubar').getByText('File').click();
+      await authenticatedPage.getByRole('menuitem', { name: 'Delete' }).click();
+      const deleteDialog = authenticatedPage.getByRole('dialog');
+      await expect(deleteDialog).toBeVisible();
+      await deleteDialog.getByRole('button', { name: 'Cancel' }).click();
+      await expect(deleteDialog).not.toBeVisible();
+      await expect(authenticatedPage).toHaveURL(path);
+      await expect(authenticatedPage.locator('h1')).toContainText(name);
+      await authenticatedPage.reload();
+      await expect(authenticatedPage.locator('h1')).toContainText(name);
+    },
   );
 });
 
@@ -143,103 +135,44 @@ test('copy snippet ID via File > Share menu copies ID to clipboard', async ({
   authenticatedPage,
   context,
 }) => {
-  // Grant clipboard permissions
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-
-  // Navigate to snippets page and open first snippet
-  await authenticatedPage.goto(ROUTES.snippets);
-  await authenticatedPage.waitForLoadState('networkidle');
-
-  const firstSnippetLink = authenticatedPage
-    .locator('a[href^="/snippets/"]')
-    .first();
-  await firstSnippetLink.waitFor({ state: 'visible', timeout: 15000 });
-  await firstSnippetLink.click();
-
-  await expect(authenticatedPage).toHaveURL(/\/snippets\/[a-zA-Z0-9_-]+$/, {
-    timeout: 15000,
-  });
-
-  // Wait for page to fully load
-  await authenticatedPage.waitForLoadState('networkidle');
-
-  // Extract the snippet ID from the URL
-  const url = authenticatedPage.url();
-  const expectedSnippetId = url.split('/snippets/')[1];
-
-  // Open File > Share > Copy Snippet ID
-  const fileMenuTrigger = authenticatedPage
-    .getByRole('menubar')
-    .getByText('File');
-  await fileMenuTrigger.waitFor({ state: 'visible', timeout: 10000 });
-  await fileMenuTrigger.click();
-
-  const shareItem = authenticatedPage.getByRole('menuitem', {
-    name: 'Share',
-  });
-  await shareItem.click();
-
-  const copySnippetIdItem = authenticatedPage.getByRole('menuitem', {
-    name: 'Copy Snippet ID',
-  });
-  await expect(copySnippetIdItem).toBeVisible();
-  await copySnippetIdItem.click();
-
-  // Verify toast appears
-  await expect(
-    authenticatedPage.getByText('Snippet ID copied to clipboard'),
-  ).toBeVisible({ timeout: 5000 });
-
-  // Verify clipboard contains the snippet ID
-  const clipboardText = await authenticatedPage.evaluate(() =>
-    navigator.clipboard.readText(),
+  await withFreshSnippet(
+    authenticatedPage,
+    'E2E Copy Snippet',
+    async ({ id }) => {
+      await authenticatedPage.getByRole('menubar').getByText('File').click();
+      await authenticatedPage.getByRole('menuitem', { name: 'Share' }).click();
+      const copyItem = authenticatedPage.getByRole('menuitem', {
+        name: 'Copy Snippet ID',
+      });
+      await expect(copyItem).toBeVisible();
+      await copyItem.click();
+      await expect(
+        authenticatedPage.getByText('Snippet ID copied to clipboard'),
+      ).toBeVisible({ timeout: 5000 });
+      expect(
+        await authenticatedPage.evaluate(() => navigator.clipboard.readText()),
+      ).toBe(id);
+    },
   );
-  expect(clipboardText).toBe(expectedSnippetId);
 });
 
 test('delete dialog shows warning about prompts referencing snippet', async ({
   authenticatedPage,
 }) => {
-  // Navigate to snippets page and open first snippet
-  await authenticatedPage.goto(ROUTES.snippets);
-  await authenticatedPage.waitForLoadState('networkidle');
-
-  const firstSnippetLink = authenticatedPage
-    .locator('a[href^="/snippets/"]')
-    .first();
-  await firstSnippetLink.waitFor({ state: 'visible', timeout: 15000 });
-  await firstSnippetLink.click();
-
-  await expect(authenticatedPage).toHaveURL(/\/snippets\/[a-zA-Z0-9_-]+$/, {
-    timeout: 15000,
+  await withFreshSnippet(authenticatedPage, 'E2E Snippet Warning', async () => {
+    await authenticatedPage.getByRole('menubar').getByText('File').click();
+    await authenticatedPage.getByRole('menuitem', { name: 'Delete' }).click();
+    const deleteDialog = authenticatedPage.getByRole('dialog');
+    await expect(deleteDialog).toBeVisible();
+    await expect(deleteDialog.getByText('Delete snippet')).toBeVisible();
+    await expect(deleteDialog.getByText(/cannot be undone/i)).toBeVisible();
+    await expect(
+      deleteDialog.getByText(
+        /Prompts referencing this snippet will no longer resolve/i,
+      ),
+    ).toBeVisible();
+    await deleteDialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(deleteDialog).not.toBeVisible();
   });
-
-  // Open File menu and click Delete
-  const fileMenuTrigger = authenticatedPage
-    .getByRole('menubar')
-    .getByText('File');
-  await fileMenuTrigger.click();
-
-  const deleteItem = authenticatedPage.getByRole('menuitem', {
-    name: 'Delete',
-  });
-  await deleteItem.click();
-
-  // Verify delete confirmation dialog opens
-  const deleteDialog = authenticatedPage.getByRole('dialog');
-  await expect(deleteDialog).toBeVisible();
-
-  // Verify the warning messages are shown
-  await expect(deleteDialog.getByText('Delete snippet')).toBeVisible();
-  await expect(deleteDialog.getByText(/cannot be undone/i)).toBeVisible();
-  await expect(
-    deleteDialog.getByText(
-      /Prompts referencing this snippet will no longer resolve/i,
-    ),
-  ).toBeVisible();
-
-  // Close the dialog
-  const cancelButton = deleteDialog.getByRole('button', { name: 'Cancel' });
-  await cancelButton.click();
-  await expect(deleteDialog).not.toBeVisible();
 });

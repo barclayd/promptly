@@ -9,6 +9,7 @@ import {
   tableFeatures,
   useTable,
 } from '@tanstack/react-table';
+import { useSyncExternalStore } from 'react';
 import { useSearchParams } from 'react-router';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -55,14 +56,25 @@ const formatVersion = (v: Version): string | null => {
   return `${v.major}.${v.minor}.${v.patch}`;
 };
 
-const formatDateTime = (timestamp: number): string => {
+const formatDateTime = (timestamp: number, timeZone?: string): string => {
   const date = new Date(timestamp);
   return date.toLocaleDateString('en-GB', {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    ...(timeZone ? { timeZone } : {}),
   });
+};
+
+const subscribeDate = () => () => {};
+const VersionDate = ({ timestamp }: { timestamp: number }) => {
+  const formatted = useSyncExternalStore(
+    subscribeDate,
+    () => formatDateTime(timestamp),
+    () => formatDateTime(timestamp, 'UTC'),
+  );
+  return <time dateTime={new Date(timestamp).toISOString()}>{formatted}</time>;
 };
 
 const ViewVersionAction = ({ version }: { version: Version }) => {
@@ -140,9 +152,11 @@ const columns: ColumnDef<typeof features, Version>[] = [
     cell: ({ row }) => (
       <div className="flex flex-col gap-0.5">
         <span className="text-xs text-muted-foreground whitespace-nowrap">
-          {row.original.updated_at
-            ? formatDateTime(row.original.updated_at)
-            : '-'}
+          {row.original.updated_at ? (
+            <VersionDate timestamp={row.original.updated_at} />
+          ) : (
+            '-'
+          )}
         </span>
         <span className="text-[10px] text-muted-foreground/70 truncate max-w-[100px]">
           {row.original.updated_by ?? '-'}
@@ -157,9 +171,11 @@ const columns: ColumnDef<typeof features, Version>[] = [
     cell: ({ row }) => (
       <div className="flex flex-col gap-0.5">
         <span className="text-xs text-muted-foreground whitespace-nowrap">
-          {row.original.published_at
-            ? formatDateTime(row.original.published_at)
-            : '-'}
+          {row.original.published_at ? (
+            <VersionDate timestamp={row.original.published_at} />
+          ) : (
+            '-'
+          )}
         </span>
         {row.original.published_at && (
           <span className="text-[10px] text-muted-foreground/70 truncate max-w-[100px]">

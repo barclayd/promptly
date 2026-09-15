@@ -9,7 +9,7 @@ export const buildZodSchema = (
   }
 
   // Use Record for mutable shape building, then cast to ZodRawShape
-  const shape: Record<string, z.ZodTypeAny> = {};
+  const shape: Record<string, z.ZodTypeAny> = Object.create(null);
 
   for (const field of fields) {
     shape[field.name] = buildFieldSchema(field);
@@ -168,9 +168,8 @@ const buildDiscriminatedUnion = (
 
   for (const [_key, caseConfig] of Object.entries(cases)) {
     // Use Record for mutable shape building, then cast to ZodRawShape
-    const shape: Record<string, z.ZodTypeAny> = {
-      [discriminator]: z.literal(caseConfig.value),
-    };
+    const shape: Record<string, z.ZodTypeAny> = Object.create(null);
+    shape[discriminator] = z.literal(caseConfig.value);
 
     for (const field of caseConfig.fields) {
       shape[field.name] = buildFieldSchema(field);

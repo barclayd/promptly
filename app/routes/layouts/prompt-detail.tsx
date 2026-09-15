@@ -17,12 +17,16 @@ import {
 } from '~/components/ui/resizable';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 import type { Version } from '~/components/versions-table';
+import { useBrowserAuthoringState } from '~/hooks/use-browser-authoring';
 import { useIsMobile } from '~/hooks/use-mobile';
+import type { BrowserAuthoringDocument } from '~/lib/authoring/browser-types';
 import type { SchemaField } from '~/lib/schema-types';
 import type { loader as rootLoader } from '~/root';
 import { useOnboardingStore } from '~/stores/onboarding-store';
 
 type PromptDetailLoaderData = {
+  authoring: BrowserAuthoringDocument;
+  versionNotFound: boolean;
   versions: Version[];
   schema: SchemaField[];
   model: string | null;
@@ -74,8 +78,17 @@ export default function PromptDetailLayout() {
   const isViewingOldVersion = promptDetailData?.isViewingOldVersion ?? false;
   const isReadOnlyDueToLimit = promptDetailData?.isReadOnlyDueToLimit ?? false;
   const isOnboardingActive = useOnboardingStore((s) => s.isActive);
+  const authoringState = useBrowserAuthoringState(promptDetailData?.authoring);
   const isReadonly =
-    isViewingOldVersion || isReadOnlyDueToLimit || isOnboardingActive;
+    Boolean(
+      !authoringState?.attached ||
+        authoringState?.isDeleting ||
+        authoringState?.deleted ||
+        promptDetailData?.versionNotFound,
+    ) ||
+    isViewingOldVersion ||
+    isReadOnlyDueToLimit ||
+    isOnboardingActive;
 
   // Ref for external control of SidebarRight (trigger test, get streaming state)
   const sidebarRightRef = useRef<SidebarRightHandle>(null);

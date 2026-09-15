@@ -4,6 +4,14 @@ import { CamelCasePlugin, Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
 import { createRequestHandler, RouterContextProvider } from 'react-router';
 import { cloudflareContext } from '~/context';
+import { maintainAuthoring } from '~/lib/authoring/outbox.server';
+import { isMcpEnabled, isMcpProtocolPath } from '~/lib/mcp/config.server';
+import { handleMcpOAuth } from '~/lib/mcp/oauth.server';
+import {
+  getAuthorizedPresenceDocument,
+  getPresenceDocumentId,
+  isTrustedPresenceOrigin,
+} from '~/lib/presence-auth.server';
 
 export { PresenceRoom } from './presence-room';
 
@@ -12,6 +20,29 @@ type Database = Record<string, string>;
 // Module-level cache for the worker entry point auth instance
 const createWorkerAuth = (env: Env) =>
   betterAuth({
+    secondaryStorage: {
+      get: async (key) => (await env.AUTH_CACHE.get(key)) ?? null,
+      set: async (key, value, ttl) => {
+        await env.AUTH_CACHE.put(key, value, {
+          expirationTtl: Math.max(ttl ?? 60, 60),
+        });
+      },
+      delete: async (key) => {
+        await env.AUTH_CACHE.delete(key);
+      },
+      getAndDelete: async (key) => {
+        const value = await env.AUTH_CACHE.get(key);
+        if (value !== null) await env.AUTH_CACHE.delete(key);
+        return value;
+      },
+      increment: async (key, ttl) => {
+        const next = Number((await env.AUTH_CACHE.get(key)) ?? 0) + 1;
+        await env.AUTH_CACHE.put(key, String(next), {
+          expirationTtl: Math.max(ttl, 60),
+        });
+        return next;
+      },
+    },
     emailAndPassword: { enabled: true },
     baseURL: env.BETTER_AUTH_URL,
     trustedOrigins: [env.BETTER_AUTH_URL],
@@ -22,6 +53,9 @@ const createWorkerAuth = (env: Env) =>
         plugins: [new CamelCasePlugin()],
       }),
       type: 'sqlite',
+    },
+    advanced: {
+      database: { validateSchema: false },
     },
     plugins: [organization()],
   });
@@ -53,25 +87,43 @@ const handlePresenceWebSocket = async (
     return null;
   }
 
-  // Extract promptId from path: /api/presence/:promptId
-  const pathParts = url.pathname.split('/');
-  const promptId = pathParts[3];
-  if (!promptId) {
-    return new Response('Missing promptId', { status: 400 });
+  if (request.method !== 'GET') {
+    return new Response('Method Not Allowed', {
+      status: 405,
+      headers: { Allow: 'GET' },
+    });
+  }
+
+  const documentId = getPresenceDocumentId(url.pathname);
+  if (!documentId) {
+    return new Response('Invalid document ID', { status: 400 });
+  }
+
+  if (!isTrustedPresenceOrigin(request, env.BETTER_AUTH_URL)) {
+    return new Response('Forbidden', { status: 403 });
   }
 
   // Validate session using Better Auth
   const auth = getAuth(env);
   const session = await auth.api.getSession({
     headers: request.headers,
+    query: { disableRefresh: true },
   });
 
   if (!session?.user) {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  // Get the Durable Object for this prompt
-  const roomId = env.PRESENCE_ROOM.idFromName(promptId);
+  const document = await getAuthorizedPresenceDocument(
+    env.promptly,
+    session.user.id,
+    documentId,
+  );
+  if (!document) {
+    return new Response('Not Found', { status: 404 });
+  }
+
+  const roomId = env.PRESENCE_ROOM.idFromName(document.id);
   const room = env.PRESENCE_ROOM.get(roomId);
 
   // Pass user info via URL query params (more reliable for WebSocket upgrade than headers)
@@ -107,12 +159,20 @@ const PROBE_PATTERNS = [
 ];
 
 export default {
+  scheduled: async (_controller, env, ctx) => {
+    ctx.waitUntil(maintainAuthoring(env));
+  },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     // Reject bot/security probes early to save CPU
     if (PROBE_PATTERNS.some((p) => url.pathname.includes(p))) {
       return new Response('Not Found', { status: 404 });
+    }
+
+    if (isMcpProtocolPath(url.pathname)) {
+      if (!isMcpEnabled(env)) return new Response('Not Found', { status: 404 });
+      return handleMcpOAuth(request, env, ctx);
     }
 
     // The app subdomain has no SEO value — every page is auth-gated or a
@@ -148,6 +208,7 @@ export default {
     // Handle presence WebSocket requests before React Router
     const presenceResponse = await handlePresenceWebSocket(request, env);
     if (presenceResponse) {
+      if (presenceResponse.status === 101) return presenceResponse;
       return withNoIndex(presenceResponse);
     }
 

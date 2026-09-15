@@ -2,10 +2,17 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "promptly",
   "compatibility_date": "2025-10-08",
-  "compatibility_flags": ["nodejs_compat_v2"],
+  "compatibility_flags": ["nodejs_compat_v2", "global_fetch_strictly_public"],
   "main": "./workers/app.ts",
+  "triggers": { "crons": ["* * * * *"] },
   "observability": {
     "enabled": true
+  },
+  "vars": {
+    "MCP_ENABLED": "true",
+    "MCP_AUTHORING_ENABLED": "true",
+    "MCP_PILOT_WORKSPACES": "ddqz6WonIEucP0uj07z8OBuiWTQHwadU,20SkvABoFYKMBfSvJclvBE6WVYNnntSM",
+    "MCP_ALLOW_DCR": "false"
   },
   "d1_databases": [
     {
@@ -16,6 +23,10 @@
     }
   ],
   "kv_namespaces": [
+    {
+      "binding": "OAUTH_KV",
+      "id": "089b4a1d119b49ae9ec5286fae8fa10b"
+    },
     {
       "binding": "PROMPTS_CACHE",
       "id": "fe422f717c1b4a8295656d6e494161a3"

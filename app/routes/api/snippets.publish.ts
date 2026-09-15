@@ -1,5 +1,7 @@
 import { data } from 'react-router';
 import { cloudflareContext, orgContext, sessionContext } from '~/context';
+import { AuthoringError } from '~/lib/authoring/types';
+import { publishSnippetDraft } from '~/lib/snippet-drafts.server';
 import type { Route } from './+types/snippets.publish';
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
@@ -36,73 +38,21 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
   const db = context.get(cloudflareContext).env.promptly;
 
-  const snippetOwnership = await db
-    .prepare('SELECT id FROM snippet WHERE id = ? AND organization_id = ?')
-    .bind(snippetId, org.organizationId)
-    .first();
-
-  if (!snippetOwnership) {
-    return data({ error: 'Snippet not found' }, { status: 404 });
-  }
-
-  const currentDraft = await db
-    .prepare(
-      'SELECT id FROM snippet_version WHERE snippet_id = ? AND published_at IS NULL ORDER BY created_at DESC LIMIT 1',
-    )
-    .bind(snippetId)
-    .first<{ id: string }>();
-
-  if (!currentDraft) {
-    return data({ error: 'No draft version to publish' }, { status: 400 });
-  }
-
-  const lastPublished = await db
-    .prepare(
-      'SELECT major, minor, patch FROM snippet_version WHERE snippet_id = ? AND published_at IS NOT NULL ORDER BY major DESC, minor DESC, patch DESC LIMIT 1',
-    )
-    .bind(snippetId)
-    .first<{ major: number; minor: number; patch: number }>();
-
-  // Compare semver: new version must be greater than last published
-  if (lastPublished) {
-    const isGreater =
-      major > lastPublished.major ||
-      (major === lastPublished.major && minor > lastPublished.minor) ||
-      (major === lastPublished.major &&
-        minor === lastPublished.minor &&
-        patch > lastPublished.patch);
-
-    if (!isGreater) {
-      return data(
-        {
-          error: `Version must be greater than ${lastPublished.major}.${lastPublished.minor}.${lastPublished.patch}`,
-        },
-        { status: 400 },
-      );
-    }
-  }
-
-  const now = Date.now();
-  await db
-    .prepare(
-      'UPDATE snippet_version SET major = ?, minor = ?, patch = ?, published_at = ?, published_by = ?, updated_at = ?, updated_by = ? WHERE id = ?',
-    )
-    .bind(
+  try {
+    const published = await publishSnippetDraft(db, {
+      snippetId,
+      organizationId: org.organizationId,
+      userId: session.user.id,
       major,
       minor,
       patch,
-      now,
-      session.user.id,
-      now,
-      session.user.id,
-      currentDraft.id,
-    )
-    .run();
-
-  await db
-    .prepare('UPDATE snippet SET updated_at = ? WHERE id = ?')
-    .bind(Date.now(), snippetId)
-    .run();
-
-  return { success: true, version: `${major}.${minor}.${patch}` };
+    });
+    return { success: true, version: published.version };
+  } catch (error) {
+    if (!(error instanceof AuthoringError)) throw error;
+    return data(
+      { error: error.message },
+      { status: error.code === 'content_not_found' ? 404 : 400 },
+    );
+  }
 };

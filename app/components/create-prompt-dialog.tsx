@@ -16,11 +16,13 @@ import {
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { Textarea } from '~/components/ui/textarea';
+import { useCreateRequestKey } from '~/hooks/use-create-request-key';
 import { useResourceLimits } from '~/hooks/use-resource-limits';
 import { useOnboardingStore } from '~/stores/onboarding-store';
 import { UpgradeGateModal } from './upgrade-gate-modal';
 
 type ActionData = {
+  error?: string;
   errors?: {
     name?: string[];
     description?: string[];
@@ -42,6 +44,7 @@ export const CreatePromptDialog = ({
   open: controlledOpen,
   onOpenChange,
 }: CreatePromptDialogProps) => {
+  const prepareRequest = useCreateRequestKey();
   const actionData = useActionData<ActionData>();
   const location = useLocation();
   const navigation = useNavigation();
@@ -56,6 +59,7 @@ export const CreatePromptDialog = ({
   const isSubmitting = navigation.state === 'submitting';
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    prepareRequest(e.currentTarget);
     if (!isOnboarding) return; // Normal flow — let React Router handle it
 
     const store = useOnboardingStore.getState();
@@ -120,6 +124,7 @@ export const CreatePromptDialog = ({
               action="/api/prompts/create"
               onSubmit={handleSubmit}
             >
+              <input type="hidden" name="requestKey" />
               <DialogHeader>
                 <DialogTitle>Create a new prompt</DialogTitle>
                 <DialogDescription>
@@ -144,6 +149,11 @@ export const CreatePromptDialog = ({
                   )}
                 </div>
               </div>
+              {actionData?.error && (
+                <p role="alert" className="text-destructive text-sm pb-4">
+                  {actionData.error}
+                </p>
+              )}
               <DialogFooter>
                 <DialogClose asChild>
                   <Button variant="outline" type="button">

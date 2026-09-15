@@ -194,8 +194,29 @@ export const ComposerEditor = ({
     setTimeout(() => setCopied(false), 5000);
   }, [editor]);
 
+  const bindSavedContent = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (!node || !editor) return;
+      const sync = () => {
+        const next = useComposerEditorStore.getState().content;
+        if (editor.getHTML() !== next) {
+          editor
+            .chain()
+            .setContent(next, { emitUpdate: false })
+            .setMeta('addToHistory', false)
+            .run();
+        }
+      };
+      sync();
+      return useComposerEditorStore.subscribe((state, previous) => {
+        if (state.content !== previous.content) sync();
+      });
+    },
+    [editor],
+  );
+
   return (
-    <div className="grid w-full gap-4">
+    <div className="grid w-full gap-4" ref={bindSavedContent}>
       <InputGroup>
         <InputGroupAddon align="block-start" className="border-b">
           <ComposerToolbar

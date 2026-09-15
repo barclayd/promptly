@@ -8,6 +8,7 @@ import { CreateApiKeyDialog } from '~/components/create-api-key-dialog';
 import { CreateLlmApiKeyDialog } from '~/components/create-llm-api-key-dialog';
 import { LlmApiKeysEmptyState } from '~/components/llm-api-keys-empty-state';
 import { LlmApiKeysTable } from '~/components/llm-api-keys-table';
+import { McpSettings } from '~/components/mcp-settings';
 import { Button } from '~/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import {
@@ -18,6 +19,13 @@ import {
 } from '~/context';
 import { useSubscription } from '~/hooks/use-subscription';
 import { getLlmApiKeysForOrg } from '~/lib/llm-api-keys.server';
+import {
+  getMcpUrl,
+  isMcpAuthoringEnabled,
+  isMcpEnabled,
+  isMcpWorkspaceEnabled,
+} from '~/lib/mcp/config.server';
+import { listMcpConnections } from '~/lib/mcp/connections.server';
 import type { Route } from './+types/settings';
 
 type ApiKey = {
@@ -50,15 +58,17 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   }
 
   const auth = context.get(authContext);
-  const db = context.get(cloudflareContext).env.promptly;
+  const { env } = context.get(cloudflareContext);
+  const db = env.promptly;
 
   // Get Promptly API keys and LLM API keys in parallel
-  const [apiKeysResult, llmApiKeys] = await Promise.all([
+  const [apiKeysResult, llmApiKeys, mcpConnections] = await Promise.all([
     auth.api.listApiKeys({
       headers: request.headers,
       query: { organizationId: org.organizationId },
     }),
     getLlmApiKeysForOrg(db, org.organizationId),
+    isMcpEnabled(env) ? listMcpConnections(db, currentUser.id) : null,
   ]);
 
   // Better Auth v1.5.4 returns { apiKeys: [...], total: N }
@@ -90,6 +100,21 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     llmApiKeys,
     organizationId: org.organizationId,
     organizationName: org.organizationName,
+    mcp: {
+      serverUrl: getMcpUrl(env),
+      enabled: isMcpWorkspaceEnabled(env, org.organizationId),
+      authoringEnabled: isMcpAuthoringEnabled(env),
+      canManageWorkspaceConnections:
+        mcpConnections?.canManageWorkspaceConnections ?? false,
+      connections:
+        mcpConnections?.connections.map((connection) => ({
+          ...connection,
+          canRevoke:
+            connection.revokedAt === null &&
+            (connection.userId === currentUser.id ||
+              mcpConnections.canManageWorkspaceConnections),
+        })) ?? [],
+    },
   };
 };
 
@@ -230,11 +255,12 @@ const Settings = ({ loaderData }: Route.ComponentProps) => {
 
             {/* Content */}
             <Tabs value={activeTab} onValueChange={handleTabChange}>
-              <TabsList>
+              <TabsList className="h-auto max-w-full flex-wrap justify-start gap-1">
                 <TabsTrigger value="promptly-api-keys">
                   Promptly API Keys
                 </TabsTrigger>
                 <TabsTrigger value="llm-api-keys">LLM API Keys</TabsTrigger>
+                <TabsTrigger value="mcp">MCP connections</TabsTrigger>
                 {hasBillingTab && (
                   <TabsTrigger value="billing">Billing</TabsTrigger>
                 )}
@@ -247,6 +273,17 @@ const Settings = ({ loaderData }: Route.ComponentProps) => {
                   llmApiKeys={llmApiKeys}
                   createDialogOpen={createLlmDialogOpen}
                   onCreateDialogOpenChange={setCreateLlmDialogOpen}
+                />
+              </TabsContent>
+              <TabsContent value="mcp" className="mt-6">
+                <McpSettings
+                  {...loaderData.mcp}
+                  setupHref="/settings/mcp/clients"
+                  notice={
+                    searchParams.get('notice') === 'revoked'
+                      ? 'Connection revoked.'
+                      : undefined
+                  }
                 />
               </TabsContent>
               {hasBillingTab && (

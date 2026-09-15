@@ -1,8 +1,7 @@
 'use client';
 
 import { IconAlertTriangle } from '@tabler/icons-react';
-import { useEffect } from 'react';
-import { useFetcher, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { Button } from '~/components/ui/button';
 import {
   Dialog,
@@ -13,11 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '~/components/ui/dialog';
-
-type ActionData = {
-  error?: string;
-  success?: boolean;
-};
+import { useAuthoringDialog } from '~/hooks/use-authoring-dialog';
 
 type DeletePromptDialogProps = {
   open: boolean;
@@ -33,23 +28,21 @@ export const DeletePromptDialog = ({
   onOpenChange,
   prompt,
 }: DeletePromptDialogProps) => {
-  const fetcher = useFetcher<ActionData>();
+  const authoring = useAuthoringDialog('prompt', prompt.id);
   const navigate = useNavigate();
-  const isSubmitting = fetcher.state === 'submitting';
-
-  // Redirect on success
-  useEffect(() => {
-    if (fetcher.data?.success) {
-      onOpenChange(false);
-      navigate('/prompts');
-    }
-  }, [fetcher.data, onOpenChange, navigate]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <fetcher.Form method="post" action="/api/prompts/delete">
-          <input type="hidden" name="promptId" value={prompt.id} />
+      <DialogContent ref={authoring.mount} className="sm:max-w-md">
+        <form
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (await authoring.delete()) {
+              onOpenChange(false);
+              await navigate('/prompts');
+            }
+          }}
+        >
           <DialogHeader>
             <div className="mx-auto sm:mx-0 flex size-12 items-center justify-center rounded-full bg-destructive/10 dark:bg-destructive/20">
               <IconAlertTriangle className="size-6 text-destructive" />
@@ -69,34 +62,40 @@ export const DeletePromptDialog = ({
               </span>
             </DialogDescription>
           </DialogHeader>
-          {fetcher.data?.error && (
-            <p className="text-destructive text-sm py-4">
-              {fetcher.data.error}
+          {authoring.error && (
+            <p role="alert" className="text-destructive text-sm py-4">
+              {authoring.error}
             </p>
           )}
           <DialogFooter className="pt-6">
             <DialogClose asChild>
-              <Button variant="outline" type="button" disabled={isSubmitting}>
+              <Button
+                variant="outline"
+                type="button"
+                disabled={authoring.disabled}
+              >
                 Cancel
               </Button>
             </DialogClose>
             <Button
               type="submit"
               variant="destructive"
-              disabled={isSubmitting}
+              disabled={authoring.disabled}
               className="gap-2"
             >
-              {isSubmitting ? (
+              {authoring.busy ? (
                 <>
                   <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   Deleting...
                 </>
+              ) : authoring.retrying ? (
+                'Retry delete'
               ) : (
                 'Delete'
               )}
             </Button>
           </DialogFooter>
-        </fetcher.Form>
+        </form>
       </DialogContent>
     </Dialog>
   );

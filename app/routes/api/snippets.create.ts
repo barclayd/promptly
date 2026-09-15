@@ -89,31 +89,37 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   }
 
   const snippetId = nanoid();
-  await db
-    .prepare(
-      `INSERT INTO snippet (id, name, description, folder_id, organization_id, created_by)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-    )
-    .bind(
-      snippetId,
-      result.data.name,
-      result.data.description || '',
-      folderId,
-      orgId,
-      session.user.id,
-    )
-    .run();
-
-  // Create initial draft version
   const versionId = nanoid();
   const now = Date.now();
-  await db
-    .prepare(
-      `INSERT INTO snippet_version (id, snippet_id, content, config, created_by, updated_at, updated_by)
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO snippet (id, name, description, folder_id, organization_id, created_by)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .bind(
+        snippetId,
+        result.data.name,
+        result.data.description || '',
+        folderId,
+        orgId,
+        session.user.id,
+      ),
+    db
+      .prepare(
+        `INSERT INTO snippet_version (id, snippet_id, content, config, created_by, updated_at, updated_by)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .bind(versionId, snippetId, '', '{}', session.user.id, now, session.user.id)
-    .run();
+      )
+      .bind(
+        versionId,
+        snippetId,
+        '',
+        '{}',
+        session.user.id,
+        now,
+        session.user.id,
+      ),
+  ]);
 
   return redirect(`/snippets/${snippetId}`);
 };

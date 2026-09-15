@@ -10,15 +10,14 @@ import {
   useState,
 } from 'react';
 import {
-  useFetcher,
   useLocation,
   useNavigate,
   useOutletContext,
   useSearchParams,
 } from 'react-router';
-import { useDebouncedCallback } from 'use-debounce';
 import { Skeleton } from '~/components/ui/skeleton';
 import { useVariableSyncModal } from '~/hooks/use-variable-sync-modal';
+import { initializeAuthoringStore } from '~/lib/authoring/editor-session';
 import { usePromptSchemaCacheStore } from '~/stores/prompt-schema-cache';
 
 const ComposerEditor = lazy(() =>
@@ -47,6 +46,7 @@ const RemovePromptVariablesModal = lazy(() =>
   ),
 );
 
+import { AuthoringStatus } from '~/components/authoring-status';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
@@ -57,12 +57,14 @@ import {
   orgContext,
   sessionContext,
 } from '~/context';
+import { useBrowserAuthoring } from '~/hooks/use-browser-authoring';
 import { useComposerUndoRedo } from '~/hooks/use-composer-undo-redo';
 import {
   type CursorPosition,
   type PresenceEventCallbacks,
   usePresence,
 } from '~/hooks/use-presence';
+import { readBrowserAuthoringDocument } from '~/lib/authoring/browser.server';
 import type { SchemaField } from '~/lib/schema-types';
 import { useComposerEditorStore } from '~/stores/composer-editor-store';
 import type { Route } from './+types/composers.composerId';
@@ -145,19 +147,21 @@ export const loader = async ({
       id: string;
       name: string;
       description: string;
-      folder_id: string;
+      folder_id: string | null;
     }>();
 
   if (!composer) {
     throw new Response('Composer not found', { status: 404 });
   }
 
-  const folder = await db
-    .prepare(
-      'SELECT id, name FROM composer_folder WHERE id = ? AND organization_id = ?',
-    )
-    .bind(composer.folder_id, org.organizationId)
-    .first<{ id: string; name: string }>();
+  const folder =
+    (await db
+      .prepare(
+        'SELECT id, name FROM composer_folder WHERE id = ? AND organization_id = ?',
+      )
+      .bind(composer.folder_id, org.organizationId)
+      .first<{ id: string; name: string }>()) ??
+    (composer.folder_id === null ? { id: '', name: 'Unfiled' } : null);
 
   if (!folder) {
     throw new Response('Folder not found', { status: 404 });
@@ -186,7 +190,7 @@ export const loader = async ({
     }>();
 
   let versionNotFound = false;
-  let isViewingOldVersion = false;
+  let isViewingOldVersion = Boolean(versionParam);
   let requestedVersion: string | null = null;
 
   let targetVersion: {
@@ -227,7 +231,7 @@ export const loader = async ({
     versionNotFound = true;
   }
 
-  if (!targetVersion) {
+  if (!targetVersion && !versionParam) {
     targetVersion = await db
       .prepare(
         'SELECT id, content, config, major, minor, patch, published_at, published_by, created_by, updated_at, updated_by FROM composer_version WHERE composer_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
@@ -327,7 +331,14 @@ export const loader = async ({
     ? `${lastPublishedResult.major}.${lastPublishedResult.minor}.${lastPublishedResult.patch}`
     : null;
 
+  const authoring = await readBrowserAuthoringDocument(
+    context,
+    'composer',
+    composerId,
+  );
+
   return {
+    authoring,
     folder,
     composer,
     currentVersion: currentVersionString,
@@ -350,13 +361,25 @@ export const loader = async ({
 };
 
 export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
-  const fetcher = useFetcher();
   const { triggerTest } = useOutletContext<ComposerDetailContext>();
   const location = useLocation();
   const navigate = useNavigate();
 
   const { isViewingOldVersion, versionNotFound, requestedVersion } = loaderData;
-  const isReadOnly = isViewingOldVersion;
+  const {
+    session: authoringSession,
+    snapshot: saveState,
+    editorRef: authoringRef,
+  } = useBrowserAuthoring(
+    loaderData.authoring,
+    isViewingOldVersion || versionNotFound,
+  );
+  const isReadOnly =
+    isViewingOldVersion ||
+    versionNotFound ||
+    !saveState.attached ||
+    saveState.isDeleting ||
+    saveState.deleted;
 
   useComposerUndoRedo();
 
@@ -377,17 +400,12 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
     handleRemoveSelected,
   } = useVariableSyncModal(getEditorHtml);
 
-  const { sendContentUpdate, subscribeToEvents, sendCursorUpdate, cursors } =
-    usePresence(isReadOnly ? undefined : loaderData.composer.id);
+  const { subscribeToEvents, sendCursorUpdate, cursors } = usePresence(
+    isReadOnly ? undefined : loaderData.composer.id,
+  );
 
   const [_remoteCursors, setRemoteCursors] = useState<CursorPosition[]>([]);
   const editorRef = useRef<Editor | null>(null);
-
-  const setContentFromRemote = useComposerEditorStore(
-    (state) => state.setContentFromRemote,
-  );
-
-  const localVersionRef = useRef(0);
 
   const lastCursorRef = useRef<{
     field: 'systemMessage' | 'userMessage';
@@ -400,33 +418,6 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
     if (!subscribeToEvents || isReadOnly) return;
 
     const callbacks: PresenceEventCallbacks = {
-      onContentSync: (field, value, version) => {
-        localVersionRef.current = version;
-        if (field === 'systemMessage') {
-          setContentFromRemote(value);
-          // Sync Tiptap editor with remote content (without adding to history)
-          if (editorRef.current) {
-            editorRef.current.commands.setContent(value, {
-              emitUpdate: false,
-            });
-          }
-        }
-      },
-      onContentState: (state) => {
-        if (state.version > 0) {
-          localVersionRef.current = state.version;
-
-          const currentContent = useComposerEditorStore.getState().content;
-          if (state.systemMessage !== currentContent) {
-            setContentFromRemote(state.systemMessage);
-            if (editorRef.current) {
-              editorRef.current.commands.setContent(state.systemMessage, {
-                emitUpdate: false,
-              });
-            }
-          }
-        }
-      },
       onCursorSync: (cursor) => {
         setRemoteCursors((prev) => {
           const filtered = prev.filter((c) => c.userId !== cursor.userId);
@@ -445,7 +436,7 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
     };
 
     return subscribeToEvents(callbacks);
-  }, [subscribeToEvents, isReadOnly, setContentFromRemote, sendCursorUpdate]);
+  }, [subscribeToEvents, isReadOnly, sendCursorUpdate]);
 
   useEffect(() => {
     if (!cursors) return;
@@ -460,7 +451,7 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
     version: string | null;
   } | null>(null);
 
-  const currentKey = `${loaderData.composer.id}:${loaderData.currentVersion}`;
+  const currentKey = `${loaderData.composer.id}:${isViewingOldVersion ? loaderData.requestedVersion : 'working'}`;
   const lastKey = lastInitializedRef.current
     ? `${lastInitializedRef.current.composerId}:${lastInitializedRef.current.version}`
     : null;
@@ -471,49 +462,25 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
   if (needsInit) {
     lastInitializedRef.current = {
       composerId: loaderData.composer.id,
-      version: loaderData.currentVersion,
+      version: isViewingOldVersion ? loaderData.requestedVersion : 'working',
     };
     initialContentRef.current = loaderData.content;
     usePromptSchemaCacheStore.getState().clear();
 
-    useComposerEditorStore.getState().initialize({
-      composerId: loaderData.composer.id,
-      content: loaderData.content,
-      schemaFields: loaderData.schemaFields,
-      inputData: loaderData.inputData,
-      inputDataRootName: loaderData.inputDataRootName,
-    });
+    initializeAuthoringStore(() =>
+      useComposerEditorStore.getState().initialize({
+        composerId: loaderData.composer.id,
+        content: loaderData.content,
+        schemaFields: loaderData.schemaFields,
+        inputData: loaderData.inputData,
+        inputDataRootName: loaderData.inputDataRootName,
+      }),
+    );
   }
 
-  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
-
-  // Note: Using useEffect here is acceptable — reacting to fetcher completion is external state sync
-  const prevFetcherStateRef = useRef(fetcher.state);
-  useEffect(() => {
-    const wasActive = prevFetcherStateRef.current !== 'idle';
-    prevFetcherStateRef.current = fetcher.state;
-    if (wasActive && fetcher.state === 'idle') {
-      setLastSavedAt(Date.now());
-    }
-  }, [fetcher.state]);
-
-  const debouncedSave = useDebouncedCallback(() => {
-    const state = useComposerEditorStore.getState();
-
-    fetcher.submit(
-      { composerId: loaderData.composer.id, content: state.content },
-      { method: 'post', action: '/api/composers/save-content' },
-    );
-  }, 1000);
-
-  const handleContentChange = useCallback(
-    (value: string) => {
-      useComposerEditorStore.getState().setContent(value);
-      sendContentUpdate?.('systemMessage', value);
-      debouncedSave();
-    },
-    [sendContentUpdate, debouncedSave],
-  );
+  const handleContentChange = useCallback((value: string) => {
+    useComposerEditorStore.getState().setContent(value);
+  }, []);
 
   const handleEditorReady = useCallback((editor: Editor) => {
     editorRef.current = editor;
@@ -526,10 +493,11 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
   const schemasEqual = useMemo(() => {
     if (!loaderData.lastPublishedSchema) return true;
     return (
-      JSON.stringify(sortByName(loaderData.schemaFields)) ===
-      JSON.stringify(sortByName(loaderData.lastPublishedSchema))
+      JSON.stringify(
+        sortByName(saveState.definition.config.schema as SchemaField[]),
+      ) === JSON.stringify(sortByName(loaderData.lastPublishedSchema))
     );
-  }, [loaderData.schemaFields, loaderData.lastPublishedSchema]);
+  }, [saveState.definition.config.schema, loaderData.lastPublishedSchema]);
 
   const suggestedVersion = useMemo(() => {
     if (!loaderData.lastPublishedVersion) return '1.0.0';
@@ -539,19 +507,11 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
     return schemasEqual ? `${major}.${minor + 1}.${patch}` : `${major + 1}.0.0`;
   }, [loaderData.lastPublishedVersion, schemasEqual]);
 
-  const hasContentChanges = useMemo(() => {
-    if (!loaderData.lastPublishedVersion) return true;
-    const contentChanged =
-      loaderData.content !== (loaderData.lastPublishedContent ?? '');
-    return contentChanged || !schemasEqual;
-  }, [
-    loaderData.lastPublishedVersion,
-    loaderData.content,
-    loaderData.lastPublishedContent,
-    schemasEqual,
-  ]);
-
-  const canPublish = loaderData.hasDraft && hasContentChanges && !isReadOnly;
+  const canPublish =
+    !isReadOnly &&
+    !saveState.conflict &&
+    saveState.error?.kind !== 'network' &&
+    (saveState.dirty || saveState.document.version.status === 'draft');
 
   const handleBackToLatest = useCallback(() => {
     navigate(location.pathname);
@@ -645,7 +605,8 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col" ref={authoringRef}>
+      {!isViewingOldVersion && <AuthoringStatus session={authoringSession} />}
       {isViewingOldVersion && (
         <div className="bg-muted border-b px-4 pl-6 py-2 flex items-center justify-between">
           <span className="text-sm text-muted-foreground">
@@ -669,7 +630,11 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
             {!isReadOnly && (
               <div className="hidden md:flex px-4 lg:px-6 items-center justify-between gap-2">
                 <ComposerEditorMenubar
-                  composer={loaderData.composer}
+                  composer={{
+                    ...loaderData.composer,
+                    name: saveState.definition.name,
+                    description: saveState.definition.description,
+                  }}
                   isOwner={loaderData.isOwner}
                 />
                 <PublishComposerDialog
@@ -687,15 +652,27 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
               </div>
             )}
             <div className="px-4 lg:px-6 flex flex-col gap-y-4">
-              <h1 className="text-3xl">{loaderData.composer.name}</h1>
+              <h1 className="break-words text-3xl">
+                {isViewingOldVersion
+                  ? loaderData.composer.name
+                  : saveState.definition.name}
+              </h1>
               <div className="text-muted-foreground text-sm -mt-2">
-                {loaderData.currentVersion
-                  ? `v${loaderData.currentVersion}`
+                {(
+                  isViewingOldVersion
+                    ? loaderData.currentVersion
+                    : saveState.document.version.version
+                )
+                  ? `v${isViewingOldVersion ? loaderData.currentVersion : saveState.document.version.version}`
                   : 'Draft'}
               </div>
-              {loaderData.composer.description && (
-                <p className="text-secondary-foreground">
-                  {loaderData.composer.description}
+              {(isViewingOldVersion
+                ? loaderData.composer.description
+                : saveState.definition.description) && (
+                <p className="break-words text-secondary-foreground">
+                  {isViewingOldVersion
+                    ? loaderData.composer.description
+                    : saveState.definition.description}
                 </p>
               )}
               <Separator className="my-4" />
@@ -703,9 +680,9 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
                 content={initialContentRef.current}
                 onChange={isReadOnly ? undefined : handleContentChange}
                 isDirty={isContentDirty}
-                isPendingSave={fetcher.state === 'submitting'}
-                isSaving={fetcher.state === 'loading'}
-                lastSavedAt={lastSavedAt}
+                isPendingSave={saveState.dirty}
+                isSaving={saveState.isSaving}
+                lastSavedAt={saveState.lastSavedAt}
                 onTest={triggerTest}
                 disabled={isReadOnly}
                 prompts={loaderData.prompts}

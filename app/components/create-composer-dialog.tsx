@@ -16,8 +16,10 @@ import {
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { Textarea } from '~/components/ui/textarea';
+import { useCreateRequestKey } from '~/hooks/use-create-request-key';
 
 type ActionData = {
+  error?: string;
   errors?: { name?: string[]; description?: string[] };
 };
 
@@ -32,6 +34,7 @@ export const CreateComposerDialog = ({
   open: controlledOpen,
   onOpenChange,
 }: CreateComposerDialogProps) => {
+  const prepareRequest = useCreateRequestKey();
   const actionData = useActionData<ActionData>();
   const navigation = useNavigation();
   const location = useLocation();
@@ -45,7 +48,12 @@ export const CreateComposerDialog = ({
     <Dialog key={location.key} open={dialogOpen} onOpenChange={setDialogOpen}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
       <DialogContent className="sm:max-w-106.25">
-        <Form method="post" action="/api/composers/create">
+        <Form
+          method="post"
+          action="/api/composers/create"
+          onSubmit={(event) => prepareRequest(event.currentTarget)}
+        >
+          <input type="hidden" name="requestKey" />
           <DialogHeader>
             <DialogTitle>Create a new composer</DialogTitle>
             <DialogDescription>
@@ -83,6 +91,11 @@ export const CreateComposerDialog = ({
               )}
             </div>
           </div>
+          {actionData?.error && (
+            <p role="alert" className="text-destructive text-sm pb-4">
+              {actionData.error}
+            </p>
+          )}
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline" type="button">

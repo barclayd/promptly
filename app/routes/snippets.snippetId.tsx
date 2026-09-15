@@ -1,5 +1,4 @@
 import { ArrowLeft, GitBranch, RssIcon } from 'lucide-react';
-import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   data,
@@ -31,6 +30,8 @@ import {
   usePresence,
 } from '~/hooks/use-presence';
 import { useSnippetUndoRedo } from '~/hooks/use-snippet-undo-redo';
+import { AuthoringError } from '~/lib/authoring/types';
+import { saveSnippetDraft } from '~/lib/snippet-drafts.server';
 import { useSnippetEditorStore } from '~/stores/snippet-editor-store';
 import type { Route } from './+types/snippets.snippetId';
 
@@ -295,113 +296,33 @@ export const action = async ({
   const formData = await request.formData();
   const intent = formData.get('intent') as string | null;
 
-  if (intent === 'saveConfig') {
-    const configJson = (formData.get('config') as string) ?? '{}';
-
-    const currentVersion = await db
-      .prepare(
-        'SELECT id, published_at, content FROM snippet_version WHERE snippet_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
-      )
-      .bind(snippetId)
-      .first<{
-        id: string;
-        published_at: number | null;
-        content: string | null;
-      }>();
-
-    const now = Date.now();
-    if (!currentVersion) {
-      await db
-        .prepare(
-          'INSERT INTO snippet_version (id, snippet_id, config, created_by, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?)',
-        )
-        .bind(
-          nanoid(),
-          snippetId,
-          configJson,
-          session.user.id,
-          now,
-          session.user.id,
-        )
-        .run();
-    } else if (currentVersion.published_at === null) {
-      await db
-        .prepare(
-          'UPDATE snippet_version SET config = ?, updated_at = ?, updated_by = ? WHERE id = ?',
-        )
-        .bind(configJson, now, session.user.id, currentVersion.id)
-        .run();
-    } else {
-      await db
-        .prepare(
-          'INSERT INTO snippet_version (id, snippet_id, config, content, created_by, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        )
-        .bind(
-          nanoid(),
-          snippetId,
-          configJson,
-          currentVersion.content,
-          session.user.id,
-          now,
-          session.user.id,
-        )
-        .run();
-    }
-
-    return { success: true, savedAt: Date.now(), intent: 'saveConfig' };
+  try {
+    const saved = await saveSnippetDraft(db, {
+      snippetId,
+      organizationId: org.organizationId,
+      userId: session.user.id,
+      ...(intent === 'saveConfig'
+        ? {
+            field: 'config' as const,
+            value: (formData.get('config') as string) ?? '{}',
+          }
+        : {
+            field: 'content' as const,
+            value: (formData.get('content') as string)?.trim() ?? '',
+          }),
+    });
+    return {
+      success: true,
+      savedAt: saved.savedAt,
+      ...(intent === 'saveConfig' ? { intent: 'saveConfig' } : {}),
+    };
+  } catch (error) {
+    if (!(error instanceof AuthoringError)) throw error;
+    return data(
+      { error: error.message },
+      { status: error.code === 'content_not_found' ? 404 : 409 },
+    );
   }
-
-  const content = (formData.get('content') as string)?.trim() ?? '';
-
-  const currentVersion = await db
-    .prepare(
-      'SELECT id, published_at, config FROM snippet_version WHERE snippet_id = ? ORDER BY (published_at IS NULL) DESC, created_at DESC LIMIT 1',
-    )
-    .bind(snippetId)
-    .first<{
-      id: string;
-      published_at: number | null;
-      config: string | null;
-    }>();
-
-  const now = Date.now();
-  if (!currentVersion) {
-    await db
-      .prepare(
-        'INSERT INTO snippet_version (id, snippet_id, content, created_by, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?)',
-      )
-      .bind(nanoid(), snippetId, content, session.user.id, now, session.user.id)
-      .run();
-  } else if (currentVersion.published_at === null) {
-    await db
-      .prepare(
-        'UPDATE snippet_version SET content = ?, updated_at = ?, updated_by = ? WHERE id = ?',
-      )
-      .bind(content, now, session.user.id, currentVersion.id)
-      .run();
-  } else {
-    await db
-      .prepare(
-        'INSERT INTO snippet_version (id, snippet_id, content, config, created_by, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      )
-      .bind(
-        nanoid(),
-        snippetId,
-        content,
-        currentVersion.config,
-        session.user.id,
-        now,
-        session.user.id,
-      )
-      .run();
-  }
-
-  await db
-    .prepare('UPDATE snippet SET updated_at = ? WHERE id = ?')
-    .bind(now, snippetId)
-    .run();
-
-  return { success: true, savedAt: Date.now() };
 };
 
 export default function SnippetDetail({ loaderData }: Route.ComponentProps) {
