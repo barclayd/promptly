@@ -13,7 +13,7 @@ export type McpConnectionToolInput = z.infer<
   typeof mcpConnectionToolInputSchema
 >;
 
-export const mcpConnectionToolOutputSchema = z.object({
+export const mcpConnectionToolOutputSchema = z.looseObject({
   workspaceId: z.string(),
   scopes: z
     .array(z.string())
