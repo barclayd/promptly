@@ -19,6 +19,7 @@ import {
 } from './connections.server';
 import { cachedMcpSchema } from './schema.server';
 import { searchMcpContent } from './search.server';
+import { registerPromptlyTesting } from './testing.server';
 import { checkMcpRateLimit, recordMcpToolCall } from './usage.server';
 
 const readAnnotations = {
@@ -84,7 +85,7 @@ export const handleMcpApi = async (
         { name: 'Promptly', version: '0.1.0' },
         {
           instructions: authoringAvailable
-            ? 'Promptly manages prompts, snippets and composers in your connected workspace. Search for stable IDs, read an explicit draft/working/latest/published version, then author shared drafts using expectedRevision and a requestKey. Reuse the same request key after an uncertain mutation; retries are protected for 24 hours. Never replace a stale revision without rereading and reviewing changes. Draft saves never publish; dedicated publish tools act immediately when authorized. Publish dependent prompts before their composer. Validation and previews do not execute LLMs. Snippets can be read/reused but not authored here. Native prompt menus expose published prompts using explicitly supplied JSON input; saved model settings do not change the host model. Detailed definitions/history are opt-in read tools.'
+            ? 'Promptly manages prompts, snippets and composers in your connected workspace. Search for stable IDs, read an explicit draft/working/latest/published version, then author shared drafts using expectedRevision and a requestKey. Reuse the same request key after an uncertain mutation; retries are protected for 24 hours. Never replace a stale revision without rereading and reviewing changes. Draft saves never publish; dedicated publish tools act immediately when authorized. Publish dependent prompts before their composer. Validation and previews do not execute LLMs. With explicit mcp:run consent, test_prompt, test_snippet, test_composer and compare_tests execute LLMs using workspace keys and may incur provider charges. Test configuration overrides do not save changes. Use list_models and list_versions before testing; reuse the same requestKey after an interrupted test and get_test_result to retrieve it instead of starting another billed run. Snippets can be read/reused/tested but not authored here. Native prompt menus expose published prompts using explicitly supplied JSON input; saved model settings do not change the host model. Detailed definitions/history are opt-in read tools.'
             : 'Promptly manages prompts and composers in your connected workspace. Connection checks and content discovery are available. Authoring is currently disabled. Search returns stable IDs and links, not complete definitions.',
         },
       );
@@ -140,8 +141,10 @@ export const handleMcpApi = async (
           });
         },
       );
-      if (authoringAvailable)
+      if (authoringAvailable) {
         registerPromptlyAuthoring(server, env, ctx, props.data);
+        registerPromptlyTesting(server, env, ctx, props.data);
+      }
       return server;
     };
     return createMcpHandler(createServer, {

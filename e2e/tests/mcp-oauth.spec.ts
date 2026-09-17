@@ -184,12 +184,24 @@ test('MCP native consent grants exactly the selected permissions before JavaScri
     const nativeCallback = mcpCallback.url;
     const client = await registerClient(authenticatedPage, nativeCallback);
     const page = await context.newPage();
-    for (const permission of ['read', 'publish'] as const) {
-      const auth = authorizationUrl(client.id, undefined, nativeCallback);
+    for (const { permission, allowTesting } of [
+      { permission: 'read', allowTesting: false },
+      { permission: 'read', allowTesting: true },
+      { permission: 'publish', allowTesting: true },
+    ] as const) {
+      const auth = authorizationUrl(
+        client.id,
+        'mcp:read mcp:write mcp:publish mcp:run',
+        nativeCallback,
+      );
       await page.goto(auth.url);
       const label =
         permission === 'read' ? /^Read only/ : /^Create, edit, and publish/;
       await page.getByRole('radio', { name: label }).check();
+      const testing = page.getByRole('checkbox', { name: /^Run tests/ });
+      await expect(testing).toBeEnabled();
+      await expect(testing).not.toBeChecked();
+      if (allowTesting) await testing.check();
       const submission = page.waitForRequest(
         (request) =>
           request.method() === 'POST' &&
@@ -200,6 +212,9 @@ test('MCP native consent grants exactly the selected permissions before JavaScri
       expect(
         new URLSearchParams(posted.postData() ?? '').getAll('permission'),
       ).toEqual([permission]);
+      expect(
+        new URLSearchParams(posted.postData() ?? '').getAll('allowTesting'),
+      ).toEqual(allowTesting ? ['true'] : []);
       expect(await posted.headerValue('origin')).toBe(origin);
       await page.waitForURL(
         (url) => url.origin === new URL(nativeCallback).origin,
@@ -217,11 +232,12 @@ test('MCP native consent grants exactly the selected permissions before JavaScri
       );
       expect(response.status()).toBe(200);
       const tokens = await response.json();
-      expect(tokens.scope.split(' ').sort()).toEqual(
+      const scopes =
         permission === 'read'
           ? ['mcp:read']
-          : ['mcp:publish', 'mcp:read', 'mcp:write'],
-      );
+          : ['mcp:publish', 'mcp:read', 'mcp:write'];
+      if (allowTesting) scopes.push('mcp:run');
+      expect(tokens.scope.split(' ').sort()).toEqual(scopes.sort());
       expect(
         (
           await page.request.post('/oauth/token', {
@@ -310,6 +326,7 @@ test('MCP discovery challenges use OAuth metadata and reject untrusted resources
   expect(details.client_id_metadata_document_supported).toBe(true);
   expect(details.registration_endpoint).toBeUndefined();
   expect(details.code_challenge_methods_supported).toEqual(['S256']);
+  expect(details.scopes_supported).toContain('mcp:run');
 });
 
 test('MCP supports the exact Cursor native callback with mandatory PKCE and rejects redirect substitutions', async ({
@@ -402,7 +419,12 @@ test('MCP OAuth defaults to draft permissions, supports tools and refresh, and r
   );
   expect(discovery.ok()).toBe(true);
   const advertised = (await discovery.json()).scopes_supported;
-  expect(advertised).toEqual(['mcp:read', 'mcp:write', 'mcp:publish']);
+  expect(advertised).toEqual([
+    'mcp:read',
+    'mcp:write',
+    'mcp:publish',
+    'mcp:run',
+  ]);
   // Follow the discovery-driven scope request used by coding/chat clients.
   const auth = authorizationUrl(client.id, advertised.join(' '), callback);
   await page.goto(auth.url);
@@ -418,6 +440,12 @@ test('MCP OAuth defaults to draft permissions, supports tools and refresh, and r
   ).toBeChecked();
   await expect(
     page.getByRole('radio', { name: /^Create, edit, and publish/ }),
+  ).not.toBeChecked();
+  await expect(
+    page.getByRole('checkbox', { name: /^Run tests/ }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole('checkbox', { name: /^Run tests/ }),
   ).not.toBeChecked();
   await page.getByRole('button', { name: 'Connect', exact: true }).click();
   await page.waitForURL((url) => url.origin === new URL(callback).origin);
@@ -489,11 +517,27 @@ test('MCP OAuth defaults to draft permissions, supports tools and refresh, and r
   expect(search.status()).toBe(200);
   const searchResult = await search.json();
   expect(Array.isArray(searchResult.result.structuredContent.items)).toBe(true);
-  const refreshed = await page.request.post('/oauth/token', {
+  const escalatedRefresh = await page.request.post('/oauth/token', {
     form: {
       grant_type: 'refresh_token',
       client_id: client.id,
       refresh_token: tokens.refresh_token,
+      resource: `${origin}/mcp`,
+      scope: 'mcp:read mcp:write mcp:run',
+    },
+  });
+  expect(escalatedRefresh.status()).toBe(200);
+  const unchanged = await escalatedRefresh.json();
+  expect(unchanged.scope.split(' ').sort()).toEqual(['mcp:read', 'mcp:write']);
+  const unchangedAccess = await callTool(page.request, unchanged.access_token);
+  expect(
+    (await unchangedAccess.json()).result.structuredContent.scopes,
+  ).toEqual(['mcp:read', 'mcp:write']);
+  const refreshed = await page.request.post('/oauth/token', {
+    form: {
+      grant_type: 'refresh_token',
+      client_id: client.id,
+      refresh_token: unchanged.refresh_token,
       resource: `${origin}/mcp`,
       scope: 'mcp:read',
     },
@@ -561,6 +605,114 @@ test('MCP consent rejects CSRF, permissions escalation, bad resource and missing
   expect((await page.request.get(noPkce.toString())).status()).toBe(400);
 });
 
+test('MCP consent cannot add testing unless the client requests it together with read access', async ({
+  authenticatedPage: page,
+}) => {
+  const client = await registerClient(page);
+  const auth = authorizationUrl(client.id, 'mcp:read');
+  await page.goto(auth.url);
+  await expect(
+    page.getByRole('checkbox', { name: /^Run tests/ }),
+  ).toBeDisabled();
+  const requestId = await page.locator('input[name="requestId"]').inputValue();
+  const escalated = await page.request.post('/oauth/authorize', {
+    headers: { Origin: origin },
+    form: {
+      requestId,
+      permission: 'read',
+      allowTesting: 'true',
+      decision: 'allow',
+    },
+    maxRedirects: 0,
+  });
+  expect(escalated.status()).toBe(400);
+  expect(escalated.headers().location).toBeUndefined();
+  const noRead = authorizationUrl(client.id, 'mcp:run');
+  expect((await page.request.get(noRead.url)).status()).toBe(400);
+});
+
+test('MCP testing can be approved without editing and refresh preserves a narrower grant', async ({
+  authenticatedPage: page,
+  mcpCallback,
+}, testInfo) => {
+  const callback = mcpCallback.url;
+  const client = await registerClient(page, callback);
+  const auth = authorizationUrl(client.id, 'mcp:read mcp:run', callback);
+  await page.goto(auth.url);
+  await expect(page.getByRole('radio', { name: /^Read only/ })).toBeChecked();
+  await expect(
+    page.getByRole('radio', { name: /^Create and edit drafts/ }),
+  ).toBeDisabled();
+  const testing = page.getByRole('checkbox', { name: /^Run tests/ });
+  await expect(testing).not.toBeChecked();
+  await expect(page.getByText(/incur API costs/)).toBeVisible();
+  for (const dark of [false, true]) {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.evaluate((enabled) => {
+      document.documentElement.classList.toggle('dark', enabled);
+    }, dark);
+    await testing.scrollIntoViewIfNeeded();
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth <=
+          document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: testInfo.outputPath(
+        `mcp-testing-consent-${dark ? 'dark' : 'light'}-375.png`,
+      ),
+    });
+  }
+  await testing.check();
+  await page.getByRole('button', { name: 'Connect', exact: true }).click();
+  await page.waitForURL((url) => url.origin === new URL(callback).origin);
+  const response = await exchangeCode(
+    page.request,
+    client.id,
+    new URL(page.url()).searchParams.get('code') ?? '',
+    auth.verifier,
+    callback,
+  );
+  expect(response.status()).toBe(200);
+  const tokens = await response.json();
+  expect(tokens.scope.split(' ').sort()).toEqual(['mcp:read', 'mcp:run']);
+  await page.goto('/settings?tab=mcp');
+  const connection = page.locator('li').filter({ hasText: client.name });
+  await expect(
+    connection.getByText('Testing enabled', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    connection.getByText('Read only', { exact: true }),
+  ).toBeVisible();
+
+  const refreshed = await page.request.post('/oauth/token', {
+    form: {
+      grant_type: 'refresh_token',
+      client_id: client.id,
+      refresh_token: tokens.refresh_token,
+      resource: `${origin}/mcp`,
+      scope: 'mcp:read',
+    },
+  });
+  expect(refreshed.status()).toBe(200);
+  const narrower = await refreshed.json();
+  expect(narrower.scope).toBe('mcp:read');
+  const result = await callTool(page.request, narrower.access_token);
+  expect(result.status()).toBe(200);
+  expect((await result.json()).result.structuredContent.scopes).toEqual([
+    'mcp:read',
+  ]);
+  expect(
+    (
+      await page.request.post('/oauth/token', {
+        form: { client_id: client.id, token: narrower.refresh_token },
+      })
+    ).status(),
+  ).toBe(200);
+});
+
 test('MCP publishing requires an explicit consent choice and authorization codes cannot be replayed', async ({
   authenticatedPage: page,
   mcpCallback,
@@ -572,7 +724,12 @@ test('MCP publishing requires an explicit consent choice and authorization codes
   );
   expect(discovery.ok()).toBe(true);
   const advertised = (await discovery.json()).scopes_supported;
-  expect(advertised).toEqual(['mcp:read', 'mcp:write', 'mcp:publish']);
+  expect(advertised).toEqual([
+    'mcp:read',
+    'mcp:write',
+    'mcp:publish',
+    'mcp:run',
+  ]);
   const auth = authorizationUrl(client.id, advertised.join(' '), callback);
   await page.goto(auth.url);
   await expect(

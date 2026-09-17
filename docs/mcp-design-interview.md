@@ -2,6 +2,8 @@
 
 Status: accepted for implementation on 2026-09-15 when Dan said “let’s build it”. The implementation brief is in `docs/mcp-server-design.md`.
 
+Historical interview record: on 2026-09-17 Dan extended the scope to LLM testing and comparisons for snippets, prompts and composers. Execution-deferral statements below describe the original release; current behavior is in [MCP testing](./mcp-testing.md).
+
 ## Confirmed decisions
 
 - Build a customer-facing Promptly integration, initially piloted in an approved workspace.

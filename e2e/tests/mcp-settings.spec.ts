@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { expect, test } from '../fixtures/base';
 
-test('MCP setup copies authoring scopes in each client format and explains the consent choice', async ({
+test('MCP setup copies authoring and testing scopes in each client format and explains the consent choice', async ({
   authenticatedPage: page,
 }, testInfo) => {
   const session = await page.request.get('/api/auth/get-session');
@@ -20,6 +20,10 @@ test('MCP setup copies authoring scopes in each client format and explains the c
   await expect(setup).toContainText(
     'Existing permissions do not expand automatically',
   );
+  await expect(setup).toContainText(
+    'Run tests is a separate choice, off by default',
+  );
+  await expect(setup).toContainText('LLM API keys with API costs');
   const copied: Record<string, string> = {};
   for (const name of ['Codex', 'Claude Code', 'Cursor']) {
     const guide = setup.locator('details').filter({
@@ -37,7 +41,7 @@ test('MCP setup copies authoring scopes in each client format and explains the c
   }
 
   expect(copied.Codex).toBe(
-    'codex mcp add promptly --url http://localhost:5173/mcp\ncodex mcp login promptly --scopes mcp:read,mcp:write,mcp:publish',
+    'codex mcp add promptly --url http://localhost:5173/mcp\ncodex mcp login promptly --scopes mcp:read,mcp:write,mcp:publish,mcp:run',
   );
   const claudeConfig = copied['Claude Code'].match(
     /^claude mcp add-json promptly '(.+)'$/,
@@ -46,13 +50,13 @@ test('MCP setup copies authoring scopes in each client format and explains the c
   expect(JSON.parse(claudeConfig?.[1] ?? '{}')).toEqual({
     type: 'http',
     url: 'http://localhost:5173/mcp',
-    oauth: { scopes: 'mcp:read mcp:write mcp:publish' },
+    oauth: { scopes: 'mcp:read mcp:write mcp:publish mcp:run' },
   });
   expect(JSON.parse(copied.Cursor).mcpServers.promptly).toEqual({
     url: 'http://localhost:5173/mcp',
     auth: {
       CLIENT_ID: 'YOUR_PROMPTLY_CLIENT_ID',
-      scopes: ['mcp:read', 'mcp:write', 'mcp:publish'],
+      scopes: ['mcp:read', 'mcp:write', 'mcp:publish', 'mcp:run'],
     },
   });
 
@@ -124,6 +128,7 @@ console.log(renderToStaticMarkup(createElement(McpSettings, {
     for (const config of configs) {
       expect(config).not.toContain('mcp:write');
       expect(config).not.toContain('mcp:publish');
+      expect(config).not.toContain('mcp:run');
     }
     await expect(
       page.getByText(/These settings request read-only access/),

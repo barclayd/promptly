@@ -162,7 +162,10 @@ export const createMcpConnection = async (
       400,
     );
   }
-  const { userId, clientId, clientName, permission } = result.data;
+  const { userId, clientId, clientName, permission, allowTesting } =
+    result.data;
+  const scopes = scopesForMcpPermission(permission);
+  if (allowTesting) scopes.push('mcp:run');
   const session = db.withSession('first-primary');
   const workspace = await getWorkspace(session, userId);
   const row = await session
@@ -180,7 +183,7 @@ export const createMcpConnection = async (
       nanoid(),
       clientId,
       clientName,
-      JSON.stringify(scopesForMcpPermission(permission)),
+      JSON.stringify(scopes),
       Date.now(),
       workspace.membershipId,
       userId,
@@ -286,7 +289,10 @@ export const authorizeMcpConnection = async (
   const scopes = connection.scopes.filter((scope) =>
     tokenScopes.data.includes(scope),
   );
-  if (!scopes.includes(input.requiredScope ?? 'mcp:read')) {
+  if (
+    !scopes.includes(input.requiredScope ?? 'mcp:read') ||
+    (input.requiredScope === 'mcp:run' && !scopes.includes('mcp:read'))
+  ) {
     throw new McpConnectionError(
       'insufficient_scope',
       'This connection does not have permission for this MCP operation.',

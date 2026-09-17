@@ -2,6 +2,8 @@
 
 Status: accepted for implementation on 2026-09-15. Compatibility/authentication milestone in progress. Interview conducted on 2026-09-13.
 
+Scope extended on 2026-09-17 to include configurable LLM tests and version comparisons for snippets, prompts and composers. The [testing contract](./mcp-testing.md) supersedes the original execution deferral.
+
 ## Outcome
 
 Customers can use an MCP client to create, inspect, edit, validate, preview, and publish Promptly prompts and composers. They can also use published prompts through MCP's native prompts capability. Changes share the same drafts and business rules as the browser app, remain attributable to a user/client, and can be recovered from a 90-day activity history.
@@ -17,7 +19,7 @@ Pilot in an approved workspace. The primary acceptance workflow starts with a br
 | Hosting | `https://app.promptlycms.com/mcp`, in the existing Worker and repository |
 | Authentication | OAuth sign-in using existing Promptly accounts; MCP API-key access deferred |
 | Workspace | Each user belongs to one workspace; bind the connection automatically to that workspace |
-| Consent | Read only; Create and edit drafts; Create/edit/publish. Default to draft editing; publishing is opt-in |
+| Consent | Read only; Create and edit drafts; Create/edit/publish. Default to draft editing; publishing is opt-in. Independent Run tests opt-in |
 | Read access | Includes drafts, published content, configuration, and saved sample input data |
 | Connection control | Members manage their own connections; owners/admins can view and revoke any workspace connection |
 | Authoring | Full saved definitions: content, metadata, model settings, schemas, sample input data, and references |
@@ -30,7 +32,7 @@ Pilot in an approved workspace. The primary acceptance workflow starts with a br
 | Browser interaction | Automatically update clean editors; preserve unsaved local edits and show conflicts in dirty editors |
 | Recovery | Activity history with user/client/action and before/after state; restore earlier state into the current draft |
 | Retention | 90 days for MCP activity/snapshots; retain existing published-version behavior |
-| LLM execution | Deferred; validation and preview make no LLM calls |
+| LLM execution | Explicit testing tools for snippets, prompts and composers, plus shared-input version comparisons; validation and preview continue to make no LLM calls |
 | Native MCP prompts | Include published prompts; require supplied input values, validate, resolve snippets, return prepared messages |
 | Mutation size | One document per mutation, atomic persistence, duplicate-safe retries |
 | Plans | All existing plans, including Free/trials, subject to normal resource limits |
@@ -39,7 +41,7 @@ Pilot in an approved workspace. The primary acceptance workflow starts with a br
 | Installation | Custom connections, guided from Promptly Settings; public directory listings deferred |
 | Delivery | Tested milestones, beginning with OAuth/basic tool calls across all five clients; no additional deadline |
 
-Deletion, MCP API keys, snippet authoring, provider execution, public directory submissions, and bulk/all-or-nothing multi-document operations are outside this release. Preserve default creation in the existing Untitled folders; folder management is not part of this proposal.
+Deletion, MCP API keys, snippet authoring, public directory submissions, and bulk/all-or-nothing multi-document operations are outside this release. Preserve default creation in the existing Untitled folders; folder management is not part of this proposal.
 
 ## Authorization and connections
 
@@ -52,6 +54,7 @@ Recommended scope implementation:
 | Read only | Search/read content and history; inspect versions/models; validate/preview; prepare published native prompts |
 | Create and edit drafts | All read capabilities, plus create/update/restore prompt and composer drafts |
 | Create/edit/publish | All editor capabilities, plus publish prompts/composers |
+| Run tests (independent opt-in) | Test snippets, prompts and composers and compare versions using provider keys; requires read access, not write/publish access |
 
 These are MCP authoring scopes, distinct from the existing published-only API-key read scopes. A narrower token never gains permission from a user's broader browser session. Every protected operation enforces the intersection of the grant, current membership/role, resource ownership, and applicable subscription rules. Server-side authorization is mandatory even if a client hides unavailable tools.
 
@@ -94,6 +97,7 @@ These names and groupings are implementation recommendations; the approved behav
 | Reference markup | A read-only helper that produces canonical composer HTML for structured prompt/variable/raw-HTML-block inputs |
 | Publish | `publish_prompt`, `publish_composer` |
 | History/recovery | `list_changes`, `get_change`, `restore_change` |
+| LLM testing | `test_prompt`, `test_snippet`, `test_composer`, `compare_tests`, `get_test_result` |
 
 Expose ordinary, descriptive tools with explicit schemas and appropriate read/write/idempotency annotations. A tool annotation is a client hint, not a permission check. No general-purpose code execution or SQL tool is needed.
 

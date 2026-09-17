@@ -3,7 +3,11 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { convertV4MiniflareOptions, Miniflare } from 'miniflare';
+import {
+  convertV4MiniflareOptions,
+  Miniflare,
+  type V4WorkerOptionsShape,
+} from 'miniflare';
 import { z } from 'zod';
 import {
   applyAuthoringFixtureMigration,
@@ -14,6 +18,7 @@ export const withMcpAuthoring = async (
   run: (runtime: Miniflare, db: D1Database) => Promise<void>,
   enabled = true,
   mcpEnabled = true,
+  overrides: Pick<V4WorkerOptionsShape, 'bindings' | 'outboundService'> = {},
 ) => {
   const temporary = await mkdtemp(join(tmpdir(), 'promptly-mcp-authoring-'));
   let runtime: Miniflare | undefined;
@@ -47,11 +52,13 @@ export const withMcpAuthoring = async (
         durableObjects: {
           PRESENCE_ROOM: { className: 'PresenceRoom', useSQLite: true },
         },
+        outboundService: overrides.outboundService,
         bindings: {
           BETTER_AUTH_URL: 'https://mcp.test',
           MCP_ENABLED: String(mcpEnabled),
           MCP_ALLOW_DCR: 'false',
           MCP_AUTHORING_ENABLED: String(enabled),
+          ...overrides.bindings,
         },
       }),
     );
@@ -63,6 +70,7 @@ export const withMcpAuthoring = async (
       '0024_mcp_connections.sql',
       '0025_mcp_authorization_requests.sql',
       '0027_authoring_persistence.sql',
+      '0029_mcp_test_runs.sql',
     ])
       await applyAuthoringFixtureMigration(db, name);
     await db

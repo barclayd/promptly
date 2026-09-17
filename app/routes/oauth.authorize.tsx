@@ -43,7 +43,7 @@ const publicAuthorizationErrors = new Set([
   'The client requested unsupported permissions.',
   'This authorization request is invalid. Start the connection again from your client.',
   'Unknown OAuth client.',
-  'The client must request read access with authoring permissions.',
+  'The client must request read access with authoring or testing permissions.',
   'Sign in again to connect.',
   'This connection request expired or has already been used. Start again from your client.',
   'The chosen permissions exceed what this client requested.',
@@ -110,7 +110,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const permissions = allowedPermissions(authorization);
   if (!permissions.length)
     throw new Response(
-      'The client must request read access with authoring permissions.',
+      'The client must request read access with authoring or testing permissions.',
       { status: 400 },
     );
   const requestId = nanoid(32);
@@ -147,6 +147,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     workspaceName: workspace.organizationName,
     email: session.user.email,
     allowedPermissions: permissions,
+    testingRequested: authorization.scope.includes('mcp:run'),
     defaultPermission: permissions.includes('edit')
       ? ('edit' as const)
       : ('read' as const),
@@ -164,10 +165,13 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   const form = await request.formData();
   const requestId = form.get('requestId');
   const permission = mcpPermissionSchema.safeParse(form.get('permission'));
+  const testingChoice = form.get('allowTesting');
+  const allowTesting = testingChoice === 'true';
   const decision = form.get('decision');
   if (
     typeof requestId !== 'string' ||
     !permission.success ||
+    (testingChoice !== null && testingChoice !== 'true') ||
     (decision !== 'allow' && decision !== 'deny')
   ) {
     return data(
@@ -204,7 +208,10 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     destination.searchParams.set('iss', getMcpOrigin(env));
     return redirect(destination.toString());
   }
-  if (!allowedPermissions(authorization).includes(permission.data)) {
+  if (
+    !allowedPermissions(authorization).includes(permission.data) ||
+    (allowTesting && !authorization.scope.includes('mcp:run'))
+  ) {
     throw new Response(
       'The chosen permissions exceed what this client requested.',
       { status: 400 },
@@ -218,6 +225,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     clientId: client.clientId,
     clientName: client.clientName || 'MCP client',
     permission: permission.data,
+    allowTesting,
   });
   try {
     if (

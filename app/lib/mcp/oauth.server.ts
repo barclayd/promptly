@@ -43,11 +43,11 @@ const oauthOptions = (env: Env): OAuthProviderOptions<Env> => ({
   allowPlainPKCE: false,
   accessTokenTTL: 3600,
   refreshTokenTTL: 60 * 60 * 24 * 30,
-  scopesSupported: ['mcp:read', 'mcp:write', 'mcp:publish'],
+  scopesSupported: ['mcp:read', 'mcp:write', 'mcp:publish', 'mcp:run'],
   resourceMetadata: {
     resource: getMcpUrl(env),
     scopes_supported: isMcpAuthoringEnabled(env)
-      ? ['mcp:read', 'mcp:write', 'mcp:publish']
+      ? ['mcp:read', 'mcp:write', 'mcp:publish', 'mcp:run']
       : ['mcp:read'],
     resource_name: 'Promptly',
   },
