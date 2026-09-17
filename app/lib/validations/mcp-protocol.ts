@@ -15,8 +15,21 @@ export type McpConnectionToolInput = z.infer<
 
 export const mcpConnectionToolOutputSchema = z.object({
   workspaceId: z.string(),
-  scopes: z.array(z.string()),
-  authoringAvailable: z.boolean(),
+  scopes: z
+    .array(z.string())
+    .describe(
+      'Current effective permissions shared by the token and connection grant.',
+    ),
+  authoringAvailable: z
+    .boolean()
+    .describe(
+      'Whether authoring and testing tools are enabled on this server; individual scopes still apply.',
+    ),
+  canRunTests: z
+    .boolean()
+    .describe(
+      'Whether testing is enabled and this request has mcp:run permission. Model credentials and test inputs are validated separately.',
+    ),
 });
 export type McpConnectionToolOutput = z.infer<
   typeof mcpConnectionToolOutputSchema

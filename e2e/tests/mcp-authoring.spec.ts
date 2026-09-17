@@ -15,6 +15,7 @@ import {
   mcpPromptReadOutputSchema,
   mcpSnippetReadOutputSchema,
 } from '../../app/lib/validations/mcp-authoring';
+import { mcpConnectionToolOutputSchema } from '../../app/lib/validations/mcp-protocol';
 import { expect, test } from '../fixtures/base';
 import { mcpRpc, withMcpAuthoring } from '../fixtures/mcp-authoring';
 
@@ -99,18 +100,33 @@ test('OAuth resource discovery advertises authoring scopes only when authoring i
 });
 
 test('MCP authoring remains absent until the rollout flag is enabled', async () => {
-  await withMcpAuthoring(async (runtime) => {
+  await withMcpAuthoring(async (runtime, db) => {
+    const scopes = ['mcp:read', 'mcp:run'];
+    await db
+      .prepare(
+        "UPDATE mcp_connection SET scopes = ? WHERE id = 'connection-read'",
+      )
+      .bind(JSON.stringify(scopes))
+      .run();
     const listing = await mcpRpc(runtime, 'tools/list');
     expect(
       toolsSchema.parse(listing.body.result?.tools).map((tool) => tool.name),
     ).toEqual(['get_connection', 'search_content']);
-    const connection = await mcpRpc(runtime, 'tools/call', {
-      name: 'get_connection',
-      arguments: {},
-    });
-    expect(connection.body.result?.structuredContent).toMatchObject({
-      authoringAvailable: false,
-    });
+    for (const legacy of [false, true]) {
+      const connection = await call(
+        runtime,
+        'get_connection',
+        {},
+        mcpConnectionToolOutputSchema,
+        { legacy, permission: 'read', scopes },
+      );
+      expect(connection).toEqual({
+        workspaceId: 'workspace',
+        scopes,
+        authoringAvailable: false,
+        canRunTests: false,
+      });
+    }
     const absent = await mcpRpc(runtime, 'tools/call', {
       name: 'create_prompt',
       arguments: { requestKey: 'disabled', definition: { name: 'Disabled' } },
@@ -210,6 +226,7 @@ test('modern and legacy MCP discover the same explicit authoring contracts', asy
                 ? ['mcp:read', 'mcp:write']
                 : ['mcp:read', 'mcp:write', 'mcp:publish'],
           authoringAvailable: true,
+          canRunTests: false,
         });
       }
     }
@@ -224,6 +241,121 @@ test('modern and legacy MCP discover the same explicit authoring contracts', asy
     );
     expect(prompt.version.version).toBe('2.0.0');
   });
+});
+
+test('MCP testing capability refreshes from effective token and connection permissions on both transports', async () => {
+  for (const legacy of [false, true]) {
+    await withMcpAuthoring(async (runtime, db) => {
+      const read = ['mcp:read'];
+      const readRun = ['mcp:read', 'mcp:run'];
+      const options = { legacy, permission: 'read' as const };
+      const connection = (scopes: string[]) =>
+        call(runtime, 'get_connection', {}, mcpConnectionToolOutputSchema, {
+          ...options,
+          scopes,
+        });
+      const discover = (scopes: string[]) =>
+        mcpRpc(
+          runtime,
+          legacy ? 'initialize' : 'server/discover',
+          legacy
+            ? {
+                protocolVersion: '2025-11-25',
+                capabilities: {},
+                clientInfo: {
+                  name: 'Capability regression',
+                  version: '1.0.0',
+                },
+              }
+            : {},
+          { ...options, scopes },
+        );
+      const initial = await discover(read);
+      expect(initial.body.error).toBeUndefined();
+      expect(initial.body.result?.instructions).toEqual(expect.any(String));
+      const catalog = await mcpRpc(runtime, 'tools/list', {}, options);
+      expect(catalog.body.result?.tools).toEqual(expect.any(Array));
+      expect(await connection(readRun)).toMatchObject({
+        scopes: read,
+        canRunTests: false,
+      });
+
+      await db
+        .prepare(
+          "UPDATE mcp_connection SET scopes = ? WHERE id = 'connection-read'",
+        )
+        .bind(JSON.stringify(readRun))
+        .run();
+      expect(await connection(read)).toMatchObject({
+        scopes: read,
+        canRunTests: false,
+      });
+      expect(await connection(readRun)).toMatchObject({
+        scopes: readRun,
+        canRunTests: true,
+      });
+      const publishConnection = await call(
+        runtime,
+        'get_connection',
+        {},
+        mcpConnectionToolOutputSchema,
+        { legacy, permission: 'publish' },
+      );
+      expect(publishConnection).toMatchObject({
+        scopes: ['mcp:read', 'mcp:write', 'mcp:publish'],
+        canRunTests: false,
+      });
+      expect((await discover(readRun)).body.result?.instructions).toEqual(
+        initial.body.result?.instructions,
+      );
+      expect(
+        (
+          await mcpRpc(
+            runtime,
+            'tools/list',
+            {},
+            { ...options, scopes: readRun },
+          )
+        ).body.result?.tools,
+      ).toEqual(catalog.body.result?.tools);
+
+      await db
+        .prepare(
+          "UPDATE mcp_connection SET scopes = ? WHERE id = 'connection-read'",
+        )
+        .bind(JSON.stringify(read))
+        .run();
+      expect(await connection(readRun)).toMatchObject({
+        scopes: read,
+        canRunTests: false,
+      });
+      expect(
+        await failedCall(
+          runtime,
+          'get_test_result',
+          { requestKey: 'permission-check' },
+          {
+            ...options,
+            scopes: readRun,
+          },
+        ),
+      ).toMatchObject({ code: 'insufficient_scope' });
+
+      await db
+        .prepare(
+          "UPDATE mcp_connection SET revoked_at = 1 WHERE id = 'connection-read'",
+        )
+        .run();
+      const revoked = await mcpRpc(
+        runtime,
+        'tools/call',
+        { name: 'get_connection', arguments: {} },
+        { ...options, scopes: readRun },
+      );
+      expect(revoked.response.status).toBe(401);
+      expect(revoked.body.result).toBeUndefined();
+    });
+  }
 });
 
 test('MCP builds, previews, publishes, revises and restores related prompts and a composer', async () => {

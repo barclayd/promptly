@@ -160,7 +160,7 @@ export const registerPromptlyTesting = (
       options.name,
       {
         title: options.title,
-        description: `${options.description} Requires explicit mcp:run consent and may incur charges on workspace LLM keys. Overrides apply only to this test; saved content/configuration is unchanged. Use a fresh requestKey for a new test; retry identical inputs with the same key to retrieve the recorded result without another LLM call for 24 hours. Use get_test_result if the connection is interrupted.`,
+        description: `${options.description} Requires mcp:run consent and may incur charges on workspace LLM keys. If permission is uncertain or the connection was refreshed, call get_connection for current scopes and canRunTests before reporting missing access. Overrides apply only to this test; saved content/configuration is unchanged. Use a fresh requestKey for a new test; retry identical inputs with the same key to retrieve the recorded result without another LLM call for 24 hours. Use get_test_result if the connection is interrupted.`,
         inputSchema: validatedInput(options.input),
         outputSchema: cachedMcpSchema(options.output),
         annotations: {
@@ -238,7 +238,7 @@ export const registerPromptlyTesting = (
     name: 'test_composer',
     title: 'Test a composer',
     description:
-      'Execute the selected composer version using supplied or saved sample input data. Honors pinned prompt versions and their snippet dependencies, executes each unique prompt once, and assembles the output in document order. Model/temperature overrides apply to all referenced prompts; omission retains each prompt’s saved configuration. Returns per-prompt usage, errors and resolved versions. At most eight unique prompts per composer test.',
+      'Execute the selected composer version using supplied or saved sample input data. Pinned prompt publications are honored; unpinned prompts use their latest publication even when a newer draft exists. A draft composer falls back to a working prompt only if it has never been published. To test unpublished prompt edits, use test_prompt with an explicit draft version; do not publish merely to run a test. Preserves snippet dependencies, executes each unique prompt once, and assembles the output in document order. Model/temperature overrides apply to all referenced prompts; omission retains each prompt’s saved configuration. Returns per-prompt usage, errors and resolved versions. At most eight unique prompts per composer test.',
     input: composerInput,
     output: composerOutput,
     run: testComposer,

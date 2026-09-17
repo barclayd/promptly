@@ -290,6 +290,16 @@ test('read and run consent executes tests on both MCP transports without grantin
           permission: 'read' as const,
           scopes: readRun,
         };
+        const connection = await mcpRpc(
+          runtime,
+          'tools/call',
+          { name: 'get_connection', arguments: {} },
+          options,
+        );
+        expect(connection.body.result?.structuredContent).toMatchObject({
+          scopes: readRun,
+          canRunTests: true,
+        });
         const tested = await mcpRpc(
           runtime,
           'tools/call',
