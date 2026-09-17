@@ -85,7 +85,7 @@ export const handleMcpApi = async (
         { name: 'Promptly', version: '0.1.0' },
         {
           instructions: authoringAvailable
-            ? 'Promptly manages prompts, snippets and composers in your connected workspace. Search for stable IDs, read an explicit draft/working/latest/published version, then author shared drafts using expectedRevision and a requestKey. Reuse the same request key after an uncertain mutation; retries are protected for 24 hours. Never replace a stale revision without rereading and reviewing changes. Draft saves never publish; dedicated publish tools act immediately when authorized. Publish dependent prompts before their composer. Validation and previews do not execute LLMs. With explicit mcp:run consent, test_prompt, test_snippet, test_composer and compare_tests execute LLMs using workspace keys and may incur provider charges. Test configuration overrides do not save changes. Use list_models and list_versions before testing; reuse the same requestKey after an interrupted test and get_test_result to retrieve it instead of starting another billed run. Snippets can be read/reused/tested but not authored here. Native prompt menus expose published prompts using explicitly supplied JSON input; saved model settings do not change the host model. Detailed definitions/history are opt-in read tools.'
+            ? 'Promptly manages prompts, snippets and composers in your connected workspace. Call get_connection again after reconnecting, when permissions are uncertain, or before reporting that testing permission is missing. Use its current scopes and canRunTests instead of earlier conversation claims or the tool list. Search for stable IDs, read an explicit draft/working/latest/published version, then author shared drafts using expectedRevision and a requestKey. Reuse the same request key after an uncertain mutation; retries are protected for 24 hours. Never replace a stale revision without rereading and reviewing changes. Draft saves never publish; dedicated publish tools act immediately when authorized. Publish dependent prompts before their composer. Validation and previews do not execute LLMs. With explicit mcp:run consent, test_prompt, test_snippet, test_composer and compare_tests execute LLMs using workspace keys and may incur provider charges. Test configuration overrides do not save changes. Use list_models and list_versions before testing; reuse the same requestKey after an interrupted test and get_test_result to retrieve it instead of starting another billed run. Snippets can be read/reused/tested but not authored here. Native prompt menus expose published prompts using explicitly supplied JSON input; saved model settings do not change the host model. Detailed definitions/history are opt-in read tools.'
             : 'Promptly manages prompts and composers in your connected workspace. Connection checks and content discovery are available. Authoring is currently disabled. Search returns stable IDs and links, not complete definitions.',
         },
       );
@@ -94,7 +94,7 @@ export const handleMcpApi = async (
         {
           title: 'Check Promptly connection',
           description:
-            'Inspect the connected Promptly workspace and this connection’s granted permissions.',
+            'Check the connected Promptly workspace, current effective scopes and canRunTests. Call again after reconnecting, when permissions are uncertain, or before reporting missing testing permission; earlier conversation claims and the tool list do not establish current access. canRunTests reflects permission and server availability, not model credentials or valid test inputs.',
           inputSchema: cachedMcpSchema(mcpConnectionToolInputSchema),
           annotations: readAnnotations,
           outputSchema: cachedMcpSchema(mcpConnectionToolOutputSchema),
@@ -109,6 +109,8 @@ export const handleMcpApi = async (
             workspaceId: props.data.organizationId,
             scopes: access.scopes,
             authoringAvailable,
+            canRunTests:
+              authoringAvailable && access.scopes.includes('mcp:run'),
           });
         },
       );
