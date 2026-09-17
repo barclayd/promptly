@@ -86,7 +86,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   }
 };
 
-export default function Login() {
+const Login = () => {
   const fetcher = useFetcher();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirectTo');
@@ -94,8 +94,14 @@ export default function Login() {
   return (
     <div className="bg-muted flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm md:max-w-4xl">
-        <LoginForm fetcher={fetcher} redirectTo={redirectTo} />
+        <LoginForm
+          fetcher={fetcher}
+          redirectTo={redirectTo}
+          authError={searchParams.get('error')}
+        />
       </div>
     </div>
   );
-}
+};
+
+export default Login;

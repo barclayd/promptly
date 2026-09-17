@@ -119,6 +119,27 @@ test('MCP authoring remains absent until the rollout flag is enabled', async () 
   }, false);
 });
 
+test('MCP master switch blocks an existing connection even when authoring is enabled', async () => {
+  await withMcpAuthoring(
+    async (runtime) => {
+      const response = await runtime.dispatchFetch('https://mcp.test/mcp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'tools/call',
+          params: { name: 'get_connection', arguments: {} },
+        }),
+      });
+      expect(response.status).toBe(403);
+      expect(await response.json()).toMatchObject({ error: 'access_denied' });
+    },
+    true,
+    false,
+  );
+});
+
 test('modern and legacy MCP discover the same explicit authoring contracts', async () => {
   await withMcpAuthoring(async (runtime) => {
     const modern = await mcpRpc(runtime, 'tools/list');

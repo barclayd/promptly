@@ -9,18 +9,9 @@ export const isMcpAuthoringEnabled = (
   env: Env & { MCP_AUTHORING_ENABLED?: string },
 ) => isMcpEnabled(env) && env.MCP_AUTHORING_ENABLED?.toLowerCase() === 'true';
 
-export const isMcpWorkspaceEnabled = (env: Env, organizationId: string) =>
-  isMcpEnabled(env) &&
-  env.MCP_PILOT_WORKSPACES.split(',')
-    .map((id) => id.trim())
-    .filter(Boolean)
-    .includes(organizationId);
-
-export const requireMcpWorkspace = (env: Env, organizationId: string) => {
-  if (!isMcpWorkspaceEnabled(env, organizationId)) {
-    throw new Response('MCP is not enabled for this workspace.', {
-      status: 403,
-    });
+export const requireMcpEnabled = (env: Env) => {
+  if (!isMcpEnabled(env)) {
+    throw new Response('MCP is currently disabled.', { status: 403 });
   }
 };
 

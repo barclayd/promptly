@@ -6,8 +6,8 @@ import { Label } from '~/components/ui/label';
 import { Textarea } from '~/components/ui/textarea';
 import { cloudflareContext, userContext } from '~/context';
 import {
+  requireMcpEnabled,
   requireMcpSameOrigin,
-  requireMcpWorkspace,
 } from '~/lib/mcp/config.server';
 import { getMcpWorkspace } from '~/lib/mcp/connections.server';
 import { getMcpOAuthApi } from '~/lib/mcp/oauth.server';
@@ -17,27 +17,21 @@ import type { Route } from './+types/settings.mcp-clients';
 export const meta = () => [{ title: 'Register MCP client | Promptly' }];
 export const headers = () => ({
   'Cache-Control': 'no-store',
-  'Referrer-Policy': 'no-referrer',
+  'Referrer-Policy': 'same-origin',
 });
 
 export const loader = async ({ context }: Route.LoaderArgs) => {
   const { env } = context.get(cloudflareContext);
-  const workspace = await getMcpWorkspace(
-    env.promptly,
-    context.get(userContext).id,
-  );
-  requireMcpWorkspace(env, workspace.organizationId);
+  await getMcpWorkspace(env.promptly, context.get(userContext).id);
+  requireMcpEnabled(env);
   return null;
 };
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
   const { env } = context.get(cloudflareContext);
   requireMcpSameOrigin(request, env);
-  const workspace = await getMcpWorkspace(
-    env.promptly,
-    context.get(userContext).id,
-  );
-  requireMcpWorkspace(env, workspace.organizationId);
+  await getMcpWorkspace(env.promptly, context.get(userContext).id);
+  requireMcpEnabled(env);
   const parsed = mcpClientRegistrationSchema.safeParse(
     Object.fromEntries(await request.formData()),
   );

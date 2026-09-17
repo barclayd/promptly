@@ -11,7 +11,6 @@
   "vars": {
     "MCP_ENABLED": "true",
     "MCP_AUTHORING_ENABLED": "true",
-    "MCP_PILOT_WORKSPACES": "ddqz6WonIEucP0uj07z8OBuiWTQHwadU,20SkvABoFYKMBfSvJclvBE6WVYNnntSM",
     "MCP_ALLOW_DCR": "false"
   },
   "d1_databases": [

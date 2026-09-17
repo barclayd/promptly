@@ -11,7 +11,7 @@ import { registerPromptlyAuthoring } from './authoring.server';
 import {
   getMcpOrigin,
   isMcpAuthoringEnabled,
-  isMcpWorkspaceEnabled,
+  isMcpEnabled,
 } from './config.server';
 import {
   authorizeMcpConnection,
@@ -56,12 +56,12 @@ export const handleMcpApi = async (
     });
     if (
       access.workspace.organizationId !== props.data.organizationId ||
-      !isMcpWorkspaceEnabled(env, props.data.organizationId)
+      !isMcpEnabled(env)
     ) {
       return Response.json(
         {
           error: 'access_denied',
-          error_description: 'MCP is not enabled for this workspace.',
+          error_description: 'This MCP connection is unavailable.',
         },
         { status: 403 },
       );
@@ -85,7 +85,7 @@ export const handleMcpApi = async (
         {
           instructions: authoringAvailable
             ? 'Promptly manages prompts, snippets and composers in your connected workspace. Search for stable IDs, read an explicit draft/working/latest/published version, then author shared drafts using expectedRevision and a requestKey. Reuse the same request key after an uncertain mutation; retries are protected for 24 hours. Never replace a stale revision without rereading and reviewing changes. Draft saves never publish; dedicated publish tools act immediately when authorized. Publish dependent prompts before their composer. Validation and previews do not execute LLMs. Snippets can be read/reused but not authored here. Native prompt menus expose published prompts using explicitly supplied JSON input; saved model settings do not change the host model. Detailed definitions/history are opt-in read tools.'
-            : 'Promptly manages prompts and composers in your connected workspace. This pilot currently supports connection checks and content discovery. Creating, editing, and publishing tools are not available yet. Search returns stable IDs and links, not complete definitions.',
+            : 'Promptly manages prompts and composers in your connected workspace. Connection checks and content discovery are available. Authoring is currently disabled. Search returns stable IDs and links, not complete definitions.',
         },
       );
       server.registerTool(

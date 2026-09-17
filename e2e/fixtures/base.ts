@@ -39,6 +39,18 @@ export const test = base.extend<{
 }>({
   authenticatedPage: async ({ page }, use) => {
     await login(page);
+    const response = await page.request.get('/api/auth/get-session');
+    expect(response.ok()).toBe(true);
+    const session: { user?: { id?: string } } = await response.json();
+    const userId = session.user?.id;
+    if (!userId) throw new Error('Authenticated fixture has no user session');
+
+    const skipOnboarding = (id: string) => {
+      localStorage.setItem(`promptly:onboarding-skipped:${id}`, '1');
+    };
+    await page.addInitScript(skipOnboarding, userId);
+    await page.evaluate(skipOnboarding, userId);
+    await page.reload({ waitUntil: 'networkidle' });
     await use(page);
   },
 });

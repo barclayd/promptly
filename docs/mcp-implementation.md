@@ -1,10 +1,10 @@
 # MCP implementation and compatibility record
 
-Updated 2026-09-15. The [accepted design](./mcp-server-design.md) remains the release contract.
+Updated 2026-09-17. The [accepted design](./mcp-server-design.md) remains the release contract.
 
-## Current pilot
+## Workspace availability
 
-The authoring server is deployed at `https://app.promptlycms.com/mcp`, enabled only for two explicitly approved pilot workspaces. Live authoring acceptance uses one of those workspaces. This remains a limited pilot; outstanding client checks are listed below.
+The authoring server is available at `https://app.promptlycms.com/mcp`. The current implementation enables MCP for every workspace while `MCP_ENABLED=true`; it no longer reads a pilot allowlist. Users still need a current workspace membership and must approve each connection. The compatibility evidence below records the initial two-workspace deployment; deploying this change is required to expand production access.
 
 The 21 tools cover connection information, content search, full prompt/composer/snippet reads, version/model discovery, prompt/composer creation and editing, validation and previews, composer markup generation, dedicated publication, and activity inspection/restoration. Snippets can be read and reused; snippet authoring, deletion tools, and LLM execution are outside the MCP release. Published prompts also appear through native MCP `prompts/list` and `prompts/get`.
 
@@ -48,11 +48,10 @@ Keep the existing Better Auth/provider configuration in the ignored `.env` and s
 BETTER_AUTH_URL=http://localhost:5173
 MCP_ENABLED=true
 MCP_AUTHORING_ENABLED=true
-MCP_PILOT_WORKSPACES=<local-test-workspace-id>
 MCP_ALLOW_DCR=false
 ```
 
-An empty allowlist denies every workspace. Use the actual local test workspace, not a production ID. Run `bun run dev`; MCP setup is at `/settings?tab=mcp`, manual client registration at `/settings/mcp/clients`, and history at `/activity`.
+No workspace allowlist is needed. Use a local test account with a workspace membership. Run `bun run dev`; MCP setup is at `/settings?tab=mcp`, manual client registration at `/settings/mcp/clients`, and history at `/activity`.
 
 ```sh
 bun run lint
@@ -78,7 +77,6 @@ ChatGPT's private developer app remains unpublished. Its pilot test uses an acco
 | --- | --- | --- |
 | `MCP_ENABLED` | `true` | Master endpoint and OAuth switch |
 | `MCP_AUTHORING_ENABLED` | `true` | Exposes authoring tools, full discovery scopes and native published prompts |
-| `MCP_PILOT_WORKSPACES` | Approved workspace IDs from deployment configuration | Only the two approved workspaces |
 | `MCP_ALLOW_DCR` | `false` | Dynamic registration is separately gated |
 | `BETTER_AUTH_URL` | Existing app URL | Canonical OAuth issuer and MCP origin |
 | `OAUTH_KV` | `089b4a1d119b49ae9ec5286fae8fa10b` | Dedicated OAuth storage |
@@ -93,7 +91,7 @@ RFC 7009 revocation disables the whole connection, including when an access toke
 
 Production migrations `0024`–`0028` are applied. `0027` adds opaque revisions, unique prompt/composer drafts, replay/history/snapshot/outbox storage. `0028` enforces one snippet draft, with browser snippet writes hardened against publication races. Local and production inventories found no duplicate draft groups before migration. No existing draft was discarded.
 
-Current authoring Worker: `4f7f4b55-b605-41ee-8810-c7b036383e79` (2026-09-15). Deployment used `--keep-vars`, preserving all 14 secret bindings and existing infrastructure. Hosted discovery advertises all three scopes, unauthenticated `/mcp` returns 401, and the existing login page returns 200. `public/.assetsignore` excludes `.DS_Store` assets.
+Last recorded pilot authoring Worker: `4f7f4b55-b605-41ee-8810-c7b036383e79` (2026-09-15). Deployment used `--keep-vars`, preserving all 14 secret bindings and existing infrastructure. Hosted discovery advertises all three scopes, unauthenticated `/mcp` returns 401, and the existing login page returns 200. `public/.assetsignore` excludes `.DS_Store` assets.
 
 First authoring candidate Worker: `6913b93d-61f3-4d05-9e93-a0dce1ff4617`. Previous foundation-only Worker: `27d9031f-3483-45e1-a607-d1fcba714ae8`. Pre-pilot Worker: `c22d1cee-ee79-4618-9f3b-f14475206bc6`. Database recovery bookmarks belong in the private deployment record.
 
@@ -103,4 +101,16 @@ First disable `MCP_AUTHORING_ENABLED` to stop authoring exposure, or `MCP_ENABLE
 
 The deployed authoring candidate passed **238 E2E tests without retries**, `bun run lint`, `bun run typecheck`, production build and Worker dry run. This includes discovery-driven consent, explicit publish opt-in, setup command formats, immutable publication, stale revision/retry races, activity restoration across two editors, and snippet publication races. The static-schema optimization passed all 241 tests (240 directly, one browser element screenshot on retry), lint, typecheck, production build and dry run. The screenshot check then passed three consecutive runs without retries and without concurrent build work. The optimized Worker was deployed and both Codex and Claude Code hosted rechecks passed.
 
-Remaining acceptance: complete Cursor and personal ChatGPT authoring checks when browser access recovers; perform the user-deferred Claude chat-app check after workspace approval. Keep the allowlist unchanged until the agreed acceptance is complete.
+The workspace-wide access and first-connection changes passed **253 E2E tests without retries**, lint (existing warnings only), typecheck, production build and Worker dry run. Coverage includes actual Better Auth callbacks for Google, Apple and GitHub, signed-out login and recovery, JavaScript-disabled registration and consent, exact read/publish scopes, cross-origin referrer suppression, and responsive light/dark login screens. These changes still require deployment and a hosted first-connection smoke check from a workspace outside the former pilot.
+
+Remaining acceptance: complete Cursor and personal ChatGPT authoring checks when browser access recovers; perform the user-deferred Claude chat-app check after workspace approval. These client-specific checks are independent of workspace eligibility.
+
+## First-connection sign-in
+
+A signed-out MCP connection returns to the complete OAuth authorization request after login. Local redirect validation accepts standard query characters (including `+` between scopes) while rejecting external destinations, network-path references, backslashes, and control characters. Client ID, callback URL, state, resource, scopes and PKCE challenge survive both password and social login.
+
+Manual registration and consent also work before JavaScript loads. Their `Referrer-Policy: same-origin` preserves the browser's origin on native form submissions while withholding the referrer from external OAuth callbacks. The previous `no-referrer` policy made native POSTs send `Origin: null`, which React Router correctly rejected. Consent submits the selected permission directly from its radio input, including without JavaScript; the previous hidden field could retain the default edit permission after the user selected read-only. Same-origin validation and explicit publish consent remain enforced.
+
+Better Auth 1.7.4 requires the existing local email to be verified before implicitly linking a new social provider. Promptly password signup leaves it unverified. Selecting a different provider can therefore produce `account_not_linked` even when that provider verifies the same email. Existing linked providers and verified accounts retain Better Auth's normal behavior. See the [account-linking error reference](https://better-auth.com/docs/reference/errors/account_not_linked) and the [pinned implementation](https://github.com/better-auth/better-auth/blob/v1.7.4/packages/better-auth/src/oauth2/link-account.ts).
+
+The login page directs MCP users to their existing sign-in method. Social callback failures return to that page with a fixed, actionable message and the original authorization request intact. Signing in with the existing method continues to consent without restarting the assistant connection. This does not disable email verification checks, trust unverified provider emails, or silently merge identities.

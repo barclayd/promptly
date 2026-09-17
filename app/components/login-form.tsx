@@ -12,6 +12,7 @@ import {
   FieldSeparator,
 } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
+import { isValidRedirectPath } from '~/lib/redirect';
 import { cn } from '~/lib/utils';
 
 type ActionData = {
@@ -24,16 +25,22 @@ type ActionData = {
 interface LoginFormProps extends React.ComponentProps<'div'> {
   fetcher: FetcherWithComponents<ActionData>;
   redirectTo?: string | null;
+  authError?: string | null;
 }
 
 export const LoginForm = ({
   className,
   fetcher,
   redirectTo,
+  authError,
   ...props
 }: LoginFormProps) => {
   const errors = fetcher.data?.errors;
   const isSubmitting = fetcher.state === 'submitting';
+  const isMcpConnection =
+    !!redirectTo &&
+    isValidRedirectPath(redirectTo) &&
+    redirectTo.split('?')[0] === '/oauth/authorize';
 
   useEffect(() => {
     if (errors && Object.keys(errors).length > 0) {
@@ -53,9 +60,38 @@ export const LoginForm = ({
               <div className="flex flex-col items-center gap-2 text-center">
                 <h1 className="text-2xl font-bold">Welcome back</h1>
                 <p className="text-muted-foreground text-balance">
-                  Login to your Promptly account
+                  {isMcpConnection
+                    ? 'Sign in to connect your AI app to Promptly'
+                    : 'Login to your Promptly account'}
                 </p>
               </div>
+              {authError ? (
+                <div
+                  role="alert"
+                  className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm"
+                >
+                  <p className="font-medium">
+                    {authError === 'account_not_linked'
+                      ? 'Use your usual Promptly sign-in method'
+                      : 'Sign-in could not be completed'}
+                  </p>
+                  <p className="mt-1 text-muted-foreground">
+                    {authError === 'account_not_linked'
+                      ? 'This provider is not linked to your account. Use your original provider or email and password to continue.'
+                      : 'Try again or use another sign-in method.'}
+                    {isMcpConnection &&
+                      ' Your connection request will continue after you sign in.'}
+                  </p>
+                </div>
+              ) : (
+                isMcpConnection && (
+                  <p className="text-sm text-muted-foreground">
+                    Use the same email and sign-in method you normally use for
+                    Promptly. You will review the workspace and permissions
+                    before connecting.
+                  </p>
+                )
+              )}
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input

@@ -23,7 +23,6 @@ import {
   getMcpUrl,
   isMcpAuthoringEnabled,
   isMcpEnabled,
-  isMcpWorkspaceEnabled,
 } from '~/lib/mcp/config.server';
 import { listMcpConnections } from '~/lib/mcp/connections.server';
 import type { Route } from './+types/settings';
@@ -102,7 +101,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     organizationName: org.organizationName,
     mcp: {
       serverUrl: getMcpUrl(env),
-      enabled: isMcpWorkspaceEnabled(env, org.organizationId),
+      enabled: isMcpEnabled(env),
       authoringEnabled: isMcpAuthoringEnabled(env),
       canManageWorkspaceConnections:
         mcpConnections?.canManageWorkspaceConnections ?? false,
