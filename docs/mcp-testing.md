@@ -10,6 +10,20 @@ After reconnecting, or before reporting that testing permission is missing, call
 
 Use `list_models` to discover supported model identifiers and workspace availability, and `list_versions` to select a version. Unknown models and missing keys fail before execution. The existing system Anthropic fallback is permitted only when the selected model is the default `claude-haiku-4.5`; another requested model is never silently replaced by Haiku. Keys and raw provider error details are never returned.
 
+## Missing tools or a connection schema error in Claude
+
+A cached connector catalog can cause two separate symptoms after an upgrade: recently added test tools are missing, and `get_connection` fails client-side validation with `data must NOT have additional properties`. The pre-testing catalog has 21 tools; the current enabled catalog has 26, including the five testing/result tools. Tool registration does not depend on whether a particular connection has `mcp:run`; execution still enforces that scope.
+
+`No matching deferred tools found` is a Claude tool-search result, not a response from `get_connection` or a Promptly scope denial. An exact `select:mcp__...` lookup only establishes that those names were not found by that search. Check that Promptly is enabled in the conversation, search for its testing tools by description to avoid assuming a client-assigned namespace, and inspect connector tool permissions/catalog freshness. Collect the actual `get_connection` call separately if a schema error is also reported.
+
+The connection response originally had three fields: `workspaceId`, `scopes`, and `authoringAvailable`. Its advertised output schema rejected additional fields. Adding `canRunTests` in PR #123 therefore broke clients that retained the earlier schema. This exact mismatch is reproducible on both supported transports. Removing the field would instead break clients that cached the newer schema, where it is required.
+
+The current response keeps all four fields. Its output schema now permits future additional fields while validating every existing field, and server version `0.2.0` identifies this catalog release. Neither changing the version nor deploying a more permissive schema replaces a schema already cached by Claude. An affected client still needs to reload its connector definition.
+
+For Claude web/desktop, try a fresh conversation with Promptly enabled. If tools remain missing or the schema error persists after reconnecting, remove and re-add the custom connector at **Customize > Connectors**, using `https://app.promptlycms.com/mcp`. Sign in and select **Run tests** again. On Team/Enterprise, an owner manages the shared connector definition in **Organization settings > Connectors**; a member's reauthorization alone may not replace it. Coordinate removal of a shared connector with its owner because other members use it too. Also check that Claude's tool permissions allow the newly added testing tools. See [custom connector setup/removal](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp) and [connector tool permissions](https://support.claude.com/en/articles/11176164-use-connectors-to-extend-claude-s-capabilities).
+
+Verify recovery with a fresh `get_connection` call and confirm the test tools are available before making a billed test call. If it still fails, collect the expanded tool error including the rejected property and schema path; Claude's prose alone does not prove which request or response failed validation.
+
 ## Individual tests
 
 Each call requires a connection-local `requestKey`. Use a new key for a new experiment. These are tool argument objects, not HTTP endpoint bodies.
