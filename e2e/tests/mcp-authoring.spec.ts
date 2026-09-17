@@ -89,7 +89,9 @@ test('OAuth resource discovery advertises authoring scopes only when authoring i
           .parse(await response.json());
         expect(metadata.resource).toBe('https://mcp.test/mcp');
         expect(metadata.scopes_supported).toEqual(
-          enabled ? ['mcp:read', 'mcp:write', 'mcp:publish'] : ['mcp:read'],
+          enabled
+            ? ['mcp:read', 'mcp:write', 'mcp:publish', 'mcp:run']
+            : ['mcp:read'],
         );
       }
     }, enabled);
@@ -144,7 +146,7 @@ test('modern and legacy MCP discover the same explicit authoring contracts', asy
   await withMcpAuthoring(async (runtime) => {
     const modern = await mcpRpc(runtime, 'tools/list');
     const tools = toolsSchema.parse(modern.body.result?.tools);
-    expect(tools).toHaveLength(21);
+    expect(tools).toHaveLength(26);
     expect(tools.map((tool) => tool.name)).toEqual(
       expect.arrayContaining([
         'get_prompt',
@@ -157,6 +159,11 @@ test('modern and legacy MCP discover the same explicit authoring contracts', asy
         'publish_prompt',
         'publish_composer',
         'restore_change',
+        'test_prompt',
+        'test_snippet',
+        'test_composer',
+        'compare_tests',
+        'get_test_result',
       ]),
     );
     expect(
@@ -168,7 +175,7 @@ test('modern and legacy MCP discover the same explicit authoring contracts', asy
       expect(tool.inputSchema.type).toBe('object');
       expect(tool.outputSchema.type).toBe('object');
       expect(tool.annotations.readOnlyHint).toBe(
-        !/^(create|update|publish|restore)_/.test(tool.name),
+        !/^(create|update|publish|restore|test|compare)_/.test(tool.name),
       );
     }
     const initialized = await mcpRpc(

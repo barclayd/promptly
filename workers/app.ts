@@ -7,6 +7,7 @@ import { cloudflareContext } from '~/context';
 import { maintainAuthoring } from '~/lib/authoring/outbox.server';
 import { isMcpEnabled, isMcpProtocolPath } from '~/lib/mcp/config.server';
 import { handleMcpOAuth } from '~/lib/mcp/oauth.server';
+import { cleanupMcpTestRuns } from '~/lib/mcp/test-runs.server';
 import {
   getAuthorizedPresenceDocument,
   getPresenceDocumentId,
@@ -161,6 +162,7 @@ const PROBE_PATTERNS = [
 export default {
   scheduled: async (_controller, env, ctx) => {
     ctx.waitUntil(maintainAuthoring(env));
+    ctx.waitUntil(cleanupMcpTestRuns(env.promptly));
   },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);

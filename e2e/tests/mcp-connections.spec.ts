@@ -9,6 +9,7 @@ import {
   listMcpConnections,
   revokeMcpConnection,
 } from '../../app/lib/mcp/connections.server';
+import { mcpGrantScopesSchema } from '../../app/lib/validations/mcp';
 import { expect, test } from '../fixtures/base';
 
 const withDatabase = async (run: (db: D1Database) => Promise<void>) => {
@@ -125,6 +126,70 @@ test('MCP intersects connection permissions with the exact token scopes', async 
         requiredScope: 'mcp:write',
       }),
     ).rejects.toMatchObject({ code: 'insufficient_scope', status: 403 });
+  });
+});
+
+test('MCP testing is a separate opt-in permission and requires read access', async () => {
+  await withDatabase(async (db) => {
+    const connection = await createMcpConnection(db, {
+      userId: 'alice',
+      clientId: 'test-client',
+      clientName: 'Testing client',
+      permission: 'read',
+      allowTesting: true,
+    });
+    expect(connection.scopes).toEqual(['mcp:read', 'mcp:run']);
+    expect(connection.permission).toBe('read');
+    await attachMcpGrant(db, {
+      connectionId: connection.id,
+      userId: connection.userId,
+      grantId: `grant-${connection.id}`,
+    });
+    const input = {
+      connectionId: connection.id,
+      userId: connection.userId,
+      clientId: connection.clientId,
+      tokenScopes: connection.scopes,
+    };
+    expect(
+      (await authorizeMcpConnection(db, { ...input, requiredScope: 'mcp:run' }))
+        .scopes,
+    ).toEqual(['mcp:read', 'mcp:run']);
+    for (const requiredScope of ['mcp:write', 'mcp:publish'] as const) {
+      await expect(
+        authorizeMcpConnection(db, { ...input, requiredScope }),
+      ).rejects.toMatchObject({ code: 'insufficient_scope', status: 403 });
+    }
+    for (const tokenScopes of [['mcp:read'], ['mcp:run']] as const) {
+      await expect(
+        authorizeMcpConnection(db, {
+          ...input,
+          tokenScopes,
+          requiredScope: 'mcp:run',
+        }),
+      ).rejects.toMatchObject({ code: 'insufficient_scope', status: 403 });
+    }
+
+    const existing = await connect(db, 'alice', 'publish');
+    expect(existing.scopes).toEqual(['mcp:read', 'mcp:write', 'mcp:publish']);
+    await expect(
+      authorizeMcpConnection(db, {
+        ...input,
+        connectionId: existing.id,
+        clientId: existing.clientId,
+        requiredScope: 'mcp:run',
+      }),
+    ).rejects.toMatchObject({ code: 'insufficient_scope', status: 403 });
+    expect(
+      mcpGrantScopesSchema.safeParse(['mcp:read', 'mcp:run']).success,
+    ).toBe(true);
+    for (const scopes of [
+      ['mcp:run'],
+      ['mcp:read', 'mcp:publish', 'mcp:run'],
+      ['mcp:read', 'mcp:run', 'mcp:run'],
+    ]) {
+      expect(mcpGrantScopesSchema.safeParse(scopes).success).toBe(false);
+    }
   });
 });
 

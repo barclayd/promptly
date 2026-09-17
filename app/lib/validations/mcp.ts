@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-export const mcpScopeSchema = z.enum(['mcp:read', 'mcp:write', 'mcp:publish']);
+export const mcpScopeSchema = z.enum([
+  'mcp:read',
+  'mcp:write',
+  'mcp:publish',
+  'mcp:run',
+]);
 export type McpScope = z.infer<typeof mcpScopeSchema>;
 
 export const mcpPermissionSchema = z.enum(['read', 'edit', 'publish']);
@@ -22,14 +27,15 @@ export const permissionForMcpScopes = (
   return scopes.includes('mcp:write') ? 'edit' : 'read';
 };
 
-export const mcpScopesSchema = z.array(mcpScopeSchema).min(1).max(3);
+export const mcpScopesSchema = z.array(mcpScopeSchema).min(1).max(4);
 
 export const mcpGrantScopesSchema = mcpScopesSchema.refine(
   (scopes) => {
     const expected = scopesForMcpPermission(permissionForMcpScopes(scopes));
+    const contentScopes = scopes.filter((scope) => scope !== 'mcp:run');
     return (
       new Set(scopes).size === scopes.length &&
-      expected.length === scopes.length &&
+      expected.length === contentScopes.length &&
       expected.every((scope) => scopes.includes(scope))
     );
   },
@@ -43,6 +49,7 @@ export const createMcpConnectionSchema = z.object({
   clientId: z.string().min(1).max(2048),
   clientName: z.string().trim().min(1).max(200),
   permission: mcpPermissionSchema.default('edit'),
+  allowTesting: z.boolean().default(false),
 });
 export type CreateMcpConnectionInput = z.input<
   typeof createMcpConnectionSchema
@@ -59,6 +66,7 @@ export type McpConnectionProps = z.infer<typeof mcpConnectionPropsSchema>;
 
 export const mcpConsentSchema = z.object({
   permission: mcpPermissionSchema.default('edit'),
+  allowTesting: z.boolean().default(false),
 });
 export type McpConsentInput = z.infer<typeof mcpConsentSchema>;
 

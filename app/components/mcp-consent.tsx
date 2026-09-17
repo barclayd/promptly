@@ -13,6 +13,7 @@ export type McpConsentProps = {
   workspaceName: string;
   email: string;
   allowedPermissions: McpPermission[];
+  testingRequested: boolean;
   defaultPermission: McpPermission;
   error?: string;
 };
@@ -50,6 +51,7 @@ export const McpConsent = ({
   workspaceName,
   email,
   allowedPermissions,
+  testingRequested,
   defaultPermission,
   error,
 }: McpConsentProps) => {
@@ -148,6 +150,37 @@ export const McpConsent = ({
                   })}
                 </div>
               </fieldset>
+
+              <label
+                className={cn(
+                  'flex items-start gap-3 rounded-lg border p-4 focus-within:ring-2 focus-within:ring-ring',
+                  testingRequested
+                    ? 'cursor-pointer hover:bg-muted/50'
+                    : 'cursor-not-allowed opacity-50',
+                )}
+              >
+                <input
+                  type="checkbox"
+                  name="allowTesting"
+                  value="true"
+                  disabled={!testingRequested || isSubmitting}
+                  className="mt-0.5 size-4 shrink-0 accent-primary"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">Run tests</span>
+                  <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
+                    Test snippets, prompts, and composers and compare versions
+                    using your workspace’s LLM API keys. Tests send content and
+                    input data to your model provider and incur API costs. Saved
+                    content and settings stay unchanged.
+                  </span>
+                  {!testingRequested && (
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      Not requested by this client
+                    </span>
+                  )}
+                </span>
+              </label>
 
               {permission === 'publish' && (
                 <p className="break-words rounded-lg border border-border bg-muted/50 p-3 text-sm leading-relaxed">

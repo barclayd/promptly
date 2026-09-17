@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { Link, useFetcher } from 'react-router';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
-import type { McpPermission } from '~/lib/validations/mcp';
+import type { McpPermission, McpScope } from '~/lib/validations/mcp';
 
 export type McpSettingsConnection = {
   id: string;
@@ -17,6 +17,7 @@ export type McpSettingsConnection = {
   userName: string;
   userEmail: string;
   permission: McpPermission;
+  scopes: McpScope[];
   grantId: string | null;
   createdAt: number;
   lastUsedAt: number | null;
@@ -124,6 +125,11 @@ const McpConnection = ({
           <p className="mt-3 text-sm">
             {permissionLabels[connection.permission]}
           </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {connection.scopes.includes('mcp:run')
+              ? 'Testing enabled'
+              : 'Testing not enabled'}
+          </p>
           <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
             <div className="flex gap-1">
               <dt>{isAwaitingClient ? 'Approved' : 'Connected'}</dt>
@@ -179,7 +185,7 @@ const McpClientGuides = ({
   authoringEnabled: boolean;
 }) => {
   const scopes = authoringEnabled
-    ? ['mcp:read', 'mcp:write', 'mcp:publish']
+    ? ['mcp:read', 'mcp:write', 'mcp:publish', 'mcp:run']
     : ['mcp:read'];
   const clients = [
     {
@@ -309,7 +315,7 @@ export const McpSettings = ({
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
           {enabled
             ? authoringEnabled
-              ? 'Read, create, edit, validate, and publish prompts and composers from your assistant. Your selected permission level controls what each connection can change.'
+              ? 'Read, create, edit, validate, and publish prompts and composers from your assistant. You can also allow tests of snippets, prompts, and composers, including version comparisons. Your choices control each connection’s access.'
               : 'Check your connection and find prompts, composers, and snippets. Authoring is currently disabled.'
             : 'New connections and existing MCP access are paused. Try again when MCP is enabled.'}
         </p>
@@ -341,7 +347,7 @@ export const McpSettings = ({
       </h3>
       <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
         {enabled && authoringEnabled
-          ? 'These settings let you choose Read only, Create and edit drafts, or Create, edit, and publish when you connect. Draft editing is selected by default; publishing is enabled only if you select it.'
+          ? 'These settings let you choose Read only, Create and edit drafts, or Create, edit, and publish when you connect. Draft editing is selected by default; publishing is enabled only if you select it. Run tests is a separate choice, off by default, and uses your workspace’s LLM API keys with API costs.'
           : 'These settings request read-only access while authoring is unavailable for this workspace.'}
       </p>
       <McpClientGuides
