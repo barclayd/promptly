@@ -13,7 +13,7 @@ import {
   getMcpOrigin,
   getMcpUrl,
   isMcpAuthoringEnabled,
-  isMcpWorkspaceEnabled,
+  isMcpEnabled,
 } from './config.server';
 import {
   authorizeMcpConnection,
@@ -64,7 +64,7 @@ const oauthOptions = (env: Env): OAuthProviderOptions<Env> => ({
       !parsed.success ||
       parsed.data.userId !== userId ||
       parsed.data.clientId !== clientId ||
-      !isMcpWorkspaceEnabled(env, parsed.data.organizationId)
+      !isMcpEnabled(env)
     ) {
       throw new OAuthError('invalid_grant', {
         description: 'This Promptly connection is no longer available.',

@@ -1,9 +1,47 @@
 import { createHash, randomBytes } from 'node:crypto';
-import type { APIRequestContext, APIResponse, Page } from '@playwright/test';
-import { expect, test } from '../fixtures/base';
+import { createServer } from 'node:http';
+import type {
+  APIRequestContext,
+  APIResponse,
+  Request as BrowserRequest,
+  Page,
+} from '@playwright/test';
+import { test as base, expect } from '../fixtures/base';
+import { TEST_USER } from '../helpers/test-data';
 
 const origin = 'http://localhost:5173';
 const callback = 'http://127.0.0.1:49199/callback';
+
+const test = base.extend<{
+  mcpCallback: { url: string; referrers: (string | undefined)[] };
+}>({
+  // biome-ignore lint/correctness/noEmptyPattern: Playwright requires destructured fixture dependencies.
+  mcpCallback: async ({}, use) => {
+    const referrers: (string | undefined)[] = [];
+    const server = createServer((request, response) => {
+      if (request.url?.startsWith('/callback?'))
+        referrers.push(request.headers.referer);
+      response.end('Connected');
+    });
+    await new Promise<void>((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(0, '127.0.0.1', resolve);
+    });
+    try {
+      const address = server.address();
+      if (!address || typeof address === 'string')
+        throw new Error('Callback listener has no TCP address');
+      await use({
+        url: `http://127.0.0.1:${address.port}/callback`,
+        referrers,
+      });
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
+  },
+});
 
 const readRpcResponse = async (response: APIResponse) => {
   if (response.headers()['content-type']?.startsWith('text/event-stream')) {
@@ -107,6 +145,149 @@ const callTool = (
       },
     },
   });
+
+test('MCP native forms register clients before JavaScript loads', async ({
+  browser,
+  authenticatedPage,
+}) => {
+  const context = await browser.newContext({
+    baseURL: origin,
+    javaScriptEnabled: false,
+    storageState: await authenticatedPage.context().storageState(),
+  });
+  try {
+    const page = await context.newPage();
+    const posts: BrowserRequest[] = [];
+    page.on('request', (request) => {
+      if (request.method() === 'POST') posts.push(request);
+    });
+    const client = await registerClient(page);
+    expect(client.id).not.toBe('');
+    expect(posts).toHaveLength(1);
+    expect(await posts[0].headerValue('origin')).toBe(origin);
+  } finally {
+    await context.close();
+  }
+});
+
+test('MCP native consent grants exactly the selected permissions before JavaScript loads', async ({
+  browser,
+  authenticatedPage,
+  mcpCallback,
+}) => {
+  const context = await browser.newContext({
+    baseURL: origin,
+    javaScriptEnabled: false,
+    storageState: await authenticatedPage.context().storageState(),
+  });
+  try {
+    const nativeCallback = mcpCallback.url;
+    const client = await registerClient(authenticatedPage, nativeCallback);
+    const page = await context.newPage();
+    for (const permission of ['read', 'publish'] as const) {
+      const auth = authorizationUrl(client.id, undefined, nativeCallback);
+      await page.goto(auth.url);
+      const label =
+        permission === 'read' ? /^Read only/ : /^Create, edit, and publish/;
+      await page.getByRole('radio', { name: label }).check();
+      const submission = page.waitForRequest(
+        (request) =>
+          request.method() === 'POST' &&
+          new URL(request.url()).pathname === '/oauth/authorize',
+      );
+      await page.getByRole('button', { name: 'Connect', exact: true }).click();
+      const posted = await submission;
+      expect(
+        new URLSearchParams(posted.postData() ?? '').getAll('permission'),
+      ).toEqual([permission]);
+      expect(await posted.headerValue('origin')).toBe(origin);
+      await page.waitForURL(
+        (url) => url.origin === new URL(nativeCallback).origin,
+      );
+      const destination = new URL(page.url());
+      expect(destination.searchParams.get('state')).toBe(auth.state);
+      expect(mcpCallback.referrers.length).toBeGreaterThan(0);
+      expect(mcpCallback.referrers.at(-1)).toBeUndefined();
+      const response = await exchangeCode(
+        page.request,
+        client.id,
+        destination.searchParams.get('code') ?? '',
+        auth.verifier,
+        nativeCallback,
+      );
+      expect(response.status()).toBe(200);
+      const tokens = await response.json();
+      expect(tokens.scope.split(' ').sort()).toEqual(
+        permission === 'read'
+          ? ['mcp:read']
+          : ['mcp:publish', 'mcp:read', 'mcp:write'],
+      );
+      expect(
+        (
+          await page.request.post('/oauth/token', {
+            form: { client_id: client.id, token: tokens.refresh_token },
+          })
+        ).status(),
+      ).toBe(200);
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+for (const recoverAccountLinking of [false, true]) {
+  test(`MCP first connection survives ${recoverAccountLinking ? 'account-linking recovery' : 'signed-out login'} with all OAuth parameters intact`, async ({
+    authenticatedPage: page,
+    mcpCallback,
+  }) => {
+    const callback = mcpCallback.url;
+    const client = await registerClient(page, callback);
+    const auth = authorizationUrl(client.id, undefined, callback);
+    const target = new URL(auth.url);
+    const redirectTo = target.pathname + target.search;
+    await page.context().clearCookies();
+    await page.goto(auth.url);
+    await expect(page).toHaveURL(
+      `${origin}/login?redirectTo=${encodeURIComponent(redirectTo)}`,
+    );
+    if (recoverAccountLinking) {
+      const recovery = new URL(page.url());
+      recovery.searchParams.set('error', 'account_not_linked');
+      await page.goto(recovery.toString());
+      await expect(page.getByRole('alert')).toBeVisible();
+    }
+    await page.getByLabel('Email', { exact: true }).fill(TEST_USER.email);
+    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
+    await page.getByRole('button', { name: 'Login', exact: true }).click();
+    await expect(page).toHaveURL(auth.url);
+    await expect(
+      page.getByRole('radio', { name: /^Create and edit drafts/ }),
+    ).toBeChecked();
+    await page.getByRole('button', { name: 'Connect', exact: true }).click();
+    await page.waitForURL((url) => url.origin === new URL(callback).origin);
+    const connected = new URL(page.url());
+    expect(connected.searchParams.get('state')).toBe(auth.state);
+    const response = await exchangeCode(
+      page.request,
+      client.id,
+      connected.searchParams.get('code') ?? '',
+      auth.verifier,
+      callback,
+    );
+    expect(response.status()).toBe(200);
+    const tokens = await response.json();
+    expect(tokens.scope.split(' ').sort()).toEqual(['mcp:read', 'mcp:write']);
+    const tool = await callTool(page.request, tokens.access_token);
+    expect(tool.status()).toBe(200);
+    expect(
+      (await tool.json()).result.structuredContent.authoringAvailable,
+    ).toBe(true);
+    const revoked = await page.request.post('/oauth/token', {
+      form: { client_id: client.id, token: tokens.refresh_token },
+    });
+    expect(revoked.status()).toBe(200);
+  });
+}
 
 test('MCP discovery challenges use OAuth metadata and reject untrusted resources', async ({
   request,
@@ -212,8 +393,10 @@ test('MCP supports the exact Cursor native callback with mandatory PKCE and reje
 
 test('MCP OAuth defaults to draft permissions, supports tools and refresh, and revokes immediately', async ({
   authenticatedPage: page,
+  mcpCallback,
 }) => {
-  const client = await registerClient(page);
+  const callback = mcpCallback.url;
+  const client = await registerClient(page, callback);
   const discovery = await page.request.get(
     '/.well-known/oauth-protected-resource/mcp',
   );
@@ -221,10 +404,7 @@ test('MCP OAuth defaults to draft permissions, supports tools and refresh, and r
   const advertised = (await discovery.json()).scopes_supported;
   expect(advertised).toEqual(['mcp:read', 'mcp:write', 'mcp:publish']);
   // Follow the discovery-driven scope request used by coding/chat clients.
-  const auth = authorizationUrl(client.id, advertised.join(' '));
-  await page.route(`${callback}*`, (route) =>
-    route.fulfill({ body: 'Connected', contentType: 'text/plain' }),
-  );
+  const auth = authorizationUrl(client.id, advertised.join(' '), callback);
   await page.goto(auth.url);
   await expect(page.getByRole('radio')).toHaveCount(3);
   for (const name of [
@@ -251,6 +431,7 @@ test('MCP OAuth defaults to draft permissions, supports tools and refresh, and r
     client.id,
     code ?? '',
     auth.verifier,
+    callback,
   );
   expect(tokensResponse.status()).toBe(200);
   const tokens = await tokensResponse.json();
@@ -382,18 +563,17 @@ test('MCP consent rejects CSRF, permissions escalation, bad resource and missing
 
 test('MCP publishing requires an explicit consent choice and authorization codes cannot be replayed', async ({
   authenticatedPage: page,
+  mcpCallback,
 }) => {
-  const client = await registerClient(page);
+  const callback = mcpCallback.url;
+  const client = await registerClient(page, callback);
   const discovery = await page.request.get(
     '/.well-known/oauth-protected-resource/mcp',
   );
   expect(discovery.ok()).toBe(true);
   const advertised = (await discovery.json()).scopes_supported;
   expect(advertised).toEqual(['mcp:read', 'mcp:write', 'mcp:publish']);
-  const auth = authorizationUrl(client.id, advertised.join(' '));
-  await page.route(`${callback}*`, (route) =>
-    route.fulfill({ body: 'Connected' }),
-  );
+  const auth = authorizationUrl(client.id, advertised.join(' '), callback);
   await page.goto(auth.url);
   await expect(
     page.getByRole('radio', { name: /^Create and edit drafts/ }),
@@ -410,6 +590,7 @@ test('MCP publishing requires an explicit consent choice and authorization codes
     client.id,
     code,
     randomBytes(32).toString('base64url'),
+    callback,
   );
   expect(badVerifier.status()).toBe(400);
   const response = await exchangeCode(
@@ -417,6 +598,7 @@ test('MCP publishing requires an explicit consent choice and authorization codes
     client.id,
     code,
     auth.verifier,
+    callback,
   );
   expect(response.status()).toBe(200);
   expect((await response.json()).scope.split(' ').sort()).toEqual([
@@ -425,20 +607,21 @@ test('MCP publishing requires an explicit consent choice and authorization codes
     'mcp:write',
   ]);
   expect(
-    (await exchangeCode(page.request, client.id, code, auth.verifier)).status(),
+    (
+      await exchangeCode(page.request, client.id, code, auth.verifier, callback)
+    ).status(),
   ).toBe(400);
 });
 
 test('MCP token revocation verifies token ownership and permanently revokes the connection', async ({
   authenticatedPage: page,
+  mcpCallback,
 }) => {
-  const foreignClient = await registerClient(page);
-  await page.route(`${callback}*`, (route) =>
-    route.fulfill({ body: 'Connected' }),
-  );
+  const callback = mcpCallback.url;
+  const foreignClient = await registerClient(page, callback);
   for (const tokenType of ['access_token', 'refresh_token'] as const) {
-    const client = await registerClient(page);
-    const auth = authorizationUrl(client.id, 'mcp:read');
+    const client = await registerClient(page, callback);
+    const auth = authorizationUrl(client.id, 'mcp:read', callback);
     await page.goto(auth.url);
     await page.getByRole('button', { name: 'Connect', exact: true }).click();
     await page.waitForURL((url) => url.origin === new URL(callback).origin);
@@ -447,6 +630,7 @@ test('MCP token revocation verifies token ownership and permanently revokes the 
       client.id,
       new URL(page.url()).searchParams.get('code') ?? '',
       auth.verifier,
+      callback,
     );
     expect(response.status()).toBe(200);
     const tokens = await response.json();

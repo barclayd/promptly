@@ -11,8 +11,8 @@ import { Button } from '~/components/ui/button';
 import { cloudflareContext, sessionContext } from '~/context';
 import {
   getMcpOrigin,
+  requireMcpEnabled,
   requireMcpSameOrigin,
-  requireMcpWorkspace,
 } from '~/lib/mcp/config.server';
 import {
   createMcpConnection,
@@ -31,7 +31,7 @@ import type { Route } from './+types/oauth.authorize';
 export const meta = () => [{ title: 'Connect to Promptly' }];
 export const headers = () => ({
   'Cache-Control': 'no-store',
-  'Referrer-Policy': 'no-referrer',
+  'Referrer-Policy': 'same-origin',
   'X-Frame-Options': 'DENY',
 });
 
@@ -48,7 +48,7 @@ const publicAuthorizationErrors = new Set([
   'This connection request expired or has already been used. Start again from your client.',
   'The chosen permissions exceed what this client requested.',
   'Your workspace membership changed. Start the connection again.',
-  'MCP is not enabled for this workspace.',
+  'MCP is currently disabled.',
   'Invalid request origin.',
   clientMetadataUnavailable,
 ]);
@@ -103,7 +103,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const session = context.get(sessionContext);
   if (!session?.user) throw redirect('/login');
   const workspace = await getMcpWorkspace(env.promptly, session.user.id);
-  requireMcpWorkspace(env, workspace.organizationId);
+  requireMcpEnabled(env);
   const authorization = await parseAuthorization(request, env);
   const client = await getMcpOAuthApi(env).lookupClient(authorization.clientId);
   if (!client) throw new Response('Unknown OAuth client.', { status: 400 });
@@ -160,7 +160,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   if (!session?.user)
     throw new Response('Sign in again to connect.', { status: 401 });
   const workspace = await getMcpWorkspace(env.promptly, session.user.id);
-  requireMcpWorkspace(env, workspace.organizationId);
+  requireMcpEnabled(env);
   const form = await request.formData();
   const requestId = form.get('requestId');
   const permission = mcpPermissionSchema.safeParse(form.get('permission'));

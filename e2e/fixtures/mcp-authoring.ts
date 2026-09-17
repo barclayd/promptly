@@ -13,6 +13,7 @@ import {
 export const withMcpAuthoring = async (
   run: (runtime: Miniflare, db: D1Database) => Promise<void>,
   enabled = true,
+  mcpEnabled = true,
 ) => {
   const temporary = await mkdtemp(join(tmpdir(), 'promptly-mcp-authoring-'));
   let runtime: Miniflare | undefined;
@@ -48,8 +49,7 @@ export const withMcpAuthoring = async (
         },
         bindings: {
           BETTER_AUTH_URL: 'https://mcp.test',
-          MCP_ENABLED: 'true',
-          MCP_PILOT_WORKSPACES: 'workspace',
+          MCP_ENABLED: String(mcpEnabled),
           MCP_ALLOW_DCR: 'false',
           MCP_AUTHORING_ENABLED: String(enabled),
         },

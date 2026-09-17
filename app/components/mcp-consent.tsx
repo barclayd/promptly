@@ -102,7 +102,6 @@ export const McpConsent = ({
 
             <Form method="post" className="space-y-5">
               <input type="hidden" name="requestId" value={requestId} />
-              <input type="hidden" name="permission" value={permission} />
               <fieldset disabled={isSubmitting}>
                 <legend className="mb-3 text-sm font-medium">
                   Allow this client to
@@ -123,7 +122,7 @@ export const McpConsent = ({
                       >
                         <input
                           type="radio"
-                          name="permissionChoice"
+                          name="permission"
                           value={option.value}
                           checked={permission === option.value}
                           onChange={() => setPermission(option.value)}

@@ -75,11 +75,7 @@ import {
   mcpPromptReadOutputSchema,
   mcpSnippetReadOutputSchema,
 } from '../validations/mcp-authoring';
-import {
-  getMcpOrigin,
-  isMcpAuthoringEnabled,
-  isMcpWorkspaceEnabled,
-} from './config.server';
+import { getMcpOrigin, isMcpAuthoringEnabled } from './config.server';
 import {
   authorizeMcpConnection,
   type McpAccess,
@@ -168,10 +164,7 @@ export const registerPromptlyAuthoring = (
     tokenScopes: props.scopes,
   };
   const authorize = async (scope: McpScope = 'mcp:read') => {
-    if (
-      !isMcpAuthoringEnabled(env) ||
-      !isMcpWorkspaceEnabled(env, props.organizationId)
-    )
+    if (!isMcpAuthoringEnabled(env))
       throw new AuthoringError(
         'access_denied',
         'MCP authoring is not enabled for this workspace.',

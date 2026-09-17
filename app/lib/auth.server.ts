@@ -69,6 +69,9 @@ const createAuth = (ctx: Readonly<RouterContextProvider>) => {
       },
     },
     baseURL,
+    onAPIError: {
+      errorURL: `${baseURL}/login`,
+    },
     trustedOrigins: [baseURL, 'https://appleid.apple.com'],
     socialProviders: {
       google: {

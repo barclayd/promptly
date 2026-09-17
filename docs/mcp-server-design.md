@@ -174,7 +174,7 @@ Collect tool-level counts, errors, conflicts, latency, rate-limit events, and fa
 
 Apply rate limits to connections/users and workspaces, with clear retry guidance. Exact initial thresholds and payload limits are engineering tuning parameters for the pilot, not a new billing allowance. Resource-limit checks must be shared with browser authoring, including prompt creation and restricted editing after trial expiry; do not invent a composer quota the product does not currently have.
 
-Use an allowlist for the pilot workspace and an operator kill switch for MCP access/writes. This makes the customer-facing implementation testable before opening it to additional workspaces. Expansion beyond the pilot is a deliberate rollout step, not an automatic consequence of deployment.
+The initial deployment used a workspace allowlist. The general workspace rollout removes that allowlist; retain the operator kill switches for MCP access and authoring. Membership, per-connection consent, scopes, revocation and resource limits continue to apply to every workspace.
 
 ## Delivery milestones and acceptance
 

@@ -293,7 +293,6 @@ export const McpSettings = ({
           <h2 id="mcp-heading" className="text-lg font-semibold">
             MCP connections
           </h2>
-          <Badge variant="secondary">Pilot</Badge>
         </div>
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
           Connect your AI assistant to your Promptly workspace.
@@ -303,16 +302,16 @@ export const McpSettings = ({
         <p className="text-sm font-medium">
           {enabled
             ? authoringEnabled
-              ? 'Authoring pilot enabled'
-              : 'Connection pilot enabled'
-            : 'Pilot access is not enabled'}
+              ? 'Authoring enabled'
+              : 'Read-only access enabled'
+            : 'MCP is currently disabled'}
         </p>
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
           {enabled
             ? authoringEnabled
               ? 'Read, create, edit, validate, and publish prompts and composers from your assistant. Your selected permission level controls what each connection can change.'
-              : 'Check your connection and find prompts, composers, and snippets. Authoring tools are being added during the pilot.'
-            : 'MCP is currently available to selected pilot workspaces.'}
+              : 'Check your connection and find prompts, composers, and snippets. Authoring is currently disabled.'
+            : 'New connections and existing MCP access are paused. Try again when MCP is enabled.'}
         </p>
       </div>
       {error && (
@@ -403,7 +402,7 @@ export const McpSettings = ({
             <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground">
               {enabled
                 ? 'Add the server URL to your assistant, then sign in to Promptly. Your connection will appear here.'
-                : 'Your connections will appear here when this workspace joins the pilot.'}
+                : 'You can connect your assistant when MCP is enabled.'}
             </p>
           </div>
         </div>

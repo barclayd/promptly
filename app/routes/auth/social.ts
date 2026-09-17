@@ -11,22 +11,27 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
   const formData = await request.formData();
   const provider = formData.get('provider');
 
-  if (typeof provider !== 'string') {
-    throw new Response('Provider is required', { status: 400 });
+  if (
+    typeof provider !== 'string' ||
+    !['apple', 'google', 'github'].includes(provider)
+  ) {
+    throw new Response('Unsupported sign-in provider', { status: 400 });
   }
 
   const auth = getAuth(context);
   const redirectTo = formData.get('redirectTo');
-  const callbackURL =
+  const returnQuery =
     typeof redirectTo === 'string' && isValidRedirectPath(redirectTo)
-      ? `/auth/oauth-complete?redirectTo=${encodeURIComponent(redirectTo)}`
-      : '/auth/oauth-complete';
+      ? `?redirectTo=${encodeURIComponent(redirectTo)}`
+      : '';
 
   const response = await auth.api.signInSocial({
     body: {
       provider,
-      callbackURL,
+      callbackURL: `/auth/oauth-complete${returnQuery}`,
+      errorCallbackURL: `/login${returnQuery}`,
     },
+    headers: request.headers,
     asResponse: true,
   });
 

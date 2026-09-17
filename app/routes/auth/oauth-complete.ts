@@ -14,7 +14,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   });
 
   if (!session?.user) {
-    return redirect('/login');
+    return redirect(`/login?redirectTo=${encodeURIComponent(target)}`);
   }
 
   const db = context.get(cloudflareContext).env.promptly;

@@ -1,6 +1,6 @@
 # Authoring persistence foundation
 
-The shared persistence and domain services implement authorized, revision-checked creation, editing, publication, history restoration, and browser soft deletion. Browser/MCP adapters and editor coordination use these services; concurrent MCP authoring is enabled for the two approved pilot workspaces.
+The shared persistence and domain services implement authorized, revision-checked creation, editing, publication, history restoration, and browser soft deletion. Browser/MCP adapters and editor coordination use these services; concurrent MCP authoring is available to workspace members when the MCP and authoring switches are enabled.
 
 ## Migration
 
