@@ -43,7 +43,7 @@ export const handleMcpApi = async (
     'WWW-Authenticate': `Bearer error="${error}", resource_metadata="${getMcpOrigin(env)}/.well-known/oauth-protected-resource/mcp"${error === 'insufficient_scope' ? ', scope="mcp:read"' : ''}`,
   });
   const props = mcpConnectionPropsSchema.safeParse(ctx.props);
-  if (!props.success) {
+  if (!props.success || props.data.externalServerId) {
     return Response.json(
       { error: 'invalid_token' },
       { status: 401, headers: challenge('invalid_token') },
@@ -57,6 +57,8 @@ export const handleMcpApi = async (
     });
     if (
       access.workspace.organizationId !== props.data.organizationId ||
+      access.connection.externalServerId !== null ||
+      access.connection.externalResource !== null ||
       !isMcpEnabled(env)
     ) {
       return Response.json(

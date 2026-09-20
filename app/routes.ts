@@ -12,6 +12,7 @@ export default [
   // API routes
   route('api/set-theme', './routes/api/set-theme.ts'),
   route('api/mcp/revoke', './routes/api/mcp.revoke.ts'),
+  route('api/mcp/external/:serverId', './routes/api/mcp.external.ts'),
   route('api/authoring/save', './routes/api/authoring.save.ts'),
   route('api/authoring/read', './routes/api/authoring.read.ts'),
   route('api/authoring/restore', './routes/api/authoring.restore.ts'),

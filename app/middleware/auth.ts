@@ -24,6 +24,7 @@ export const authMiddleware: MiddlewareFunction<Response> = async ({
   url,
   context,
 }) => {
+  if (url.pathname.startsWith('/api/mcp/external/')) return;
   // Create auth instance ONCE and cache in context
   const auth = getAuth(context);
   context.set(authContext, auth);

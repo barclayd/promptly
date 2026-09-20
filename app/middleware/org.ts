@@ -24,6 +24,7 @@ export const orgMiddleware: MiddlewareFunction<Response> = async ({
   url,
   context,
 }) => {
+  if (url.pathname.startsWith('/api/mcp/external/')) return;
   if (isPublicRoute(url.pathname)) {
     return;
   }

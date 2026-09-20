@@ -37,6 +37,8 @@ export type McpWorkspace = {
 };
 
 export type McpConnection = {
+  externalServerId: string | null;
+  externalResource: string | null;
   id: string;
   userId: string;
   organizationId: string;
@@ -63,6 +65,8 @@ export type McpConnectionListItem = McpConnection & {
 };
 
 type McpConnectionRow = {
+  external_server_id?: string | null;
+  external_resource?: string | null;
   id: string;
   user_id: string;
   organization_id: string;
@@ -129,6 +133,8 @@ const toConnection = (row: McpConnectionRow): McpConnection => {
     throw connectionUnavailable();
   }
   return {
+    externalServerId: row.external_server_id ?? null,
+    externalResource: row.external_resource ?? null,
     id: row.id,
     userId: row.user_id,
     organizationId: row.organization_id,

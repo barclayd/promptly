@@ -9,6 +9,7 @@ import {
   mcpConnectionPropsSchema,
   mcpScopeSchema,
 } from '~/lib/validations/mcp';
+import { mcpStoredGrantAudienceSchema } from '~/lib/validations/mcp-external';
 import {
   getMcpOrigin,
   getMcpUrl,
@@ -20,6 +21,8 @@ import {
   claimMcpGrant,
   McpConnectionError,
 } from './connections.server';
+import { assertMcpConnectionAudience } from './external-access.server';
+import { getExternalMcpServers } from './external-config.server';
 import { handleMcpApi } from './protocol.server';
 import {
   isMcpRevocationRequest,
@@ -27,7 +30,11 @@ import {
 } from './revocation.server';
 import { checkMcpRegistrationRateLimit } from './usage.server';
 
-const oauthOptions = (env: Env): OAuthProviderOptions<Env> => ({
+const oauthOptions = (
+  env: Env,
+  resource: string | undefined = getMcpUrl(env),
+  tokenEndpoint = false,
+): OAuthProviderOptions<Env> => ({
   apiRoute: '/mcp',
   apiHandler: { fetch: handleMcpApi },
   defaultHandler: { fetch: () => new Response('Not found', { status: 404 }) },
@@ -45,7 +52,7 @@ const oauthOptions = (env: Env): OAuthProviderOptions<Env> => ({
   refreshTokenTTL: 60 * 60 * 24 * 30,
   scopesSupported: ['mcp:read', 'mcp:write', 'mcp:publish', 'mcp:run'],
   resourceMetadata: {
-    resource: getMcpUrl(env),
+    resource: tokenEndpoint ? undefined : resource,
     scopes_supported: isMcpAuthoringEnabled(env)
       ? ['mcp:read', 'mcp:write', 'mcp:publish', 'mcp:run']
       : ['mcp:read'],
@@ -64,12 +71,15 @@ const oauthOptions = (env: Env): OAuthProviderOptions<Env> => ({
       !parsed.success ||
       parsed.data.userId !== userId ||
       parsed.data.clientId !== clientId ||
+      (grantType !== GrantType.AUTHORIZATION_CODE &&
+        grantType !== GrantType.REFRESH_TOKEN) ||
       !isMcpEnabled(env)
     ) {
       throw new OAuthError('invalid_grant', {
         description: 'This Promptly connection is no longer available.',
       });
     }
+    let effectiveScopes = parsed.data.scopes;
     try {
       if (grantType === GrantType.AUTHORIZATION_CODE) {
         await claimMcpGrant(env.promptly, {
@@ -82,6 +92,24 @@ const oauthOptions = (env: Env): OAuthProviderOptions<Env> => ({
         ...parsed.data,
         tokenScopes: parsed.data.scopes,
       });
+      assertMcpConnectionAudience(env, access, parsed.data.externalServerId);
+      const grant = mcpStoredGrantAudienceSchema.safeParse(
+        await env.OAUTH_KV.get(`grant:${userId}:${grantId}`, 'json'),
+      );
+      if (
+        !grant.success ||
+        grant.data.id !== grantId ||
+        grant.data.userId !== userId ||
+        grant.data.clientId !== clientId ||
+        grant.data.resource !==
+          (access.connection.externalResource ?? getMcpUrl(env))
+      )
+        throw new McpConnectionError(
+          'connection_unavailable',
+          'This connection is unavailable.',
+          401,
+        );
+      effectiveScopes = access.scopes;
       if (
         access.workspace.organizationId !== parsed.data.organizationId ||
         access.connection.grantId !== grantId
@@ -99,7 +127,7 @@ const oauthOptions = (env: Env): OAuthProviderOptions<Env> => ({
     const scopes = requestedScope.filter(
       (scope) =>
         mcpScopeSchema.safeParse(scope).success &&
-        parsed.data.scopes.includes(mcpScopeSchema.parse(scope)),
+        effectiveScopes.includes(mcpScopeSchema.parse(scope)),
     );
     return {
       accessTokenProps: { ...parsed.data, scopes },
@@ -108,7 +136,14 @@ const oauthOptions = (env: Env): OAuthProviderOptions<Env> => ({
   },
 });
 
-export const getMcpOAuthApi = (env: Env) => getOAuthApi(oauthOptions(env), env);
+export const getMcpOAuthApi = (env: Env, resource = getMcpUrl(env)) => {
+  if (
+    resource !== getMcpUrl(env) &&
+    !getExternalMcpServers(env).some((server) => server.resource === resource)
+  )
+    throw new Response('This MCP resource is not available.', { status: 400 });
+  return getOAuthApi(oauthOptions(env, resource), env);
+};
 
 export const handleMcpOAuth = async (
   request: Request,
@@ -177,7 +212,13 @@ export const handleMcpOAuth = async (
     }
     request = new Request(request, { body });
   }
-  const provider = new OAuthProvider(oauthOptions(env));
+  const provider = new OAuthProvider(
+    oauthOptions(
+      env,
+      undefined,
+      new URL(request.url).pathname === '/oauth/token',
+    ),
+  );
   const providerEnv = (await isMcpRevocationRequest(request))
     ? { ...env, OAUTH_KV: withMcpRevocationKv(env.promptly, env.OAUTH_KV) }
     : env;

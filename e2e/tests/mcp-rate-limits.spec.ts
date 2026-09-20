@@ -1,8 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { convertV4MiniflareOptions, Miniflare } from 'miniflare';
 import {
+  checkMcpExternalRateLimit,
   checkMcpRateLimit,
   checkMcpRegistrationRateLimit,
+  MCP_EXTERNAL_SOURCE_LIMIT,
   MCP_REGISTRATION_GLOBAL_LIMIT,
   MCP_REGISTRATION_SOURCE_LIMIT,
 } from '../../app/lib/mcp/usage.server';
@@ -38,6 +40,42 @@ const withDatabase = async (run: (db: D1Database) => Promise<void>) => {
     await runtime.dispose();
   }
 };
+
+test('external bridge limits are independent from registration and bound source growth at global capacity', async () => {
+  await withDatabase(async (db) => {
+    const now = 1_800_000;
+    const results = await Promise.all(
+      Array.from({ length: MCP_EXTERNAL_SOURCE_LIMIT + 2 }, () =>
+        checkMcpExternalRateLimit(db, '192.0.2.1', now),
+      ),
+    );
+    expect(results.filter((result) => result === null)).toHaveLength(120);
+    expect(results.filter((result) => result !== null)).toEqual([60, 60]);
+    expect(
+      await checkMcpRegistrationRateLimit(db, '192.0.2.1', now),
+    ).toBeNull();
+    expect(await checkMcpExternalRateLimit(db, '192.0.2.2', now)).toBeNull();
+    await db
+      .prepare(
+        "UPDATE mcp_rate_limit SET request_count = 599 WHERE key = 'external:global'",
+      )
+      .run();
+    expect(await checkMcpExternalRateLimit(db, '192.0.2.3', now)).toBeNull();
+    expect(await checkMcpExternalRateLimit(db, '192.0.2.4', now)).toBe(60);
+    const before = await db
+      .prepare('SELECT key FROM mcp_rate_limit')
+      .all<{ key: string }>();
+    expect(
+      before.results.filter((row) => row.key.startsWith('external:source:')),
+    ).toHaveLength(3);
+    expect(before.results.some((row) => row.key.includes('192.0.2'))).toBe(
+      false,
+    );
+    expect(
+      await checkMcpExternalRateLimit(db, '192.0.2.1', now + 60_000),
+    ).toBeNull();
+  });
+});
 
 test('MCP registration limits concurrent requests per source and resets at the next minute', async () => {
   await withDatabase(async (db) => {

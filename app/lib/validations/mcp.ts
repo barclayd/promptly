@@ -56,6 +56,7 @@ export type CreateMcpConnectionInput = z.input<
 >;
 
 export const mcpConnectionPropsSchema = z.object({
+  externalServerId: z.string().min(1).max(64).optional(),
   connectionId: z.string().min(1).max(200),
   userId: z.string().min(1).max(200),
   organizationId: z.string().min(1).max(200),

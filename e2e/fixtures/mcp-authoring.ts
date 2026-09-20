@@ -18,7 +18,9 @@ export const withMcpAuthoring = async (
   run: (runtime: Miniflare, db: D1Database) => Promise<void>,
   enabled = true,
   mcpEnabled = true,
-  overrides: Pick<V4WorkerOptionsShape, 'bindings' | 'outboundService'> = {},
+  overrides: Pick<V4WorkerOptionsShape, 'bindings' | 'outboundService'> & {
+    workerEntry?: URL;
+  } = {},
 ) => {
   const temporary = await mkdtemp(join(tmpdir(), 'promptly-mcp-authoring-'));
   let runtime: Miniflare | undefined;
@@ -28,7 +30,10 @@ export const withMcpAuthoring = async (
       'bun',
       [
         'build',
-        fileURLToPath(new URL('./mcp-authoring-worker.ts', import.meta.url)),
+        fileURLToPath(
+          overrides.workerEntry ??
+            new URL('./mcp-authoring-worker.ts', import.meta.url),
+        ),
         '--target=browser',
         '--external=cloudflare:*',
         '--external=node:*',
@@ -69,8 +74,10 @@ export const withMcpAuthoring = async (
       '0012_add_organization_id_to_subscription.sql',
       '0024_mcp_connections.sql',
       '0025_mcp_authorization_requests.sql',
+      '0026_mcp_consent_membership.sql',
       '0027_authoring_persistence.sql',
       '0029_mcp_test_runs.sql',
+      '0030_mcp_external_connections.sql',
     ])
       await applyAuthoringFixtureMigration(db, name);
     await db

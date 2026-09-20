@@ -16,6 +16,7 @@ export type McpConsentProps = {
   testingRequested: boolean;
   defaultPermission: McpPermission;
   error?: string;
+  externalServer?: { name: string; resource: string };
 };
 
 const permissions: {
@@ -54,6 +55,7 @@ export const McpConsent = ({
   testingRequested,
   defaultPermission,
   error,
+  externalServer,
 }: McpConsentProps) => {
   const navigation = useNavigation();
   const [permission, setPermission] = useState<McpPermission | ''>(() => {
@@ -82,9 +84,16 @@ export const McpConsent = ({
               Connect {clientName}
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Choose what this client can do in your Promptly workspace.
+              {externalServer
+                ? `Connect to ${externalServer.name} using your Promptly workspace. This service can read drafts and published definitions for external previews. It cannot edit or publish content.`
+                : 'Choose what this client can do in your Promptly workspace.'}
             </p>
 
+            {externalServer && (
+              <p className="mt-3 break-all text-sm text-muted-foreground">
+                External service: {externalServer.resource}
+              </p>
+            )}
             <dl className="my-6 space-y-3 rounded-lg bg-muted/50 p-4 text-sm">
               <div className="grid gap-1 sm:grid-cols-[6rem_1fr] sm:gap-3">
                 <dt className="text-muted-foreground">Workspace</dt>
@@ -109,45 +118,51 @@ export const McpConsent = ({
                   Allow this client to
                 </legend>
                 <div className="overflow-hidden rounded-lg border divide-y">
-                  {permissions.map((option) => {
-                    const isAllowed = allowedPermissions.includes(option.value);
-                    return (
-                      <label
-                        key={option.value}
-                        className={cn(
-                          'flex items-start gap-3 p-4 transition-colors focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring',
-                          isAllowed
-                            ? 'cursor-pointer hover:bg-muted/50'
-                            : 'cursor-not-allowed opacity-50',
-                          permission === option.value && 'bg-primary/5',
-                        )}
-                      >
-                        <input
-                          type="radio"
-                          name="permission"
-                          value={option.value}
-                          checked={permission === option.value}
-                          onChange={() => setPermission(option.value)}
-                          disabled={!isAllowed}
-                          required
-                          className="mt-0.5 size-4 shrink-0 accent-primary"
-                        />
-                        <span className="min-w-0">
-                          <span className="block text-sm font-medium">
-                            {option.label}
-                          </span>
-                          <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
-                            {option.description}
-                          </span>
-                          {!isAllowed && (
-                            <span className="mt-1 block text-xs text-muted-foreground">
-                              Not requested by this client
-                            </span>
+                  {permissions
+                    .filter(
+                      (option) => !externalServer || option.value === 'read',
+                    )
+                    .map((option) => {
+                      const isAllowed = allowedPermissions.includes(
+                        option.value,
+                      );
+                      return (
+                        <label
+                          key={option.value}
+                          className={cn(
+                            'flex items-start gap-3 p-4 transition-colors focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring',
+                            isAllowed
+                              ? 'cursor-pointer hover:bg-muted/50'
+                              : 'cursor-not-allowed opacity-50',
+                            permission === option.value && 'bg-primary/5',
                           )}
-                        </span>
-                      </label>
-                    );
-                  })}
+                        >
+                          <input
+                            type="radio"
+                            name="permission"
+                            value={option.value}
+                            checked={permission === option.value}
+                            onChange={() => setPermission(option.value)}
+                            disabled={!isAllowed}
+                            required
+                            className="mt-0.5 size-4 shrink-0 accent-primary"
+                          />
+                          <span className="min-w-0">
+                            <span className="block text-sm font-medium">
+                              {option.label}
+                            </span>
+                            <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
+                              {option.description}
+                            </span>
+                            {!isAllowed && (
+                              <span className="mt-1 block text-xs text-muted-foreground">
+                                Not requested by this client
+                              </span>
+                            )}
+                          </span>
+                        </label>
+                      );
+                    })}
                 </div>
               </fieldset>
 
@@ -167,12 +182,13 @@ export const McpConsent = ({
                   className="mt-0.5 size-4 shrink-0 accent-primary"
                 />
                 <span className="min-w-0">
-                  <span className="block text-sm font-medium">Run tests</span>
+                  <span className="block text-sm font-medium">
+                    {externalServer ? 'Run external previews' : 'Run tests'}
+                  </span>
                   <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
-                    Test snippets, prompts, and composers and compare versions
-                    using your workspace’s LLM API keys. Tests send content and
-                    input data to your model provider and incur API costs. Saved
-                    content and settings stay unchanged.
+                    {externalServer
+                      ? `Allow ${externalServer.name} to run and compare previews using customer inputs. The external service sends content and customer data to its configured model providers and incurs provider charges. This does not send an email or publish changes.`
+                      : 'Test snippets, prompts, and composers and compare versions using your workspace’s LLM API keys. Tests send content and input data to your model provider and incur API costs. Saved content and settings stay unchanged.'}
                   </span>
                   {!testingRequested && (
                     <span className="mt-1 block text-xs text-muted-foreground">
