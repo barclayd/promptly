@@ -19,6 +19,8 @@ import {
   getMcpWorkspace,
   revokeMcpConnection,
 } from '~/lib/mcp/connections.server';
+import { bindExternalMcpConnection } from '~/lib/mcp/external-access.server';
+import { getMcpAuthorizationTarget } from '~/lib/mcp/external-config.server';
 import { getMcpOAuthApi } from '~/lib/mcp/oauth.server';
 import {
   type McpPermission,
@@ -50,12 +52,17 @@ const publicAuthorizationErrors = new Set([
   'Your workspace membership changed. Start the connection again.',
   'MCP is currently disabled.',
   'Invalid request origin.',
+  'This MCP resource is not available.',
+  'This external service is not available for your workspace.',
   clientMetadataUnavailable,
 ]);
 
 const parseAuthorization = async (request: Request, env: Env) => {
   try {
-    const parsed = await getMcpOAuthApi(env).parseAuthRequest(request);
+    const target = getMcpAuthorizationTarget(env, request);
+    const parsed = await getMcpOAuthApi(env, target.resource).parseAuthRequest(
+      request,
+    );
     if (!parsed.codeChallenge || parsed.codeChallengeMethod !== 'S256') {
       throw new Response('Connect using OAuth with S256 PKCE.', {
         status: 400,
@@ -65,14 +72,17 @@ const parseAuthorization = async (request: Request, env: Env) => {
       parsed.scope.some(
         (scope) =>
           scope !== 'offline_access' &&
-          !mcpScopeSchema.safeParse(scope).success,
+          (!mcpScopeSchema.safeParse(scope).success ||
+            (target.externalServer !== undefined &&
+              scope !== 'mcp:read' &&
+              scope !== 'mcp:run')),
       )
     ) {
       throw new Response('The client requested unsupported permissions.', {
         status: 400,
       });
     }
-    return parsed;
+    return { authorization: parsed, ...target };
   } catch (error) {
     if (error instanceof CimdFetchError) {
       throw new Response(clientMetadataUnavailable, { status: 503 });
@@ -87,9 +97,15 @@ const parseAuthorization = async (request: Request, env: Env) => {
   }
 };
 
-const allowedPermissions = (request: AuthRequest): McpPermission[] => {
+const allowedPermissions = (
+  request: AuthRequest,
+  external = false,
+): McpPermission[] => {
   const requested = request.scope.filter((scope) => scope !== 'offline_access');
-  return (['read', 'edit', 'publish'] as const).filter(
+  const options: McpPermission[] = external
+    ? ['read']
+    : ['read', 'edit', 'publish'];
+  return options.filter(
     (permission) =>
       requested.length === 0 ||
       scopesForMcpPermission(permission).every((scope) =>
@@ -104,10 +120,26 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   if (!session?.user) throw redirect('/login');
   const workspace = await getMcpWorkspace(env.promptly, session.user.id);
   requireMcpEnabled(env);
-  const authorization = await parseAuthorization(request, env);
-  const client = await getMcpOAuthApi(env).lookupClient(authorization.clientId);
+  const { authorization, resource, externalServer } = await parseAuthorization(
+    request,
+    env,
+  );
+  if (
+    externalServer &&
+    externalServer.organizationId !== workspace.organizationId
+  )
+    throw new Response(
+      'This external service is not available for your workspace.',
+      { status: 403 },
+    );
+  const client = await getMcpOAuthApi(env, resource).lookupClient(
+    authorization.clientId,
+  );
   if (!client) throw new Response('Unknown OAuth client.', { status: 400 });
-  const permissions = allowedPermissions(authorization);
+  const permissions = allowedPermissions(
+    authorization,
+    Boolean(externalServer),
+  );
   if (!permissions.length)
     throw new Response(
       'The client must request read access with authoring or testing permissions.',
@@ -138,6 +170,9 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const redirectUrl = new URL(authorization.redirectUri);
   return {
     requestId,
+    externalServer: externalServer
+      ? { name: externalServer.name, resource: externalServer.resource }
+      : undefined,
     clientName: client.clientName || 'MCP client',
     clientId: client.clientId,
     redirectOrigin:
@@ -197,10 +232,18 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       'This connection request expired or has already been used. Start again from your client.',
       { status: 400 },
     );
-  const authorization = await parseAuthorization(
+  const { authorization, resource, externalServer } = await parseAuthorization(
     new Request(pending.request_url),
     env,
   );
+  if (
+    externalServer &&
+    externalServer.organizationId !== workspace.organizationId
+  )
+    throw new Response(
+      'This external service is not available for your workspace.',
+      { status: 403 },
+    );
   if (decision === 'deny') {
     const destination = new URL(authorization.redirectUri);
     destination.searchParams.set('error', 'access_denied');
@@ -209,7 +252,9 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     return redirect(destination.toString());
   }
   if (
-    !allowedPermissions(authorization).includes(permission.data) ||
+    !allowedPermissions(authorization, Boolean(externalServer)).includes(
+      permission.data,
+    ) ||
     (allowTesting && !authorization.scope.includes('mcp:run'))
   ) {
     throw new Response(
@@ -217,7 +262,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       { status: 400 },
     );
   }
-  const api = getMcpOAuthApi(env);
+  const api = getMcpOAuthApi(env, resource);
   const client = await api.lookupClient(authorization.clientId);
   if (!client) throw new Response('Unknown OAuth client.', { status: 400 });
   const connection = await createMcpConnection(env.promptly, {
@@ -237,6 +282,12 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
         { status: 409 },
       );
     }
+    if (externalServer)
+      await bindExternalMcpConnection(env.promptly, {
+        connectionId: connection.id,
+        userId: connection.userId,
+        server: externalServer,
+      });
     const result = await api.completeAuthorization({
       request: authorization,
       userId: session.user.id,
@@ -246,6 +297,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
         clientName: connection.clientName,
       },
       props: {
+        ...(externalServer ? { externalServerId: externalServer.id } : {}),
         connectionId: connection.id,
         userId: connection.userId,
         organizationId: connection.organizationId,

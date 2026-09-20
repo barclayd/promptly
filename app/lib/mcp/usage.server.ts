@@ -1,9 +1,14 @@
 export const MCP_REGISTRATION_SOURCE_LIMIT = 10;
 export const MCP_REGISTRATION_GLOBAL_LIMIT = 60;
+export const MCP_EXTERNAL_SOURCE_LIMIT = 120;
+export const MCP_EXTERNAL_GLOBAL_LIMIT = 600;
 
-export const checkMcpRegistrationRateLimit = async (
+const checkMcpPublicRateLimit = async (
   db: D1Database,
   source: string,
+  namespace: string,
+  sourceLimit: number,
+  globalLimit: number,
   now = Date.now(),
 ) => {
   const digest = await crypto.subtle.digest(
@@ -13,8 +18,8 @@ export const checkMcpRegistrationRateLimit = async (
   const sourceHash = Array.from(new Uint8Array(digest), (byte) =>
     byte.toString(16).padStart(2, '0'),
   ).join('');
-  const sourceKey = `registration:source:${sourceHash}`;
-  const globalKey = 'registration:global';
+  const sourceKey = `${namespace}:source:${sourceHash}`;
+  const globalKey = `${namespace}:global`;
   const windowStart = Math.floor(now / 60_000) * 60_000;
   const results = await db.batch<{ request_count: number }>([
     db
@@ -42,8 +47,8 @@ export const checkMcpRegistrationRateLimit = async (
         windowStart,
         globalKey,
         windowStart,
-        MCP_REGISTRATION_GLOBAL_LIMIT,
-        MCP_REGISTRATION_SOURCE_LIMIT + 1,
+        globalLimit,
+        sourceLimit + 1,
       ),
     db
       .prepare(
@@ -66,21 +71,49 @@ export const checkMcpRegistrationRateLimit = async (
         windowStart,
         sourceKey,
         windowStart,
-        MCP_REGISTRATION_SOURCE_LIMIT,
+        sourceLimit,
         globalKey,
         windowStart,
-        MCP_REGISTRATION_GLOBAL_LIMIT,
+        globalLimit,
       ),
   ]);
   const sourceCount = results[1]?.results[0]?.request_count;
   const globalCount = results[2]?.results[0]?.request_count;
   return sourceCount !== undefined &&
-    sourceCount <= MCP_REGISTRATION_SOURCE_LIMIT &&
+    sourceCount <= sourceLimit &&
     globalCount !== undefined &&
-    globalCount <= MCP_REGISTRATION_GLOBAL_LIMIT
+    globalCount <= globalLimit
     ? null
     : Math.ceil((windowStart + 60_000 - now) / 1000);
 };
+
+export const checkMcpRegistrationRateLimit = (
+  db: D1Database,
+  source: string,
+  now = Date.now(),
+) =>
+  checkMcpPublicRateLimit(
+    db,
+    source,
+    'registration',
+    MCP_REGISTRATION_SOURCE_LIMIT,
+    MCP_REGISTRATION_GLOBAL_LIMIT,
+    now,
+  );
+
+export const checkMcpExternalRateLimit = (
+  db: D1Database,
+  source: string,
+  now = Date.now(),
+) =>
+  checkMcpPublicRateLimit(
+    db,
+    source,
+    'external',
+    MCP_EXTERNAL_SOURCE_LIMIT,
+    MCP_EXTERNAL_GLOBAL_LIMIT,
+    now,
+  );
 
 export const checkMcpRateLimit = async (
   db: D1Database,

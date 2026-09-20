@@ -11,6 +11,7 @@ import { Button } from '~/components/ui/button';
 import type { McpPermission, McpScope } from '~/lib/validations/mcp';
 
 export type McpSettingsConnection = {
+  externalResource?: string | null;
   id: string;
   clientName: string;
   clientId: string;
@@ -117,6 +118,11 @@ const McpConnection = ({
             </span>
             <Badge variant="outline">{status}</Badge>
           </div>
+          {connection.externalResource && (
+            <p className="mt-1 break-all text-sm text-muted-foreground">
+              External service: {connection.externalResource}
+            </p>
+          )}
           <p className="mt-1 break-all text-sm text-muted-foreground">
             {connection.userName}
             {connection.userName && ' · '}
@@ -127,8 +133,12 @@ const McpConnection = ({
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {connection.scopes.includes('mcp:run')
-              ? 'Testing enabled'
-              : 'Testing not enabled'}
+              ? connection.externalResource
+                ? 'External previews enabled'
+                : 'Testing enabled'
+              : connection.externalResource
+                ? 'External previews not enabled'
+                : 'Testing not enabled'}
           </p>
           <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
             <div className="flex gap-1">
