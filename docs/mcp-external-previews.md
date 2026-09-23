@@ -93,6 +93,8 @@ This integration pins `@cloudflare/workers-oauth-provider` to 0.10.3. Authorizat
 
 The provider has no single-grant lookup API. The bounded external access adapter reads its `grant:<userId>:<grantId>` KV record using IDs obtained from D1 and validates client, resource, scopes, and expiry. This storage-format dependency, together with the existing RFC 7009 revocation adapter, must be reviewed on provider upgrades. Access-token decryption and validation use the provider's `unwrapToken` API.
 
+KV can briefly return the consent-stage grant after token exchange has completed elsewhere. That record has `createdAt` but no `expiresAt`; the provider initially stores it for ten minutes. When explicit expiry is absent, the adapter uses that same ten-minute bound and rejects missing, malformed, future or expired creation timestamps. A claimed D1 grant and all existing authorization checks are still required. Explicit grant expiry remains authoritative. This avoids rejecting newly issued tokens solely because the updated grant has not propagated yet.
+
 `e2e/tests/mcp-external.spec.ts` exercises real Miniflare D1/KV and the production consent/token/read handlers, including PKCE, single-use consent, native compatibility, audience/scope escalation, delegated reads, workspace isolation, revoked/expired grants, disabled registrations, and stripped-prop rejection. `mcp-rate-limits.spec.ts` verifies isolated source/global thresholds and bounded cleanup.
 
 References: [Cloudflare OAuth provider](https://github.com/cloudflare/workers-oauth-provider), [Workers secrets](https://developers.cloudflare.com/workers/configuration/secrets/), [RFC 8707 resource indicators](https://www.rfc-editor.org/rfc/rfc8707), [RFC 7009 revocation](https://www.rfc-editor.org/rfc/rfc7009).

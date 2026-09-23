@@ -115,8 +115,16 @@ export const authorizeExternalMcpConnection = async (
     grant.data.id !== access.connection.grantId ||
     grant.data.userId !== subject.userId ||
     grant.data.clientId !== access.connection.clientId ||
-    grant.data.resource !== server.resource ||
-    grant.data.expiresAt * 1000 <= Date.now()
+    grant.data.resource !== server.resource
+  )
+    throw unavailable();
+  // KV may still return the pre-exchange grant. Provider 0.10.3 stores that
+  // record with a 600-second TTL but no expiresAt; preserve that upper bound.
+  const now = Date.now();
+  const expiresAt = grant.data.expiresAt ?? grant.data.createdAt + 600;
+  if (
+    expiresAt * 1000 <= now ||
+    (grant.data.expiresAt === undefined && grant.data.createdAt * 1000 > now)
   )
     throw unavailable();
   const scopes = access.scopes.filter((scope) =>

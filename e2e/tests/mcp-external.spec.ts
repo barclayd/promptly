@@ -243,6 +243,96 @@ test('external OAuth binds read/run consent to one audience and delegates exact 
   });
 });
 
+test('external OAuth accepts a recent consent-stage grant snapshot without bypassing expiry or D1 authorization', async () => {
+  await fixture(async (runtime, db) => {
+    const started = await begin(runtime);
+    const consent = consentSchema.parse(await started.response.json());
+    const approved = await approve(runtime, consent.requestId);
+    expect(approved.status).toBe(302);
+    const code = new URL(
+      approved.headers.get('Location') ?? '',
+    ).searchParams.get('code');
+    expect(code).toBeTruthy();
+    const [userId, grantId] = (code ?? '').split(':');
+    const grantKey = `grant:${userId}:${grantId}`;
+    const { OAUTH_KV: kv } = await runtime.getBindings<Pick<Env, 'OAUTH_KV'>>();
+    // Capture the actual provider record a different KV location may still see.
+    const consentGrant = z
+      .record(z.string(), z.unknown())
+      .parse(await kv.get(grantKey, 'json'));
+    expect(consentGrant.expiresAt).toBeUndefined();
+    const exchanged = await exchange(runtime, {
+      grant_type: 'authorization_code',
+      client_id: started.clientId,
+      code: code ?? '',
+      code_verifier: verifier,
+      redirect_uri: 'https://client.example/callback',
+    });
+    expect(exchanged.status).toBe(200);
+    const tokens = tokensSchema.parse(await exchanged.json());
+    const exchangedGrant = z
+      .record(z.string(), z.unknown())
+      .parse(await kv.get(grantKey, 'json'));
+    const inspect = () =>
+      bridge(runtime, {
+        action: 'introspect',
+        token: tokens.access_token,
+        resource,
+      });
+    const principal = principalSchema.parse(await (await inspect()).json());
+    const read = {
+      action: 'read',
+      subject: {
+        userId: principal.userId,
+        organizationId: principal.organizationId,
+        connectionId: principal.connectionId,
+      },
+      tool: 'get_connection',
+      arguments: {},
+    };
+    const expectAccess = async (active: boolean) => {
+      expect(await (await inspect()).json()).toMatchObject({ active });
+      expect((await bridge(runtime, read)).status).toBe(active ? 200 : 403);
+    };
+    await kv.put(grantKey, JSON.stringify(consentGrant));
+    await expectAccess(true);
+    const now = Math.floor(Date.now() / 1000);
+    for (const invalid of [
+      { createdAt: now - 600 },
+      { createdAt: now + 600 },
+      { createdAt: undefined },
+      { createdAt: null },
+      { createdAt: String(now) },
+      { createdAt: 0 },
+      { createdAt: now + 0.5 },
+      { expiresAt: now - 1 },
+      { expiresAt: null },
+      { expiresAt: 'invalid' },
+    ]) {
+      await kv.put(grantKey, JSON.stringify({ ...consentGrant, ...invalid }));
+      await expectAccess(false);
+    }
+    // A current explicit expiry is authoritative even after the code-stage TTL.
+    await kv.put(grantKey, JSON.stringify({ ...exchangedGrant, createdAt: 1 }));
+    await expectAccess(true);
+    await kv.delete(grantKey);
+    await expectAccess(false);
+    await kv.put(grantKey, JSON.stringify(consentGrant));
+    await db
+      .prepare('UPDATE mcp_connection SET grant_id = NULL WHERE id = ?')
+      .bind(principal.connectionId)
+      .run();
+    await expectAccess(false);
+    await db
+      .prepare(
+        'UPDATE mcp_connection SET grant_id = ?, revoked_at = ? WHERE id = ?',
+      )
+      .bind(grantId, Date.now(), principal.connectionId)
+      .run();
+    await expectAccess(false);
+  });
+});
+
 test('external read-only consent does not issue run permission and live scope reductions apply to refresh and reads', async () => {
   await fixture(async (runtime, db) => {
     const connected = await connect(runtime, { run: false });

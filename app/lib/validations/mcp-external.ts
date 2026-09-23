@@ -101,7 +101,8 @@ export const externalMcpStoredGrantSchema = mcpStoredGrantAudienceSchema.extend(
       .array(z.enum(['mcp:read', 'mcp:run']))
       .min(1)
       .max(2),
-    expiresAt: z.number().int().positive(),
+    createdAt: z.number().int().positive(),
+    expiresAt: z.number().int().positive().optional(),
   },
 );
 export type ExternalMcpStoredGrant = z.infer<
