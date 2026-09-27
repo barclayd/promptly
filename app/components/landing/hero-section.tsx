@@ -100,7 +100,7 @@ export const HeroSection = () => {
                   asChild
                   className="text-base"
                 >
-                  <a href="#features">See how it works</a>
+                  <a href="#demo">See how it works</a>
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground mt-2 sm:mt-3">
