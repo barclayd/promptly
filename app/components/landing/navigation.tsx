@@ -25,6 +25,11 @@ const navLinks = [
     description: 'What makes Promptly special',
   },
   {
+    label: 'Demo',
+    href: '#demo',
+    description: 'See Promptly in 60 seconds',
+  },
+  {
     label: 'For Developers',
     href: 'https://docs.promptlycms.com',
     description: 'API and SDK documentation',

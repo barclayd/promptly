@@ -35,6 +35,7 @@ app/components/landing/
 ├── navigation.tsx
 ├── pain-points-section.tsx
 ├── solution-section.tsx      # Tab-based: Editors/Developers/Business
+├── showreel-section.tsx      # Autoplaying 60s reel, hosted on R2 (media.promptlycms.com)
 ├── features-grid-section.tsx
 ├── how-it-works-section.tsx  # 3-step workflow with visual demos
 ├── audience-section.tsx
