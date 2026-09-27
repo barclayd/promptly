@@ -44,8 +44,8 @@ export const CreateShot = () => {
             </div>
           </div>
         </Panel>
-        <Burst x={690} y={480} at={click} count={18} speed={12} life={18} seed="create" />
-        <Cursor path={[{ f: 24, x: 900, y: 640 }, { f: 46, x: 700, y: 484 }]} clicks={[click]} show={[20, 70]} />
+        <Burst x={683} y={379} at={click} count={18} speed={12} life={18} seed="create" />
+        <Cursor path={[{ f: 24, x: 900, y: 640 }, { f: 46, x: 683, y: 379 }]} clicks={[click]} show={[20, 70]} />
       </div>
     </Feature>
   );
@@ -303,12 +303,12 @@ export const ModelShot = () => {
   ];
   const cur = [...hops].reverse().find(([at]) => f >= at)?.[1];
   const pick = 28;
-  const open = pop(f, 4, springs.snappy) * (1 - tw(f, pick + 2, pick + 8, 0, 1, ease.inExpo));
+  const open = pop(f, 4, springs.snappy) * (1 - tw(f, pick + 1, pick + 4, 0, 1, ease.inQuad));
   const selected = f >= pick ? 'Claude Sonnet 4.6' : 'GPT-5.4 Mini';
   const temp = kf(f, [34, 50], [0.3, 0.7], ease.inOutCubic);
   const sliderW = 560;
   // Panel shrinks as the dropdown closes so the slider rides up under the picker.
-  const h = 700 - 370 * tw(f, pick + 1, pick + 8, 0, 1, ease.inOutCubic);
+  const h = 700 - 370 * tw(f, pick + 1, pick + 6, 0, 1, ease.inOutCubic);
   return (
     <Feature side="left" n="04" label="MODEL SETTINGS" title={'Any model.\nYour settings.'} accent={['model']} grad={['#A5F3FC', '#22D3EE']} sub={'Claude, GPT and Gemini,\nswitched in a click.'}>
       <div style={{ position: 'relative' }}>
@@ -361,7 +361,6 @@ export const ModelShot = () => {
                         borderRadius: 9,
                         fontSize: 20,
                         background: on ? t.hover : undefined,
-                        boxShadow: on ? `inset 3px 0 0 ${p.color}` : undefined,
                       }}
                     >
                       <Dot color={p.color} letter={p.name[0]} />
@@ -373,7 +372,7 @@ export const ModelShot = () => {
               </div>
             ))}
           </div>
-          <div style={{ position: 'absolute', left: 34, right: 34, bottom: 44, opacity: tw(f, pick + 5, pick + 10) }}>
+          <div style={{ position: 'absolute', left: 34, right: 34, bottom: 44, opacity: tw(f, pick + 3, pick + 6) }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 18 }}>
               <span style={{ fontSize: 18, fontWeight: 700, color: t.subtle, letterSpacing: '0.1em' }}>TEMPERATURE</span>
               <span style={{ fontFamily: mono, fontSize: 30, fontWeight: 700, transform: `scale(${1 + pulse(f, 50, 5) * 0.2})` }}>{temp.toFixed(2)}</span>
@@ -398,7 +397,7 @@ export const ModelShot = () => {
         <Cursor
           path={[
             { f: 16, x: 500, y: 330 },
-            { f: 26, x: 300, y: 256 },
+            { f: 26, x: 300, y: 233 },
             { f: 32, x: 34 + 0.3 * 612 + 6, y: 285 },
             { f: 50, x: 34 + 0.7 * 612 + 6, y: 285 },
           ]}

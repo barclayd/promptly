@@ -3,7 +3,7 @@ import { AbsoluteFill, Audio, Sequence, staticFile } from 'remotion';
 import { Background, Grain } from './components/Background';
 import { Shot } from './components/Fx';
 import { s } from './lib/motion';
-import { stage } from './lib/theme';
+import { sans, stage } from './lib/theme';
 import { ComposerShot } from './scenes/ComposerShot';
 import { Explainer } from './scenes/Explainer';
 import { ActivityShot, AnalyticsShot, SearchShot, ThemeShot } from './scenes/Insights';
@@ -158,7 +158,7 @@ const SFX: [number, string, number][] = [
 ];
 
 export const Showreel = () => (
-  <AbsoluteFill style={{ background: stage.bg }}>
+  <AbsoluteFill style={{ background: stage.bg, fontFamily: sans }}>
     <Background />
     <Sequence durationInFrames={s(10)}>
       <Intro />

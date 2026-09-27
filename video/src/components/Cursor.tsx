@@ -1,5 +1,5 @@
 import { useCurrentFrame } from 'remotion';
-import { ease, kf, pulse, tw } from '../lib/motion';
+import { ease, kf, tw } from '../lib/motion';
 
 type Key = { f: number; x: number; y: number };
 
@@ -58,7 +58,6 @@ export const Cursor = ({
               borderRadius: '50%',
               border: `${3 * (1 - r)}px solid rgba(255,255,255,${0.9 * (1 - r)})`,
               transform: `scale(${0.2 + r * 1.3})`,
-              boxShadow: `0 0 30px rgba(165,180,252,${0.6 * pulse(f, c, 6)})`,
             }}
           />
         );

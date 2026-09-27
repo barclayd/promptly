@@ -234,7 +234,6 @@ export const SearchShot = () => {
                           padding: '14px 16px',
                           borderRadius: 12,
                           background: i === hl ? t.hover : 'transparent',
-                          boxShadow: i === hl ? `inset 3px 0 0 ${stage.cyan}` : undefined,
                           transform: i === hl ? `scale(${1 + pulse(f, hl === 0 ? OPEN + 16 : hl === 1 ? 38 : 46, 6) * 0.02})` : undefined,
                         }}
                       >
@@ -452,7 +451,7 @@ export const ThemeShot = () => {
   const shake = roll * 6 * Math.sin(f * 2.3);
   // Toggle click point in MiniApp coords.
   const cx = 150;
-  const cy = 626;
+  const cy = 598;
   return (
     <AbsoluteFill>
       <div style={{ position: 'absolute', top: 36, width: '100%' }}>

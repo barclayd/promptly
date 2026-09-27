@@ -54,7 +54,7 @@ export const TestShot = () => {
         <Float rx={4} ry={-3} drift={0.5}>
           <div style={{ position: 'relative' }}>
             <Panel w={1620} h={715} glow={stage.violet} style={{ display: 'flex' }}>
-              <div style={{ width: 470, borderRight: `1px solid ${t.border}`, padding: 30, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ width: 520, borderRight: `1px solid ${t.border}`, padding: 30, display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <div style={{ fontSize: 26, fontWeight: 700 }}>Test</div>
                 <div style={{ display: 'flex', gap: 10, fontSize: 17, color: t.muted }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 9, border: `1px solid ${t.border}` }}>
@@ -136,8 +136,8 @@ export const TestShot = () => {
                 </div>
               </div>
             </Panel>
-            <Cursor path={[{ f: 0, x: 420, y: 820 }, { f: 11, x: 260, y: 694 }]} clicks={[run]} show={[0, 30]} />
-            <Burst x={250} y={694} at={run} count={20} speed={14} life={20} seed="run" />
+            <Cursor path={[{ f: 0, x: 420, y: 820 }, { f: 11, x: 260, y: 661 }]} clicks={[run]} show={[0, 30]} />
+            <Burst x={260} y={661} at={run} count={20} speed={14} life={20} seed="run" />
             <Sparkles at={done + 6} items={[{ x: 1500, y: 40 }, { x: 1590, y: 90, s: 0.7 }, { x: 1440, y: 110, s: 0.5 }]} />
           </div>
         </Float>
@@ -254,7 +254,7 @@ export const PublishShot = () => {
         </Panel>
         <Shockwave x={370} y={260} at={click + 3} size={1100} color="rgba(52,211,153,0.8)" />
         <Confetti x={370} y={300} at={click + 3} count={70} seed="pub" spread={1.2} />
-        <Cursor path={[{ f: 10, x: 820, y: 620 }, { f: 26, x: 640, y: 530 }]} clicks={[click]} show={[8, 40]} />
+        <Cursor path={[{ f: 10, x: 820, y: 620 }, { f: 26, x: 624, y: 403 }]} clicks={[click]} show={[8, 40]} />
       </div>
     </Feature>
   );
