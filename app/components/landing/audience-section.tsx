@@ -4,10 +4,7 @@ import { AnimatedWrapper } from './animated-wrapper';
 
 export const AudienceSection = () => {
   return (
-    <section
-      className="py-24 lg:py-32 bg-muted/30"
-      aria-labelledby="audience-heading"
-    >
+    <section className="py-24 lg:py-32" aria-labelledby="audience-heading">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <AnimatedWrapper className="text-center mb-16">
           <h2

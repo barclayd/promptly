@@ -6,7 +6,7 @@ export const PricingSection = () => {
   return (
     <section
       id="pricing"
-      className="py-24 lg:py-32"
+      className="py-24 lg:py-32 bg-muted/30"
       aria-labelledby="pricing-heading"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

@@ -22,7 +22,10 @@ const costFeatures = [
 
 export const CostSection = () => {
   return (
-    <section className="py-24 lg:py-32" aria-labelledby="cost-heading">
+    <section
+      className="py-24 lg:py-32 bg-muted/30"
+      aria-labelledby="cost-heading"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left: Content */}

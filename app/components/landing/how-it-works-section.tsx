@@ -30,7 +30,10 @@ const richDescriptions: Record<string, ReactNode> = {
 
 export const HowItWorksSection = () => {
   return (
-    <section className="py-24 lg:py-32" aria-labelledby="how-it-works-heading">
+    <section
+      className="py-24 lg:py-32 bg-muted/30"
+      aria-labelledby="how-it-works-heading"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <AnimatedWrapper className="text-center mb-16">
           <h2

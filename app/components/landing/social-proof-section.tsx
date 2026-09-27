@@ -5,7 +5,7 @@ import { AnimatedWrapper } from './animated-wrapper';
 export const SocialProofSection = () => {
   return (
     <section
-      className="py-24 lg:py-32 bg-muted/30"
+      className="py-24 lg:py-32"
       aria-label="Social proof and testimonials"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
