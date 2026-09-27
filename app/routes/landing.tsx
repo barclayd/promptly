@@ -18,6 +18,11 @@ const SolutionSection = lazy(() =>
     default: m.SolutionSection,
   })),
 );
+const ShowreelSection = lazy(() =>
+  import('~/components/landing/showreel-section').then((m) => ({
+    default: m.ShowreelSection,
+  })),
+);
 const FeaturesGridSection = lazy(() =>
   import('~/components/landing/features-grid-section').then((m) => ({
     default: m.FeaturesGridSection,
@@ -116,6 +121,7 @@ export default function Landing({ loaderData }: Route.ComponentProps) {
         <Suspense>
           <PainPointsSection />
           <SolutionSection />
+          <ShowreelSection />
           <FeaturesGridSection />
           <HowItWorksSection />
           <AudienceSection />
