@@ -1,6 +1,6 @@
 {
   "include": ["**/*.ts", "**/*.tsx", "./.react-router/types/**/*"],
-  "exclude": ["scripts/**/*"],
+  "exclude": ["scripts/**/*", "video/**/*"],
   "compilerOptions": {
     "allowImportingTsExtensions": false,
     "strict": true,
