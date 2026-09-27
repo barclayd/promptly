@@ -127,8 +127,7 @@ export const ShowreelSection = () => {
   return (
     <section
       id="demo"
-      // No top padding, so keep the heading clear of the fixed nav.
-      className="scroll-mt-24 pb-24 lg:pb-32 overflow-hidden"
+      className="py-24 lg:py-32 bg-muted/30 overflow-hidden"
       aria-labelledby="showreel-heading"
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">

@@ -41,11 +41,7 @@ const richAnswers: Record<string, React.ReactNode> = {
 
 export const FAQSection = () => {
   return (
-    <section
-      id="faq"
-      className="py-24 lg:py-32 bg-muted/30"
-      aria-labelledby="faq-heading"
-    >
+    <section id="faq" className="py-24 lg:py-32" aria-labelledby="faq-heading">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <AnimatedWrapper className="text-center mb-16">
           <h2
