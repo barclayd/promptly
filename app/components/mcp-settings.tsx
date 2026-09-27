@@ -3,11 +3,21 @@ import {
   IconCopy,
   IconExternalLink,
   IconPlugConnected,
+  IconSparkles,
 } from '@tabler/icons-react';
 import { useState } from 'react';
 import { Link, useFetcher } from 'react-router';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemFooter,
+  ItemMedia,
+  ItemTitle,
+} from '~/components/ui/item';
 import type { McpPermission, McpScope } from '~/lib/validations/mcp';
 
 export type McpSettingsConnection = {
@@ -187,6 +197,41 @@ const McpConnection = ({
   );
 };
 
+const McpAgentSetup = ({ serverUrl }: { serverUrl: string }) => {
+  const prompt = `Read https://docs.promptlycms.com/mcp/connect.md, then connect yourself to the Promptly MCP server at ${serverUrl} by following the steps for your app. Run the commands yourself and tell me when I need to sign in.`;
+
+  return (
+    <Item variant="outline">
+      <ItemMedia variant="icon">
+        <IconSparkles aria-hidden="true" />
+      </ItemMedia>
+      <ItemContent>
+        <ItemTitle>Let your assistant set itself up</ItemTitle>
+        <ItemDescription className="line-clamp-none">
+          Paste this into Claude Code, Codex, or Cursor. It follows the{' '}
+          <a
+            href="https://docs.promptlycms.com/mcp/connect/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            setup guide
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>{' '}
+          and tells you when to sign in.
+        </ItemDescription>
+      </ItemContent>
+      <ItemActions>
+        <McpCopyButton value={prompt} label="Setup prompt" />
+      </ItemActions>
+      <ItemFooter>
+        <p className="w-full rounded-lg border bg-muted/40 p-3 text-xs leading-relaxed wrap-anywhere">
+          <code>{prompt}</code>
+        </p>
+      </ItemFooter>
+    </Item>
+  );
+};
+
 const McpClientGuides = ({
   serverUrl,
   authoringEnabled,
@@ -355,6 +400,7 @@ export const McpSettings = ({
       <h3 id="mcp-setup-heading" className="text-sm font-medium">
         Set up your assistant
       </h3>
+      {enabled && <McpAgentSetup serverUrl={serverUrl} />}
       <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
         {enabled && authoringEnabled
           ? 'These settings let you choose Read only, Create and edit drafts, or Create, edit, and publish when you connect. Draft editing is selected by default; publishing is enabled only if you select it. Run tests is a separate choice, off by default, and uses your workspace’s LLM API keys with API costs.'

@@ -135,3 +135,26 @@ console.log(renderToStaticMarkup(createElement(McpSettings, {
     ).toBeVisible();
   }
 });
+
+test('MCP setup copies a prompt that hands the setup guide to the assistant', async ({
+  authenticatedPage: page,
+}) => {
+  const session = await page.request.get('/api/auth/get-session');
+  const { user } = await session.json();
+  await page.addInitScript((userId: string) => {
+    localStorage.setItem(`promptly:onboarding-skipped:${userId}`, '1');
+  }, user.id);
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/settings?tab=mcp');
+
+  const setup = page.locator('section[aria-labelledby="mcp-setup-heading"]');
+  await setup.getByRole('button', { name: 'Copy setup prompt' }).click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(
+      'Read https://docs.promptlycms.com/mcp/connect.md, then connect yourself to the Promptly MCP server at http://localhost:5173/mcp by following the steps for your app. Run the commands yourself and tell me when I need to sign in.',
+    );
+  await expect(
+    setup.getByRole('link', { name: /setup guide/ }),
+  ).toHaveAttribute('href', 'https://docs.promptlycms.com/mcp/connect/');
+});
