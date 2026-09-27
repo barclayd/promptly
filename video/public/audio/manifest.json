@@ -1,0 +1,167 @@
+{
+  "bpm": 120,
+  "bars": 30,
+  "sampleRate": 48000,
+  "totalSeconds": 60.0,
+  "hitPoints": {
+    "introStart": 0.0,
+    "bar3KickIn": 4.0,
+    "riserIntro": [
+      4.0,
+      7.75
+    ],
+    "snareRollIntro": [
+      6.0,
+      7.75
+    ],
+    "dropGapIntro": [
+      7.75,
+      8.0
+    ],
+    "dropA": 8.0,
+    "dropAAccents": [
+      10.0,
+      12.0,
+      14.0,
+      16.0,
+      18.0
+    ],
+    "dropAFill": [
+      19.5,
+      20.0
+    ],
+    "montage": 20.0,
+    "montageCrashes": [
+      28.0,
+      36.0
+    ],
+    "montageFill": [
+      35.5,
+      36.0
+    ],
+    "buildStart": 44.0,
+    "riserBuild": [
+      44.0,
+      47.75
+    ],
+    "snareRollBuild": [
+      46.0,
+      47.75
+    ],
+    "dropGapBuild": [
+      47.75,
+      48.0
+    ],
+    "dropB": 48.0,
+    "outroStart": 54.0,
+    "outroSparkle": 56.0,
+    "silenceBy": 59.9
+  },
+  "sfx": [
+    {
+      "name": "whoosh_in.wav",
+      "durationSeconds": 0.6,
+      "peakTimeSeconds": 0.4405
+    },
+    {
+      "name": "whoosh_out.wav",
+      "durationSeconds": 0.5,
+      "peakTimeSeconds": 0.029
+    },
+    {
+      "name": "swoosh_short.wav",
+      "durationSeconds": 0.25,
+      "peakTimeSeconds": 0.0977
+    },
+    {
+      "name": "impact_big.wav",
+      "durationSeconds": 2.0,
+      "peakTimeSeconds": 0.0028
+    },
+    {
+      "name": "impact_small.wav",
+      "durationSeconds": 1.0,
+      "peakTimeSeconds": 0.0019
+    },
+    {
+      "name": "pop.wav",
+      "durationSeconds": 0.15,
+      "peakTimeSeconds": 0.0025
+    },
+    {
+      "name": "pop2.wav",
+      "durationSeconds": 0.15,
+      "peakTimeSeconds": 0.0022
+    },
+    {
+      "name": "pop3.wav",
+      "durationSeconds": 0.15,
+      "peakTimeSeconds": 0.0026
+    },
+    {
+      "name": "click.wav",
+      "durationSeconds": 0.05,
+      "peakTimeSeconds": 0.0007
+    },
+    {
+      "name": "tick1.wav",
+      "durationSeconds": 0.03,
+      "peakTimeSeconds": 0.0003
+    },
+    {
+      "name": "tick2.wav",
+      "durationSeconds": 0.03,
+      "peakTimeSeconds": 0.0004
+    },
+    {
+      "name": "tick3.wav",
+      "durationSeconds": 0.03,
+      "peakTimeSeconds": 0.0007
+    },
+    {
+      "name": "tick4.wav",
+      "durationSeconds": 0.03,
+      "peakTimeSeconds": 0.0012
+    },
+    {
+      "name": "sparkle.wav",
+      "durationSeconds": 1.2,
+      "peakTimeSeconds": 0.5438
+    },
+    {
+      "name": "success.wav",
+      "durationSeconds": 0.6,
+      "peakTimeSeconds": 0.2561
+    },
+    {
+      "name": "glitch.wav",
+      "durationSeconds": 0.3,
+      "peakTimeSeconds": 0.0012
+    },
+    {
+      "name": "riser_short.wav",
+      "durationSeconds": 1.0,
+      "peakTimeSeconds": 0.9741
+    },
+    {
+      "name": "swipe.wav",
+      "durationSeconds": 0.35,
+      "peakTimeSeconds": 0.1482
+    },
+    {
+      "name": "toggle.wav",
+      "durationSeconds": 0.12,
+      "peakTimeSeconds": 0.0012
+    },
+    {
+      "name": "bass_drop.wav",
+      "durationSeconds": 1.5,
+      "peakTimeSeconds": 0.0011
+    },
+    {
+      "name": "data_blips.wav",
+      "durationSeconds": 0.8,
+      "peakTimeSeconds": 0.5143
+    }
+  ]
+}
