@@ -807,6 +807,9 @@ export default function PromptDetail({ loaderData }: Route.ComponentProps) {
                   description: saveState.definition.description,
                 }}
                 isOwner={loaderData.isOwner}
+                discardToVersion={
+                  canPublish ? loaderData.lastPublishedVersion : null
+                }
               />
               <PublishPromptDialog
                 promptId={loaderData.prompt.id}

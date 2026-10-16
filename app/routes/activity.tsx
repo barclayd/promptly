@@ -87,6 +87,7 @@ const operationLabel = (operation: string) => {
         publish: 'Published',
         restore: 'Restored',
         delete: 'Deleted',
+        discard: 'Discarded draft',
       } as Record<string, string>
     )[verb] ?? verb
   );

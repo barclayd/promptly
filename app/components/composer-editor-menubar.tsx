@@ -1,10 +1,17 @@
 'use client';
 
-import { IconCopy, IconLink, IconShare, IconTrash } from '@tabler/icons-react';
+import {
+  IconArrowBackUp,
+  IconCopy,
+  IconLink,
+  IconShare,
+  IconTrash,
+} from '@tabler/icons-react';
 import { useState } from 'react';
 import { useLocation } from 'react-router';
 import { toast } from 'sonner';
 import { DeleteComposerDialog } from '~/components/delete-composer-dialog';
+import { DiscardDraftDialog } from '~/components/discard-draft-dialog';
 import { EditComposerDetailsDialog } from '~/components/edit-composer-details-dialog';
 import {
   Menubar,
@@ -18,21 +25,26 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from '~/components/ui/menubar';
+import { useAuthoringDialog } from '~/hooks/use-authoring-dialog';
 import { useComposerUndoRedo } from '~/hooks/use-composer-undo-redo';
 
 type ComposerEditorMenubarProps = {
   composer: { id: string; name: string; description: string };
   isOwner: boolean;
+  discardToVersion: string | null;
 };
 
 export const ComposerEditorMenubar = ({
   composer,
   isOwner,
+  discardToVersion,
 }: ComposerEditorMenubarProps) => {
   const { canUndo, canRedo, undo, redo } = useComposerUndoRedo();
   const location = useLocation();
   const [editDetailsOpen, setEditDetailsOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
+  const discard = useAuthoringDialog('composer', composer.id);
 
   const handleCopyLink = async () => {
     const url = `${window.location.origin}${location.pathname}`;
@@ -70,6 +82,14 @@ export const ComposerEditorMenubar = ({
           <MenubarSeparator />
           <MenubarItem
             variant="destructive"
+            disabled={!discardToVersion}
+            onClick={() => setDiscardDialogOpen(true)}
+          >
+            <IconArrowBackUp className="size-4" />
+            Discard draft
+          </MenubarItem>
+          <MenubarItem
+            variant="destructive"
             disabled={!isOwner}
             onClick={() => setDeleteDialogOpen(true)}
           >
@@ -103,6 +123,15 @@ export const ComposerEditorMenubar = ({
         onOpenChange={setDeleteDialogOpen}
         composer={composer}
       />
+      {discardToVersion && (
+        <DiscardDraftDialog
+          open={discardDialogOpen}
+          onOpenChange={setDiscardDialogOpen}
+          name={composer.name}
+          version={discardToVersion}
+          discard={discard}
+        />
+      )}
     </Menubar>
   );
 };

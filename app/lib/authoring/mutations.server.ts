@@ -1064,6 +1064,137 @@ export const restoreAuthoringChange = async (
     { operation, requestHash },
   );
 };
+const discardDraft = async (
+  db: D1Database,
+  principal: AuthoringPrincipal,
+  kind: Kind,
+  rawInput: DeleteAuthoringInput,
+) => {
+  const access = await authorizeAuthoringAccess(db, principal, 'mcp:write');
+  const input = parseAuthoringValue(deleteAuthoringSchema, rawInput);
+  const identity = {
+    actor: access.actor,
+    operation: `discard_${kind}`,
+    requestKey: input.requestKey,
+    requestHash: await canonicalAuthoringRequestHash({
+      operation: `discard_${kind}`,
+      input,
+    }),
+  };
+  const replay = await replayResult(db, identity);
+  if (replay) return replay;
+  const organizationId = access.actor.organizationId;
+  const current = await readDefinition(db, kind, organizationId, input.id);
+  if (current.metadata.revision !== input.expectedRevision)
+    return finish(
+      db,
+      principal,
+      kind,
+      'update',
+      organizationId,
+      input.id,
+      input.expectedRevision,
+      { status: 'not_admitted', currentRevision: current.metadata.revision },
+    );
+  if (current.version.status !== 'draft')
+    throw new AuthoringError('invalid_input', 'There is no draft to discard.');
+  let latest: Awaited<ReturnType<typeof readDefinition>>;
+  try {
+    latest = await readDefinition(db, kind, organizationId, input.id, 'latest');
+  } catch (error) {
+    if (error instanceof AuthoringError && error.code === 'version_not_found')
+      throw new AuthoringError(
+        'invalid_input',
+        `This ${kind} has never been published, so there is nothing to revert to. Delete it instead.`,
+      );
+    throw error;
+  }
+  const result = await commitAuthoringMutation(db, {
+    ...identity,
+    target: {
+      kind,
+      documentId: input.id,
+      expectedRevision: input.expectedRevision,
+    },
+    guards: [
+      ...access.guards,
+      ...(await getAuthoringPolicyGuards(
+        db,
+        organizationId,
+        kind,
+        'update',
+        input.id,
+      )),
+    ],
+    prepare: ({ revision, changeId, now }) => ({
+      writes: [
+        // Reference rows cascade with the version row.
+        {
+          kind: 'delete',
+          table: kind === 'prompt' ? 'prompt_version' : 'composer_version',
+          where: {
+            sql: 'id = ? AND published_at IS NULL',
+            values: [current.version.id],
+          },
+          expectedChanges: 1,
+        },
+        {
+          kind: 'update',
+          table: kind,
+          set: { updated_at: now },
+          where: { sql: 'id = ?', values: [input.id] },
+          expectedChanges: 1,
+        },
+      ],
+      before: {
+        definition: current.definition,
+        folderId: current.metadata.folderId,
+        version: current.version,
+      },
+      after: {
+        definition: latest.definition,
+        folderId: current.metadata.folderId,
+        version: latest.version,
+      },
+      versionId: latest.version.id,
+      result: mutationResult(
+        kind,
+        input.id,
+        latest.version,
+        revision,
+        changeId,
+        [],
+        [],
+      ),
+      sideEffects: [
+        { kind: 'notify_editors', payload: {} },
+        { kind: 'invalidate_cache', payload: {} },
+      ],
+    }),
+  });
+  return finish(
+    db,
+    principal,
+    kind,
+    'update',
+    organizationId,
+    input.id,
+    input.expectedRevision,
+    result,
+  );
+};
+
+export const discardPromptDraft = (
+  db: D1Database,
+  principal: AuthoringPrincipal,
+  input: DeleteAuthoringInput,
+) => discardDraft(db, principal, 'prompt', input);
+export const discardComposerDraft = (
+  db: D1Database,
+  principal: AuthoringPrincipal,
+  input: DeleteAuthoringInput,
+) => discardDraft(db, principal, 'composer', input);
+
 export const publishPrompt = (
   db: D1Database,
   principal: AuthoringPrincipal,

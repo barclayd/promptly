@@ -28,6 +28,8 @@ import {
   type AuthoringMutationResult,
   createComposer,
   createPrompt,
+  discardComposerDraft,
+  discardPromptDraft,
   publishComposer,
   publishPrompt,
   restoreAuthoringChange,
@@ -51,6 +53,7 @@ type BrowserOperation =
   | 'create'
   | 'publish'
   | 'delete'
+  | 'discard'
   | 'restore';
 
 const json = (body: BrowserAuthoringResponse, status = 200) =>
@@ -267,7 +270,12 @@ export const browserAuthoringAction = async (
       });
     }
     let result: AuthoringMutationResult;
-    if (operation === 'restore') {
+    if (operation === 'discard') {
+      result =
+        kind === 'prompt'
+          ? await discardPromptDraft(db, principal, addressed)
+          : await discardComposerDraft(db, principal, addressed);
+    } else if (operation === 'restore') {
       result = await restoreAuthoringChange(
         db,
         principal,

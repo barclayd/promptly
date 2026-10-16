@@ -177,3 +177,38 @@ export const publishSnippetDraft = async (
     'No draft version to publish.',
   );
 };
+
+export const discardSnippetDraft = async (
+  db: D1Database,
+  input: SnippetActor,
+) => {
+  const session = db.withSession('first-primary');
+  const results = await session.batch([
+    // ponytail: deletes every draft row, which also clears the "multiple drafts" repair state.
+    session
+      .prepare(`DELETE FROM snippet_version WHERE snippet_id = ? AND published_at IS NULL
+      AND EXISTS (SELECT 1 FROM snippet s WHERE ${access})
+      AND EXISTS (SELECT 1 FROM snippet_version WHERE snippet_id = ? AND published_at IS NOT NULL)
+      RETURNING id`)
+      .bind(input.snippetId, ...accessValues(input), input.snippetId),
+    session
+      .prepare(
+        'UPDATE snippet SET updated_at = ? WHERE id = ? AND changes() > 0',
+      )
+      .bind(Date.now(), input.snippetId),
+    stateQuery(session, input),
+  ]);
+  const state = results.at(-1)?.results[0] as SnippetState | undefined;
+  if (!state)
+    throw new AuthoringError(
+      'content_not_found',
+      'Snippet not found in this workspace.',
+    );
+  if (!results[0].results.length)
+    throw new AuthoringError(
+      'invalid_input',
+      state.major === null
+        ? 'This snippet has never been published, so there is nothing to revert to. Delete it instead.'
+        : 'There is no draft to discard.',
+    );
+};

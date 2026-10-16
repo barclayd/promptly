@@ -608,6 +608,16 @@ export default function SnippetDetail({ loaderData }: Route.ComponentProps) {
               <SnippetEditorMenubar
                 snippet={loaderData.snippet}
                 isOwner={loaderData.isOwner}
+                discardToVersion={
+                  loaderData.hasDraft ? loaderData.lastPublishedVersion : null
+                }
+                onBeforeDiscard={debouncedSave.cancel}
+                onDiscarded={() =>
+                  sendContentUpdate?.(
+                    'systemMessage',
+                    loaderData.lastPublishedContent ?? '',
+                  )
+                }
               />
               <PublishSnippetDialog
                 snippetId={loaderData.snippet.id}

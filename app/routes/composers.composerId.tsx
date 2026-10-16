@@ -636,6 +636,9 @@ export default function ComposerDetail({ loaderData }: Route.ComponentProps) {
                     description: saveState.definition.description,
                   }}
                   isOwner={loaderData.isOwner}
+                  discardToVersion={
+                    canPublish ? loaderData.lastPublishedVersion : null
+                  }
                 />
                 <PublishComposerDialog
                   composerId={loaderData.composer.id}
