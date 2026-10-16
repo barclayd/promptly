@@ -1,8 +1,15 @@
-import { IconCopy, IconLink, IconShare, IconTrash } from '@tabler/icons-react';
+import {
+  IconArrowBackUp,
+  IconCopy,
+  IconLink,
+  IconShare,
+  IconTrash,
+} from '@tabler/icons-react';
 import { useState } from 'react';
 import { useLocation } from 'react-router';
 import { toast } from 'sonner';
 import { DeletePromptDialog } from '~/components/delete-prompt-dialog';
+import { DiscardDraftDialog } from '~/components/discard-draft-dialog';
 import { EditPromptDetailsDialog } from '~/components/edit-prompt-details-dialog';
 import {
   Menubar,
@@ -16,6 +23,7 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from '~/components/ui/menubar';
+import { useAuthoringDialog } from '~/hooks/use-authoring-dialog';
 import { useUndoRedo } from '~/hooks/use-undo-redo';
 
 type PromptEditorMenubarProps = {
@@ -25,16 +33,20 @@ type PromptEditorMenubarProps = {
     description: string;
   };
   isOwner: boolean;
+  discardToVersion: string | null;
 };
 
 export const PromptEditorMenubar = ({
   prompt,
   isOwner,
+  discardToVersion,
 }: PromptEditorMenubarProps) => {
   const { canUndo, canRedo, undo, redo } = useUndoRedo();
   const location = useLocation();
   const [editDetailsOpen, setEditDetailsOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
+  const discard = useAuthoringDialog('prompt', prompt.id);
 
   const handleCopyLink = async () => {
     const url = `${window.location.origin}${location.pathname}`;
@@ -72,6 +84,14 @@ export const PromptEditorMenubar = ({
           <MenubarSeparator />
           <MenubarItem
             variant="destructive"
+            disabled={!discardToVersion}
+            onClick={() => setDiscardDialogOpen(true)}
+          >
+            <IconArrowBackUp className="size-4" />
+            Discard draft
+          </MenubarItem>
+          <MenubarItem
+            variant="destructive"
             disabled={!isOwner}
             onClick={() => setDeleteDialogOpen(true)}
           >
@@ -105,6 +125,15 @@ export const PromptEditorMenubar = ({
         onOpenChange={setDeleteDialogOpen}
         prompt={prompt}
       />
+      {discardToVersion && (
+        <DiscardDraftDialog
+          open={discardDialogOpen}
+          onOpenChange={setDiscardDialogOpen}
+          name={prompt.name}
+          version={discardToVersion}
+          discard={discard}
+        />
+      )}
     </Menubar>
   );
 };

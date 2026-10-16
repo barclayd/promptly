@@ -24,6 +24,7 @@ export default [
   route('api/prompts/publish', './routes/api/prompts.publish.ts'),
   route('api/prompts/update', './routes/api/prompts.update.ts'),
   route('api/prompts/delete', './routes/api/prompts.delete.ts'),
+  route('api/prompts/discard', './routes/api/prompts.discard.ts'),
   route('api/prompt-info', './routes/api/prompt-info.ts'),
   route('api/prompt-versions', './routes/api/prompt-versions.ts'),
   route('api/prompt-schema', './routes/api/prompt-schema.ts'),
@@ -34,6 +35,7 @@ export default [
   route('api/snippets/publish', './routes/api/snippets.publish.ts'),
   route('api/snippets/update', './routes/api/snippets.update.ts'),
   route('api/snippets/delete', './routes/api/snippets.delete.ts'),
+  route('api/snippets/discard', './routes/api/snippets.discard.ts'),
   route('api/snippet-info', './routes/api/snippet-info.ts'),
   // Composer API routes
   route('api/composers/create', './routes/api/composers.create.ts'),
@@ -41,6 +43,7 @@ export default [
   route('api/composers/publish', './routes/api/composers.publish.ts'),
   route('api/composers/update', './routes/api/composers.update.ts'),
   route('api/composers/delete', './routes/api/composers.delete.ts'),
+  route('api/composers/discard', './routes/api/composers.discard.ts'),
   route('api/composers/save-content', './routes/api/composers.save-content.ts'),
   route('api/composers/save-config', './routes/api/composers.save-config.ts'),
   route('api/composer-info', './routes/api/composer-info.ts'),

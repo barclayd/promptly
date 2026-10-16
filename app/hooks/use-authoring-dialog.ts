@@ -60,7 +60,7 @@ export const useAuthoringDialog = (kind: BrowserAuthoringKind, id: string) => {
   );
 
   const perform = async (
-    operation: 'save' | 'publish' | 'delete' | 'restore',
+    operation: 'save' | 'publish' | 'delete' | 'discard' | 'restore',
     input?:
       | { name: string; description: string }
       | { changeId: string; phase: 'before' | 'after' }
@@ -74,7 +74,8 @@ export const useAuthoringDialog = (kind: BrowserAuthoringKind, id: string) => {
       if (
         (operation === 'restore' ||
           operation === 'publish' ||
-          operation === 'delete') &&
+          operation === 'delete' ||
+          operation === 'discard') &&
         state.remoteGeneration !== openedRemoteGeneration.current &&
         state.error?.kind !== 'network'
       ) {
@@ -145,13 +146,15 @@ export const useAuthoringDialog = (kind: BrowserAuthoringKind, id: string) => {
           ? await session.flush()
           : operation === 'delete'
             ? await session.delete()
-            : operation === 'restore' &&
-                typeof input === 'object' &&
-                'changeId' in input
-              ? await session.restore(input)
-              : await session.publish(
-                  typeof input === 'string' ? input : undefined,
-                );
+            : operation === 'discard'
+              ? await session.discard()
+              : operation === 'restore' &&
+                  typeof input === 'object' &&
+                  'changeId' in input
+                ? await session.restore(input)
+                : await session.publish(
+                    typeof input === 'string' ? input : undefined,
+                  );
       if (result.status === 'saved') {
         void revalidator.revalidate();
         return true;
@@ -192,6 +195,7 @@ export const useAuthoringDialog = (kind: BrowserAuthoringKind, id: string) => {
       perform('save', details),
     publish: (version: string) => perform('publish', version),
     delete: () => perform('delete'),
+    discard: () => perform('discard'),
     restore: (input: { changeId: string; phase: 'before' | 'after' }) =>
       perform('restore', input),
   };

@@ -14,7 +14,7 @@ import {
 } from './save-coordinator';
 
 type Command =
-  | { operation: 'publish' | 'delete'; version?: string }
+  | { operation: 'publish' | 'delete' | 'discard'; version?: string }
   | { operation: 'restore'; changeId: string; phase: 'before' | 'after' };
 
 let initializingStore = false;
@@ -44,7 +44,7 @@ const createEditorSession = (initial: BrowserAuthoringDocument) => {
   let appliedRevision = initial.revision;
 
   const request = async (
-    operation: 'save' | 'publish' | 'delete' | 'restore',
+    operation: 'save' | 'publish' | 'delete' | 'discard' | 'restore',
     fields: Record<string, string>,
   ): Promise<SaveTransportResult<BrowserAuthoringFields>> => {
     const form = new FormData();
@@ -394,6 +394,7 @@ const createEditorSession = (initial: BrowserAuthoringDocument) => {
     publish: (version?: string) =>
       operate({ operation: 'publish', ...(version ? { version } : {}) }),
     delete: () => operate({ operation: 'delete' }),
+    discard: () => operate({ operation: 'discard' }),
     restore: (input: { changeId: string; phase: 'before' | 'after' }) =>
       operate({ operation: 'restore', ...input }),
     retry: async () => {
