@@ -1,9 +1,14 @@
 import { RouterContextProvider } from 'react-router';
 import { z } from 'zod';
-import { cloudflareContext, sessionContext } from '../../app/context';
+import {
+  cloudflareContext,
+  sessionContext,
+  userContext,
+} from '../../app/context';
 import { handleExternalMcpBridge } from '../../app/lib/mcp/external.server';
 import { getMcpOAuthApi } from '../../app/lib/mcp/oauth.server';
 import { handleMcpApi } from '../../app/lib/mcp/protocol.server';
+import { action as serversAction } from '../../app/routes/api/mcp.servers';
 import { action, loader } from '../../app/routes/oauth.authorize';
 import foundation from './mcp-authoring-worker';
 
@@ -48,20 +53,34 @@ export default {
           env,
           path.pathname.split('/').at(-1) ?? '',
         );
+      const userId = request.headers.get('X-Test-User') ?? 'alice';
+      const now = new Date();
+      const user = {
+        id: userId,
+        name: 'Alice',
+        email: 'alice@example.com',
+        emailVerified: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+      if (path.pathname === '/api/mcp/servers') {
+        const context = new RouterContextProvider();
+        context.set(cloudflareContext, { env, ctx });
+        context.set(userContext, user);
+        const response = await serversAction({
+          request: edgeRequest,
+          context,
+          params: {},
+          pattern: '/api/mcp/servers',
+          url: new URL(edgeRequest.url),
+        });
+        return Response.json(response.data, response.init ?? undefined);
+      }
       if (path.pathname === '/oauth/authorize') {
         const context = new RouterContextProvider();
         context.set(cloudflareContext, { env, ctx });
-        const userId = request.headers.get('X-Test-User') ?? 'alice';
-        const now = new Date();
         context.set(sessionContext, {
-          user: {
-            id: userId,
-            name: 'Alice',
-            email: 'alice@example.com',
-            emailVerified: true,
-            createdAt: now,
-            updatedAt: now,
-          },
+          user,
           session: {
             id: request.headers.get('X-Test-Session') ?? 'session',
             userId,

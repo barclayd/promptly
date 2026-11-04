@@ -78,6 +78,7 @@ export const withMcpAuthoring = async (
       '0027_authoring_persistence.sql',
       '0029_mcp_test_runs.sql',
       '0030_mcp_external_connections.sql',
+      '0031_mcp_external_servers.sql',
     ])
       await applyAuthoringFixtureMigration(db, name);
     await db
