@@ -2,32 +2,43 @@ import { z } from 'zod';
 import { mcpAuthoringReadSchema } from './mcp-authoring';
 
 const id = z.string().min(1).max(200);
+const externalMcpServerIdSchema = z
+  .string()
+  .regex(
+    /^[a-z0-9][a-z0-9_-]{0,63}$/,
+    'Use up to 64 lowercase letters, numbers, hyphens and underscores for the ID.',
+  );
+const externalMcpServerNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Enter a name.')
+  .max(200, 'Use a name of up to 200 characters.');
+const externalMcpResourceSchema = z
+  .string()
+  .max(2048)
+  .refine((value) => {
+    try {
+      const url = new URL(value);
+      return (
+        url.protocol === 'https:' &&
+        url.pathname.endsWith('/mcp') &&
+        !url.username &&
+        !url.password &&
+        !url.search &&
+        !url.hash &&
+        url.href === value
+      );
+    } catch {
+      return false;
+    }
+  }, 'Use the service’s exact HTTPS MCP URL, ending in /mcp.');
 export const externalMcpServerSchema = z.strictObject({
-  id: z.string().regex(/^[a-z0-9][a-z0-9_-]{0,63}$/),
-  name: z.string().trim().min(1).max(200),
-  resource: z
-    .string()
-    .max(2048)
-    .refine((value) => {
-      try {
-        const url = new URL(value);
-        return (
-          url.protocol === 'https:' &&
-          url.pathname.endsWith('/mcp') &&
-          !url.username &&
-          !url.password &&
-          !url.search &&
-          !url.hash &&
-          url.href === value
-        );
-      } catch {
-        return false;
-      }
-    }, 'Use an exact HTTPS MCP resource URL.'),
+  id: externalMcpServerIdSchema,
+  name: externalMcpServerNameSchema,
+  resource: externalMcpResourceSchema,
   organizationId: id,
   sharedSecret: z.string().min(32).max(512),
 });
-export type ExternalMcpServer = z.infer<typeof externalMcpServerSchema>;
 export const externalMcpServersSchema = z
   .array(externalMcpServerSchema)
   .max(20)
@@ -38,6 +49,21 @@ export const externalMcpServersSchema = z
     'External server IDs and resources must be unique.',
   );
 export type ExternalMcpServers = z.infer<typeof externalMcpServersSchema>;
+
+// What a workspace admin sends to /api/mcp/servers.
+export const externalMcpServerFormSchema = z.discriminatedUnion('intent', [
+  z.strictObject({
+    intent: z.literal('create'),
+    id: externalMcpServerIdSchema,
+    name: externalMcpServerNameSchema,
+    resource: externalMcpResourceSchema,
+  }),
+  z.strictObject({
+    intent: z.enum(['rotate', 'delete']),
+    id: externalMcpServerIdSchema,
+  }),
+]);
+export type ExternalMcpServerForm = z.infer<typeof externalMcpServerFormSchema>;
 
 export const externalMcpSubjectSchema = z.strictObject({
   userId: id,

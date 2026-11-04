@@ -59,10 +59,11 @@ const publicAuthorizationErrors = new Set([
 
 const parseAuthorization = async (request: Request, env: Env) => {
   try {
-    const target = getMcpAuthorizationTarget(env, request);
-    const parsed = await getMcpOAuthApi(env, target.resource).parseAuthRequest(
-      request,
-    );
+    const target = await getMcpAuthorizationTarget(env, request);
+    const parsed = await getMcpOAuthApi(
+      env,
+      target.externalServer,
+    ).parseAuthRequest(request);
     if (!parsed.codeChallenge || parsed.codeChallengeMethod !== 'S256') {
       throw new Response('Connect using OAuth with S256 PKCE.', {
         status: 400,
@@ -120,7 +121,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   if (!session?.user) throw redirect('/login');
   const workspace = await getMcpWorkspace(env.promptly, session.user.id);
   requireMcpEnabled(env);
-  const { authorization, resource, externalServer } = await parseAuthorization(
+  const { authorization, externalServer } = await parseAuthorization(
     request,
     env,
   );
@@ -132,7 +133,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
       'This external service is not available for your workspace.',
       { status: 403 },
     );
-  const client = await getMcpOAuthApi(env, resource).lookupClient(
+  const client = await getMcpOAuthApi(env, externalServer).lookupClient(
     authorization.clientId,
   );
   if (!client) throw new Response('Unknown OAuth client.', { status: 400 });
@@ -232,7 +233,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       'This connection request expired or has already been used. Start again from your client.',
       { status: 400 },
     );
-  const { authorization, resource, externalServer } = await parseAuthorization(
+  const { authorization, externalServer } = await parseAuthorization(
     new Request(pending.request_url),
     env,
   );
@@ -262,7 +263,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
       { status: 400 },
     );
   }
-  const api = getMcpOAuthApi(env, resource);
+  const api = getMcpOAuthApi(env, externalServer);
   const client = await api.lookupClient(authorization.clientId);
   if (!client) throw new Response('Unknown OAuth client.', { status: 400 });
   const connection = await createMcpConnection(env.promptly, {

@@ -1,14 +1,14 @@
-import type {
-  ExternalMcpServer,
-  ExternalMcpSubject,
-} from '../validations/mcp-external';
+import type { ExternalMcpSubject } from '../validations/mcp-external';
 import { externalMcpStoredGrantSchema } from '../validations/mcp-external';
 import {
   authorizeMcpConnection,
   type McpAccess,
   McpConnectionError,
 } from './connections.server';
-import { getExternalMcpServers } from './external-config.server';
+import {
+  type ExternalMcpServer,
+  findExternalMcpServer,
+} from './external-config.server';
 
 const unavailable = () =>
   new McpConnectionError(
@@ -46,7 +46,7 @@ export const bindExternalMcpConnection = async (
   if (result.meta.changes !== 1) throw unavailable();
 };
 
-export const assertMcpConnectionAudience = (
+export const assertMcpConnectionAudience = async (
   env: Env,
   access: McpAccess,
   externalServerId?: string,
@@ -59,9 +59,7 @@ export const assertMcpConnectionAudience = (
       throw unavailable();
     return;
   }
-  const server = getExternalMcpServers(env).find(
-    (item) => item.id === externalServerId,
-  );
+  const server = await findExternalMcpServer(env, { id: externalServerId });
   if (
     !server ||
     access.connection.externalServerId !== server.id ||
@@ -101,7 +99,7 @@ export const authorizeExternalMcpConnection = async (
     clientId: row.client_id,
     tokenScopes: ['mcp:read', 'mcp:run'],
   });
-  assertMcpConnectionAudience(env, access, server.id);
+  await assertMcpConnectionAudience(env, access, server.id);
   // Provider 0.10.3 exposes no single-grant lookup. Keep this bounded storage
   // adapter aligned with the pinned provider, as with RFC 7009 revocation.
   const grant = externalMcpStoredGrantSchema.safeParse(

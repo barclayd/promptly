@@ -22,7 +22,7 @@ import {
   McpConnectionError,
 } from './connections.server';
 import { assertMcpConnectionAudience } from './external-access.server';
-import { getExternalMcpServers } from './external-config.server';
+import type { ExternalMcpServer } from './external-config.server';
 import { handleMcpApi } from './protocol.server';
 import {
   isMcpRevocationRequest,
@@ -92,7 +92,11 @@ const oauthOptions = (
         ...parsed.data,
         tokenScopes: parsed.data.scopes,
       });
-      assertMcpConnectionAudience(env, access, parsed.data.externalServerId);
+      await assertMcpConnectionAudience(
+        env,
+        access,
+        parsed.data.externalServerId,
+      );
       const grant = mcpStoredGrantAudienceSchema.safeParse(
         await env.OAUTH_KV.get(`grant:${userId}:${grantId}`, 'json'),
       );
@@ -136,14 +140,15 @@ const oauthOptions = (
   },
 });
 
-export const getMcpOAuthApi = (env: Env, resource = getMcpUrl(env)) => {
-  if (
-    resource !== getMcpUrl(env) &&
-    !getExternalMcpServers(env).some((server) => server.resource === resource)
-  )
-    throw new Response('This MCP resource is not available.', { status: 400 });
-  return getOAuthApi(oauthOptions(env, resource), env);
-};
+// Without a server, the API is for Promptly's own MCP resource.
+export const getMcpOAuthApi = (
+  env: Env,
+  externalServer?: Pick<ExternalMcpServer, 'resource'>,
+) =>
+  getOAuthApi(
+    oauthOptions(env, externalServer?.resource ?? getMcpUrl(env)),
+    env,
+  );
 
 export const handleMcpOAuth = async (
   request: Request,
