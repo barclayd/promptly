@@ -2,11 +2,23 @@
 
 Promptly can authorize a configured external MCP service using the existing Promptly sign-in, workspace membership, and OAuth issuer. The service can read definitions on behalf of an explicitly consented connection. Optional `mcp:run` consent lets the external service run previews using customer inputs and its configured model providers, which may incur provider charges. The bridge does not execute models, send emails, edit drafts, or publish content.
 
-External services are disabled when `MCP_EXTERNAL_SERVERS` is absent or `[]`. `MCP_ENABLED=false` disables them along with native MCP. Native `/mcp` does not accept external grants.
+A workspace's owners and admins add services in Settings, or an operator configures them in the `MCP_EXTERNAL_SERVERS` secret. `MCP_ENABLED=false` disables both along with native MCP. Native `/mcp` does not accept external grants.
 
-## Configure a service
+## Add a service in Settings
 
-Apply migration `0030_mcp_external_connections.sql` before enabling an external registration. Configure `MCP_EXTERNAL_SERVERS` as a **Worker secret**, containing an array with this shape:
+Apply migrations `0030_mcp_external_connections.sql` and `0031_mcp_external_servers.sql` first. Then, in **Settings → MCP connections → Your MCP servers**, a workspace owner or admin selects **Add server** and enters:
+
+- **Name**, shown on the consent screen.
+- **ID**, which is part of the bridge URL (`/api/mcp/external/:id`) and can't change later: up to 64 lowercase letters, numbers, hyphens and underscores.
+- **MCP URL**, the service's exact HTTPS resource ending in `/mcp`, as described below.
+
+Promptly shows a key (`promptly_mcp_…`) and the bridge URL once. Store the key in the service's secret manager; Promptly keeps only its SHA-256 hash. The service belongs to the admin's workspace, and IDs and URLs are unique across all workspaces and the secret. A URL on Promptly's own origin is rejected.
+
+**Rotate key** issues a new key and the old one stops working straight away. **Remove** deletes the service, stops its key working, and revokes every connection made through it, so adding it again later means members reconnect. Role checks are repeated inside each write.
+
+## Configure a service with a secret
+
+Configure `MCP_EXTERNAL_SERVERS` as a **Worker secret**, containing an array with this shape:
 
 ```json
 [
@@ -22,13 +34,13 @@ Apply migration `0030_mcp_external_connections.sql` before enabling an external 
 
 Use a cryptographically random secret with at least 32 bytes of entropy. Store the same value in the external service's secret manager. Do not put the registration JSON, real workspace IDs, secrets, OAuth tokens, or customer inputs in source control, Terraform outputs, CLI arguments, or logs. Set the Worker secret through a secure prompt or a private input file, for example `bunx wrangler secret put MCP_EXTERNAL_SERVERS`. Local development can use an ignored `.env` or `.dev.vars` file.
 
-Each registration has one unique ID, one exact HTTPS resource URL ending in `/mcp`, and one workspace. Query strings, fragments, credentials in URLs, and duplicate IDs/resources are rejected. There are at most 20 registrations. A malformed configuration disables all external registrations while leaving native MCP independent.
+Each registration has one unique ID, one exact HTTPS resource URL ending in `/mcp`, and one workspace. Query strings, fragments, credentials in URLs, and duplicate IDs/resources are rejected. There are at most 20 registrations. A malformed configuration disables all secret-configured registrations while leaving native MCP and services added in Settings independent. If a service added in Settings shares an ID or resource with one in the secret, the secret wins and the Settings one is ignored.
 
 The external MCP server advertises its own resource metadata and Promptly's issuer. Clients request the exact external `resource`, `mcp:read`, and optionally `mcp:run`, using S256 PKCE. Existing Promptly `/oauth/authorize` and `/oauth/token` endpoints handle authorization and exchange. Consent displays the external service and resource, offers read access only, and leaves external preview execution unchecked. External requests for `mcp:write` or `mcp:publish` are rejected.
 
 ## Bridge API
 
-All calls use `POST /api/mcp/external/:serverId` on Promptly's canonical HTTPS origin with `Content-Type: application/json` and `Authorization: Bearer <sharedSecret>`. Bodies are limited to 16 KiB. Responses have `Cache-Control: no-store`. Credentials are compared using constant-time comparison of SHA-256 digests.
+All calls use `POST /api/mcp/external/:serverId` on Promptly's canonical HTTPS origin with `Content-Type: application/json` and `Authorization: Bearer <key>`, where the key is the one shown in Settings or the registration's `sharedSecret`. Bodies are limited to 16 KiB. Responses have `Cache-Control: no-store`. Credentials are compared using constant-time comparison of SHA-256 digests.
 
 ### Introspect an incoming engine access token
 
@@ -81,7 +93,7 @@ Invalid service credentials return 401, unavailable delegated access returns 403
 
 ## Rotate, disable, and revoke
 
-To rotate a service credential, generate a new random value and update both the external service secret manager and `MCP_EXTERNAL_SERVERS`. Only one credential per registration is accepted, so coordinate the change during a brief pause; old credentials immediately stop authenticating after the new configuration is active. Existing user grants remain bound to the same server/resource/workspace.
+Services added in Settings are rotated and removed there, as described above. For one in the secret: to rotate a service credential, generate a new random value and update both the external service secret manager and `MCP_EXTERNAL_SERVERS`. Only one credential per registration is accepted, so coordinate the change during a brief pause; old credentials immediately stop authenticating after the new configuration is active. Existing user grants remain bound to the same server/resource/workspace.
 
 Remove a registration, or set the secret to `[]`, to stop new consent, token issuance/refresh, introspection, and delegated reads for that service. Changing the registration's resource or workspace invalidates old bindings; users must reconnect. Disabling and later restoring an identical registration can reactivate still-valid grants. For permanent removal, also revoke its connections from Promptly Settings.
 
@@ -95,6 +107,6 @@ The provider has no single-grant lookup API. The bounded external access adapter
 
 KV can briefly return the consent-stage grant after token exchange has completed elsewhere. That record has `createdAt` but no `expiresAt`; the provider initially stores it for ten minutes. When explicit expiry is absent, the adapter uses that same ten-minute bound and rejects missing, malformed, future or expired creation timestamps. A claimed D1 grant and all existing authorization checks are still required. Explicit grant expiry remains authoritative. This avoids rejecting newly issued tokens solely because the updated grant has not propagated yet.
 
-`e2e/tests/mcp-external.spec.ts` exercises real Miniflare D1/KV and the production consent/token/read handlers, including PKCE, single-use consent, native compatibility, audience/scope escalation, delegated reads, workspace isolation, revoked/expired grants, disabled registrations, and stripped-prop rejection. `mcp-rate-limits.spec.ts` verifies isolated source/global thresholds and bounded cleanup.
+`e2e/tests/mcp-external.spec.ts` exercises real Miniflare D1/KV and the production consent/token/read handlers, including services added in Settings and their key rotation and removal, PKCE, single-use consent, native compatibility, audience/scope escalation, delegated reads, workspace isolation, revoked/expired grants, disabled registrations, and stripped-prop rejection. `mcp-rate-limits.spec.ts` verifies isolated source/global thresholds and bounded cleanup.
 
 References: [Cloudflare OAuth provider](https://github.com/cloudflare/workers-oauth-provider), [Workers secrets](https://developers.cloudflare.com/workers/configuration/secrets/), [RFC 8707 resource indicators](https://www.rfc-editor.org/rfc/rfc8707), [RFC 7009 revocation](https://www.rfc-editor.org/rfc/rfc7009).

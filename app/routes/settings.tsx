@@ -25,6 +25,7 @@ import {
   isMcpEnabled,
 } from '~/lib/mcp/config.server';
 import { listMcpConnections } from '~/lib/mcp/connections.server';
+import { listExternalMcpServers } from '~/lib/mcp/external-servers.server';
 import type { Route } from './+types/settings';
 
 type ApiKey = {
@@ -70,6 +71,10 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     isMcpEnabled(env) ? listMcpConnections(db, currentUser.id) : null,
   ]);
 
+  const mcpServers = mcpConnections?.canManageWorkspaceConnections
+    ? await listExternalMcpServers(db, mcpConnections.workspace.organizationId)
+    : [];
+
   // Better Auth v1.5.4 returns { apiKeys: [...], total: N }
   const organizationApiKeys: ApiKey[] = Array.isArray(apiKeysResult?.apiKeys)
     ? apiKeysResult.apiKeys
@@ -113,6 +118,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
             (connection.userId === currentUser.id ||
               mcpConnections.canManageWorkspaceConnections),
         })) ?? [],
+      servers: mcpServers,
     },
   };
 };

@@ -2,7 +2,6 @@ import { timingSafeEqual } from 'node:crypto';
 import { getComposer, getPrompt, getSnippet } from '../authoring/reads.server';
 import { mcpConnectionPropsSchema } from '../validations/mcp';
 import {
-  type ExternalMcpServer,
   externalMcpReadSchema,
   externalMcpRequestSchema,
 } from '../validations/mcp-external';
@@ -14,7 +13,11 @@ import {
 } from './config.server';
 import { McpConnectionError } from './connections.server';
 import { authorizeExternalMcpConnection } from './external-access.server';
-import { getExternalMcpServers } from './external-config.server';
+import {
+  type ExternalMcpServer,
+  findExternalMcpServer,
+  hashExternalMcpKey,
+} from './external-config.server';
 import { getMcpOAuthApi } from './oauth.server';
 import {
   checkMcpExternalRateLimit,
@@ -39,17 +42,11 @@ const authenticatedService = async (
   const authorization = request.headers.get('Authorization');
   if (!authorization?.startsWith('Bearer ') || authorization.length > 1024)
     return false;
-  const [received, expected] = await Promise.all([
-    crypto.subtle.digest(
-      'SHA-256',
-      new TextEncoder().encode(authorization.slice(7)),
-    ),
-    crypto.subtle.digest(
-      'SHA-256',
-      new TextEncoder().encode(server.sharedSecret),
-    ),
-  ]);
-  return timingSafeEqual(new Uint8Array(received), new Uint8Array(expected));
+  const encoder = new TextEncoder();
+  return timingSafeEqual(
+    encoder.encode(await hashExternalMcpKey(authorization.slice(7))),
+    encoder.encode(server.keyHash),
+  );
 };
 
 const introspect = async (
@@ -60,10 +57,9 @@ const introspect = async (
 ) => {
   if (resource !== server.resource) return { active: false as const };
   try {
-    const unwrapped = await getMcpOAuthApi(
-      env,
-      server.resource,
-    ).unwrapToken<unknown>(token);
+    const unwrapped = await getMcpOAuthApi(env, server).unwrapToken<unknown>(
+      token,
+    );
     if (
       !unwrapped ||
       unwrapped.audience !== server.resource ||
@@ -122,9 +118,7 @@ const handleExternalMcpRequest = async (
     return json({ error: 'rate_limited' }, 429, {
       'Retry-After': String(retryAfter),
     });
-  const server = getExternalMcpServers(env).find(
-    (item) => item.id === serverId,
-  );
+  const server = await findExternalMcpServer(env, { id: serverId });
   if (!server || !(await authenticatedService(request, server)))
     return json({ error: 'invalid_client' }, 401);
   if (

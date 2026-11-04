@@ -138,12 +138,32 @@ const bridge = (
     },
     body: JSON.stringify(body),
   });
+const manageServer = (
+  runtime: Miniflare,
+  form: Record<string, string>,
+  headers: Record<string, string> = {},
+) =>
+  runtime.dispatchFetch(`${origin}/api/mcp/servers`, {
+    method: 'POST',
+    headers: {
+      Origin: origin,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      ...headers,
+    },
+    body: new URLSearchParams(form).toString(),
+  });
+const issuedKeySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  key: z.string().regex(/^promptly_mcp_[\w-]{43}$/),
+  bridgeUrl: z.string(),
+});
 const connect = async (
   runtime: Miniflare,
-  options: { run?: boolean; native?: boolean } = {},
+  options: { run?: boolean; native?: boolean; resource?: string } = {},
 ) => {
   const started = await begin(runtime, {
-    resource: options.native ? `${origin}/mcp` : resource,
+    resource: options.native ? `${origin}/mcp` : (options.resource ?? resource),
     omitResource: options.native,
   });
   expect(started.response.status).toBe(200);
@@ -791,5 +811,191 @@ test('revocation, membership loss, disabled registration and expired grants term
         })
       ).status,
     ).toBe(400);
+  });
+});
+
+test('workspace admins add MCP servers whose keys check sign-ins until rotated or removed', async () => {
+  await fixture(async (runtime, db) => {
+    const pagentic = 'https://pagentic.example/mcp';
+    const created = await manageServer(runtime, {
+      intent: 'create',
+      id: 'pagentic',
+      name: 'Pagentic',
+      resource: pagentic,
+    });
+    expect(created.status).toBe(200);
+    expect(created.headers.get('Cache-Control')).toBe('no-store');
+    const first = issuedKeySchema.parse(await created.json());
+    expect(first).toMatchObject({
+      id: 'pagentic',
+      name: 'Pagentic',
+      bridgeUrl: `${origin}/api/mcp/external/pagentic`,
+    });
+    // Only the hash is stored.
+    expect(
+      await db
+        .prepare('SELECT key_hash, key_start FROM mcp_external_server')
+        .first(),
+    ).toEqual({
+      key_hash: createHash('sha256').update(first.key).digest('hex'),
+      key_start: first.key.slice(0, 17),
+    });
+
+    const connected = await connect(runtime, { resource: pagentic });
+    expect(connected.consent.externalServer).toEqual({
+      name: 'Pagentic',
+      resource: pagentic,
+    });
+    const introspect = (key: string, token = connected.access_token) =>
+      bridge(
+        runtime,
+        { action: 'introspect', token, resource: pagentic },
+        { Authorization: `Bearer ${key}` },
+        'pagentic',
+      );
+    const principal = principalSchema.parse(
+      await (await introspect(first.key)).json(),
+    );
+    expect(principal).toMatchObject({
+      userId: 'alice',
+      organizationId: 'workspace',
+      scopes: ['mcp:read', 'mcp:run'],
+    });
+    expect((await introspect(secret)).status).toBe(401);
+    // Its tokens are bound to its own audience.
+    expect(
+      await (
+        await bridge(runtime, {
+          action: 'introspect',
+          token: connected.access_token,
+          resource,
+        })
+      ).json(),
+    ).toEqual({ active: false });
+
+    const rotated = await manageServer(runtime, {
+      intent: 'rotate',
+      id: 'pagentic',
+    });
+    expect(rotated.status).toBe(200);
+    const second = issuedKeySchema.parse(await rotated.json());
+    expect(second.key).not.toBe(first.key);
+    expect((await introspect(first.key)).status).toBe(401);
+    expect((await introspect(second.key)).status).toBe(200);
+
+    const removed = await manageServer(runtime, {
+      intent: 'delete',
+      id: 'pagentic',
+    });
+    expect(removed.status).toBe(200);
+    expect((await introspect(second.key)).status).toBe(401);
+    expect(
+      await db
+        .prepare(
+          "SELECT revoked_at IS NOT NULL AS revoked FROM mcp_connection WHERE external_server_id = 'pagentic'",
+        )
+        .all(),
+    ).toMatchObject({ results: [{ revoked: 1 }] });
+    expect((await begin(runtime, { resource: pagentic })).response.status).toBe(
+      400,
+    );
+
+    // Adding it again doesn't bring the old connection back.
+    const readded = issuedKeySchema.parse(
+      await (
+        await manageServer(runtime, {
+          intent: 'create',
+          id: 'pagentic',
+          name: 'Pagentic',
+          resource: pagentic,
+        })
+      ).json(),
+    );
+    expect(await (await introspect(readded.key)).json()).toEqual({
+      active: false,
+    });
+  });
+});
+
+test('only owners and admins manage MCP servers, and IDs and URLs stay unique', async () => {
+  await fixture(async (runtime, db) => {
+    await db.batch([
+      db.prepare(
+        "INSERT INTO user (id, name, email) VALUES ('bob', 'Bob', 'bob@example.com')",
+      ),
+      db.prepare(
+        "INSERT INTO member (id, organization_id, user_id, role, created_at) VALUES ('bob-member', 'workspace', 'bob', 'member', 1)",
+      ),
+      db
+        .prepare(
+          "INSERT INTO mcp_external_server (id, organization_id, name, resource, key_hash, key_start, created_at, key_created_at) VALUES ('theirs', 'foreign', 'Theirs', 'https://theirs.example/mcp', 'hash', 'start', 1, 1), ('shadow', 'workspace', 'Shadow', ?, ?, 'start', 1, 1)",
+        )
+        .bind(resource, createHash('sha256').update(secret).digest('hex')),
+    ]);
+    const create = (
+      fields: Partial<Record<'id' | 'name' | 'resource', string>>,
+      headers: Record<string, string> = {},
+    ) =>
+      manageServer(
+        runtime,
+        {
+          intent: 'create',
+          id: 'service',
+          name: 'Service',
+          resource: 'https://service.example/mcp',
+          ...fields,
+        },
+        headers,
+      );
+    const expectError = async (
+      response: { status: number; json: () => Promise<unknown> },
+      status: number,
+    ) => {
+      expect(response.status).toBe(status);
+      expect(await response.json()).toEqual({ error: expect.any(String) });
+    };
+
+    await expectError(await create({}, { 'X-Test-User': 'bob' }), 403);
+    expect((await create({}, { Origin: 'https://evil.example' })).status).toBe(
+      403,
+    );
+    await expectError(await create({ id: 'engine' }), 409);
+    await expectError(await create({ resource }), 409);
+    await expectError(await create({ id: 'theirs' }), 409);
+    await expectError(await create({ resource: `${origin}/mcp` }), 400);
+    await expectError(await create({ id: 'Not valid' }), 400);
+    await expectError(
+      await create({ resource: 'http://service.example/mcp' }),
+      400,
+    );
+    expect((await create({})).status).toBe(200);
+    await expectError(await create({}), 409);
+    await expectError(
+      await manageServer(
+        runtime,
+        { intent: 'rotate', id: 'service' },
+        {
+          'X-Test-User': 'bob',
+        },
+      ),
+      403,
+    );
+    for (const intent of ['rotate', 'delete'])
+      await expectError(
+        await manageServer(runtime, { intent, id: 'theirs' }),
+        404,
+      );
+
+    // The configured server wins a clash with a stored one.
+    expect(
+      (
+        await bridge(
+          runtime,
+          { action: 'introspect', token: 'token', resource },
+          {},
+          'shadow',
+        )
+      ).status,
+    ).toBe(401);
   });
 });

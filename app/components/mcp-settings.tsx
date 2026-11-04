@@ -1,12 +1,11 @@
 import {
-  IconCheck,
-  IconCopy,
   IconExternalLink,
   IconPlugConnected,
   IconSparkles,
 } from '@tabler/icons-react';
-import { useState } from 'react';
 import { Link, useFetcher } from 'react-router';
+import { McpCopyButton } from '~/components/mcp-copy-button';
+import { McpServers } from '~/components/mcp-servers';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import {
@@ -18,6 +17,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from '~/components/ui/item';
+import type { ExternalMcpServerListItem } from '~/lib/mcp/external-servers.server';
 import type { McpPermission, McpScope } from '~/lib/validations/mcp';
 
 export type McpSettingsConnection = {
@@ -42,6 +42,7 @@ export type McpSettingsProps = {
   authoringEnabled?: boolean;
   connections: McpSettingsConnection[];
   canManageWorkspaceConnections: boolean;
+  servers?: ExternalMcpServerListItem[];
   setupHref?: string;
   error?: string;
   notice?: string;
@@ -61,46 +62,6 @@ const formatDate = (timestamp: number | null): string => {
     year: 'numeric',
     timeZone: 'UTC',
   }).format(timestamp);
-};
-
-const McpCopyButton = ({ value, label }: { value: string; label: string }) => {
-  const [copied, setCopied] = useState(false);
-  const [error, setError] = useState(false);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setError(false);
-    } catch {
-      setError(true);
-      setCopied(false);
-    }
-  };
-
-  return (
-    <div className="flex shrink-0 flex-col items-end gap-1">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={handleCopy}
-        aria-label={copied ? `${label} copied` : `Copy ${label.toLowerCase()}`}
-      >
-        {copied ? (
-          <IconCheck className="size-4" aria-hidden="true" />
-        ) : (
-          <IconCopy className="size-4" aria-hidden="true" />
-        )}
-        <span aria-live="polite">{copied ? 'Copied' : 'Copy'}</span>
-      </Button>
-      {error && (
-        <span role="alert" className="max-w-48 text-xs text-destructive">
-          Select and copy the text manually.
-        </span>
-      )}
-    </div>
-  );
 };
 
 const McpConnection = ({
@@ -343,6 +304,7 @@ export const McpSettings = ({
   authoringEnabled = false,
   connections,
   canManageWorkspaceConnections,
+  servers,
   setupHref,
   error,
   notice,
@@ -470,5 +432,9 @@ export const McpSettings = ({
         </div>
       )}
     </section>
+
+    {enabled && canManageWorkspaceConnections && servers && (
+      <McpServers servers={servers} />
+    )}
   </div>
 );
